@@ -6,10 +6,12 @@ can read and control Sublime Text.
 Install: copy this file to Packages/User/ (or symlink it there).
 """
 import contextlib
+import html
 import io
 import json
 import os
 import re
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -94,6 +96,28 @@ def _active_output_panel_view(window):
         return None, None
     short_name = panel_name.split(".", 1)[1]
     return short_name, window.find_output_panel(short_name)
+
+
+def _find_view_by_name(window, name):
+    views = window.views()
+    if name:
+        match = next((v for v in views if name.lower() in (v.name() or "").lower()), None)
+        if not match:
+            return None, [v.name() for v in views]
+        return match, None
+    return window.active_view(), None
+
+
+def _clean_phantom_text(text):
+    text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</a>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</(div|p|h\d|li|tr)>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html.unescape(text)
+    lines = [line.rstrip() for line in text.splitlines()]
+    return "\n".join(line for line in lines if line.strip()).strip()
 
 
 # ── GET handlers ──────────────────────────────────────────────────────────────
@@ -581,6 +605,47 @@ def _get_view_chars(params):
     return _on_main(fn)
 
 
+def _get_view_phantoms(params):
+    name = params.get("name", [None])[0]
+    key = params.get("key", [""])[0].strip()
+    def fn():
+        w = sublime.active_window()
+        v, open_views = _find_view_by_name(w, name)
+        if not v:
+            return {"error": f"no view matching {name!r}", "open_views": open_views}
+        phantoms = []
+        for mod in list(sys.modules.values()):
+            ps_map = getattr(mod, "_phantom_sets", None)
+            if not isinstance(ps_map, dict):
+                continue
+            phantom_set = ps_map.get(v.id())
+            if not phantom_set:
+                continue
+            phantom_key = getattr(phantom_set, "key", "")
+            if key and phantom_key != key:
+                continue
+            for item in getattr(phantom_set, "phantoms", []):
+                region = getattr(item, "region", sublime.Region(-1, -1))
+                content = getattr(item, "content", "")
+                layout = getattr(item, "layout", None)
+                layout_name = getattr(layout, "name", None) if layout is not None else None
+                phantoms.append({
+                    "module": getattr(mod, "__name__", None),
+                    "key": phantom_key,
+                    "region": [region.a, region.b],
+                    "layout": layout_name or str(layout),
+                    "content": content,
+                    "text": _clean_phantom_text(content),
+                })
+        return {
+            "name": v.name(),
+            "path": v.file_name(),
+            "phantoms": phantoms,
+            "count": len(phantoms),
+        }
+    return _on_main(fn)
+
+
 # ── POST handlers ─────────────────────────────────────────────────────────────
 
 def _set_project_data(body):
@@ -1035,6 +1100,7 @@ _GET = {
     "/view_content":     _get_view_content,
     "/view_size":        _get_view_size,
     "/view_chars":       _get_view_chars,
+    "/view_phantoms":    _get_view_phantoms,
     "/output_panel":     _get_output_panel,
     "/symbols":          _get_symbols,
     "/lookup_symbol":    _lookup_symbol,

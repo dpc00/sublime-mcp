@@ -92,6 +92,13 @@ def get_view_chars(begin: int, end: int, name: str = "") -> dict:
 
 
 @mcp.tool()
+def get_view_phantoms(name: str = "", key: str = "") -> dict:
+    """Return phantom HTML and extracted text from a view by name.
+    If key is omitted, defaults to the common 'pybackup' phantom key."""
+    return _get("/view_phantoms", name=name, key=key)
+
+
+@mcp.tool()
 def send_to_view(text: str, name: str = "") -> dict:
     """Send a string to any open tab by name (partial match, case-insensitive).
     For Terminus tabs this types the text into the terminal as if the user typed it.
