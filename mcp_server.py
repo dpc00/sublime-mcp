@@ -13,10 +13,7 @@ from mcp.server.fastmcp import FastMCP
 BASE    = "http://127.0.0.1:9500"
 TIMEOUT = 10.0
 
-mcp = FastMCP(
-    "sublime-mcp",
-    description="Read and control Sublime Text from an MCP client.",
-)
+mcp = FastMCP("sublime-mcp")
 
 
 def _get(path: str, **params) -> dict:
