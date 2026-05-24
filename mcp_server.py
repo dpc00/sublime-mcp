@@ -326,6 +326,27 @@ def get_syntaxes() -> dict:
 
 
 @mcp.tool()
+def get_command_palette(package: str = "", command: str = "", caption: str = "") -> dict:
+    """List Command Palette entries from installed *.sublime-commands resources.
+    Optional filters: package, command id, or caption substring."""
+    return _get("/command_palette", package=package, command=command, caption=caption)
+
+
+@mcp.tool()
+def get_commands(package: str = "", command: str = "", include_palette: bool = True) -> dict:
+    """List runnable Sublime command ids from loaded command classes, optionally enriched
+    with matching Command Palette entries from installed packages."""
+    return _get("/commands", package=package, command=command, include_palette=str(include_palette).lower())
+
+
+@mcp.tool()
+def get_menu_items(menu: str = "", caption: str = "", command: str = "") -> dict:
+    """List installed menu items from *.sublime-menu resources.
+    Optional filters: menu filename, caption substring, or command id substring."""
+    return _get("/menu_items", menu=menu, caption=caption, command=command)
+
+
+@mcp.tool()
 def set_syntax(name: str) -> dict:
     """Set the syntax of the active file by name (case-insensitive partial match is fine)."""
     return _post("/set_syntax", name=name)

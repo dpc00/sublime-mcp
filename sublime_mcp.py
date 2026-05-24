@@ -45,6 +45,49 @@ def _active_view():
     return sublime.active_window().active_view()
 
 
+def _command_name_from_class(cls):
+    name = cls.__name__
+    if name.endswith("Command"):
+        name = name[:-7]
+    parts = re.findall(r"[A-Z]+(?=[A-Z][a-z]|$)|[A-Z]?[a-z]+|\d+", name)
+    return "_".join(part.lower() for part in parts if part)
+
+
+def _package_name_from_resource(resource_path):
+    parts = resource_path.split("/", 2)
+    if len(parts) >= 2 and parts[0] == "Packages":
+        return parts[1]
+    return None
+
+
+def _walk_menu_items(items, resource, path, caption_filter, command_filter, out):
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        caption = item.get("caption", "")
+        command = item.get("command", "")
+        next_path = path + ([caption] if caption else [])
+        matches = True
+        if caption_filter and caption_filter not in caption.lower():
+            matches = False
+        if command_filter and command_filter not in command.lower():
+            matches = False
+        if matches and (caption or command):
+            out.append({
+                "caption": caption,
+                "command": command,
+                "args": item.get("args", {}),
+                "resource": resource,
+                "path": next_path,
+                "id": item.get("id"),
+                "mnemonic": item.get("mnemonic"),
+                "checkbox": item.get("checkbox"),
+            })
+        children = item.get("children")
+        if isinstance(children, list):
+            _walk_menu_items(children, resource, next_path, caption_filter, command_filter, out)
+
+
 # ── GET handlers ──────────────────────────────────────────────────────────────
 
 def _get_active_file(params):
@@ -263,6 +306,147 @@ def _get_line_count(params):
 def _get_syntaxes(params):
     def fn():
         return {"syntaxes": [{"name": s.name, "path": s.path} for s in sublime.list_syntaxes()]}
+    return _on_main(fn)
+
+
+def _get_command_palette(params):
+    package_filter = params.get("package", [""])[0].strip().lower()
+    command_filter = params.get("command", [""])[0].strip().lower()
+    caption_filter = params.get("caption", [""])[0].strip().lower()
+    def fn():
+        entries = []
+        for resource in sorted(sublime.find_resources("*.sublime-commands")):
+            package = _package_name_from_resource(resource) or ""
+            if package_filter and package_filter not in package.lower():
+                continue
+            try:
+                data = sublime.decode_value(sublime.load_resource(resource))
+            except Exception as e:
+                entries.append({
+                    "resource": resource,
+                    "package": package,
+                    "error": str(e),
+                })
+                continue
+            if not isinstance(data, list):
+                continue
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+                command = item.get("command", "")
+                caption = item.get("caption", "")
+                if command_filter and command_filter not in command.lower():
+                    continue
+                if caption_filter and caption_filter not in caption.lower():
+                    continue
+                entries.append({
+                    "caption": caption,
+                    "command": command,
+                    "args": item.get("args", {}),
+                    "resource": resource,
+                    "package": package,
+                })
+        return {"entries": entries, "count": len(entries)}
+    return _on_main(fn)
+
+
+def _get_commands(params):
+    package_filter = params.get("package", [""])[0].strip().lower()
+    command_filter = params.get("command", [""])[0].strip().lower()
+    include_palette = params.get("include_palette", ["true"])[0].strip().lower() != "false"
+    def fn():
+        commands = {}
+        for scope, classes in (
+            ("application", getattr(sublime_plugin, "application_command_classes", [])),
+            ("window", getattr(sublime_plugin, "window_command_classes", [])),
+            ("text", getattr(sublime_plugin, "text_command_classes", [])),
+        ):
+            for cls in classes:
+                command = _command_name_from_class(cls)
+                module = getattr(cls, "__module__", "")
+                package = module.split(".", 1)[0] if module else ""
+                if package_filter and package_filter not in package.lower():
+                    continue
+                if command_filter and command_filter not in command.lower():
+                    continue
+                entry = commands.setdefault(command, {
+                    "command": command,
+                    "scopes": [],
+                    "class_names": [],
+                    "modules": [],
+                    "packages": [],
+                    "palette_entries": [],
+                })
+                if scope not in entry["scopes"]:
+                    entry["scopes"].append(scope)
+                if cls.__name__ not in entry["class_names"]:
+                    entry["class_names"].append(cls.__name__)
+                if module and module not in entry["modules"]:
+                    entry["modules"].append(module)
+                if package and package not in entry["packages"]:
+                    entry["packages"].append(package)
+        if include_palette:
+            for resource in sorted(sublime.find_resources("*.sublime-commands")):
+                package = _package_name_from_resource(resource) or ""
+                if package_filter and package_filter not in package.lower():
+                    continue
+                try:
+                    data = sublime.decode_value(sublime.load_resource(resource))
+                except Exception:
+                    continue
+                if not isinstance(data, list):
+                    continue
+                for item in data:
+                    if not isinstance(item, dict):
+                        continue
+                    command = item.get("command", "")
+                    caption = item.get("caption", "")
+                    if not command:
+                        continue
+                    if command_filter and command_filter not in command.lower():
+                        continue
+                    entry = commands.setdefault(command, {
+                        "command": command,
+                        "scopes": [],
+                        "class_names": [],
+                        "modules": [],
+                        "packages": [],
+                        "palette_entries": [],
+                    })
+                    if package and package not in entry["packages"]:
+                        entry["packages"].append(package)
+                    entry["palette_entries"].append({
+                        "caption": caption,
+                        "args": item.get("args", {}),
+                        "resource": resource,
+                        "package": package,
+                    })
+        return {
+            "commands": [commands[name] for name in sorted(commands)],
+            "count": len(commands),
+        }
+    return _on_main(fn)
+
+
+def _get_menu_items(params):
+    menu_filter = params.get("menu", [""])[0].strip().lower()
+    caption_filter = params.get("caption", [""])[0].strip().lower()
+    command_filter = params.get("command", [""])[0].strip().lower()
+    def fn():
+        entries = []
+        resources = sorted(sublime.find_resources("*.sublime-menu"))
+        for resource in resources:
+            filename = resource.rsplit("/", 1)[-1].lower()
+            if menu_filter and menu_filter not in filename:
+                continue
+            try:
+                data = sublime.decode_value(sublime.load_resource(resource))
+            except Exception as e:
+                entries.append({"resource": resource, "error": str(e)})
+                continue
+            if isinstance(data, list):
+                _walk_menu_items(data, resource, [], caption_filter, command_filter, entries)
+        return {"entries": entries, "count": len(entries)}
     return _on_main(fn)
 
 
@@ -828,6 +1012,9 @@ _GET = {
     "/bookmarks":        _get_bookmarks,
     "/line_count":       _get_line_count,
     "/syntaxes":         _get_syntaxes,
+    "/command_palette":  _get_command_palette,
+    "/commands":         _get_commands,
+    "/menu_items":       _get_menu_items,
     "/scope_at_cursor":  _get_scope_at_cursor,
     "/encoding":         _get_encoding,
     "/word_at_cursor":   _get_word_at_cursor,
