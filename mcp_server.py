@@ -101,8 +101,9 @@ def send_to_view(text: str, name: str = "") -> dict:
 
 
 @mcp.tool()
-def get_output_panel(name: str = "exec") -> dict:
-    """Return the text content of an output panel.  Use name='exec' for build output."""
+def get_output_panel(name: str = "") -> dict:
+    """Return the text content of an output panel.
+    If name is omitted, read the active output panel.  Use name='exec' for build output."""
     return _get("/output_panel", name=name)
 
 
@@ -344,6 +345,12 @@ def get_menu_items(menu: str = "", caption: str = "", command: str = "") -> dict
     """List installed menu items from *.sublime-menu resources.
     Optional filters: menu filename, caption substring, or command id substring."""
     return _get("/menu_items", menu=menu, caption=caption, command=command)
+
+
+@mcp.tool()
+def get_active_panel() -> dict:
+    """Return the active panel id and, if it is an output panel, its content."""
+    return _get("/active_panel")
 
 
 @mcp.tool()

@@ -88,6 +88,14 @@ def _walk_menu_items(items, resource, path, caption_filter, command_filter, out)
             _walk_menu_items(children, resource, next_path, caption_filter, command_filter, out)
 
 
+def _active_output_panel_view(window):
+    panel_name = window.active_panel()
+    if not panel_name or not panel_name.startswith("output."):
+        return None, None
+    short_name = panel_name.split(".", 1)[1]
+    return short_name, window.find_output_panel(short_name)
+
+
 # ── GET handlers ──────────────────────────────────────────────────────────────
 
 def _get_active_file(params):
@@ -234,12 +242,19 @@ def _send_to_view(body):
 
 
 def _get_output_panel(params):
-    name = params.get("name", ["exec"])[0]
+    name = params.get("name", [""])[0]
     def fn():
-        v = sublime.active_window().find_output_panel(name)
+        w = sublime.active_window()
+        panel_name = name
+        if panel_name:
+            v = w.find_output_panel(panel_name)
+        else:
+            panel_name, v = _active_output_panel_view(w)
+            if not panel_name:
+                return {"error": "no active output panel"}
         if not v:
-            return {"error": f"panel not found: {name}"}
-        return {"name": name, "content": v.substr(sublime.Region(0, v.size()))}
+            return {"error": f"panel not found: {panel_name}"}
+        return {"name": panel_name, "content": v.substr(sublime.Region(0, v.size()))}
     return _on_main(fn)
 
 
@@ -447,6 +462,22 @@ def _get_menu_items(params):
             if isinstance(data, list):
                 _walk_menu_items(data, resource, [], caption_filter, command_filter, entries)
         return {"entries": entries, "count": len(entries)}
+    return _on_main(fn)
+
+
+def _get_active_panel(params):
+    def fn():
+        w = sublime.active_window()
+        panel_name = w.active_panel()
+        out = {"active_panel": panel_name}
+        if panel_name and panel_name.startswith("output."):
+            short_name, v = _active_output_panel_view(w)
+            out["name"] = short_name
+            out["content"] = v.substr(sublime.Region(0, v.size())) if v else None
+        else:
+            out["name"] = None
+            out["content"] = None
+        return out
     return _on_main(fn)
 
 
@@ -1015,6 +1046,7 @@ _GET = {
     "/command_palette":  _get_command_palette,
     "/commands":         _get_commands,
     "/menu_items":       _get_menu_items,
+    "/active_panel":     _get_active_panel,
     "/scope_at_cursor":  _get_scope_at_cursor,
     "/encoding":         _get_encoding,
     "/word_at_cursor":   _get_word_at_cursor,
