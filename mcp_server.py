@@ -16,14 +16,14 @@ TIMEOUT = 10.0
 mcp = FastMCP("sublime-mcp")
 
 
-def _get(path: str, **params) -> dict:
-    r = httpx.get(f"{BASE}{path}", params=params, timeout=TIMEOUT)
+def _get(endpoint: str, **params) -> dict:
+    r = httpx.get(f"{BASE}{endpoint}", params=params, timeout=TIMEOUT)
     r.raise_for_status()
     return r.json()
 
 
-def _post(path: str, **body) -> dict:
-    r = httpx.post(f"{BASE}{path}", json=body, timeout=TIMEOUT)
+def _post(endpoint: str, **body) -> dict:
+    r = httpx.post(f"{BASE}{endpoint}", json=body, timeout=TIMEOUT)
     r.raise_for_status()
     return r.json()
 
