@@ -56,7 +56,7 @@ Then restart Claude Code.
 | `get_open_files` | All open files in the current window |
 | `get_project_folders` | Project root folders |
 | `get_file_content` | Content of any open file by path |
-| `get_output_panel` | Content of any output panel (default: build output) |
+| `get_output_panel` | Content of a named output panel, or the active output panel if omitted |
 | `get_symbols` | Functions/classes in the active file |
 | `lookup_symbol` | Find a symbol's definition across open files |
 | `get_project_data` | Raw `.sublime-project` JSON |
@@ -64,6 +64,7 @@ Then restart Claude Code.
 | `get_command_palette` | Installed Command Palette entries from `.sublime-commands` resources |
 | `get_commands` | Runnable command ids from loaded command classes, optionally merged with palette metadata |
 | `get_menu_items` | Installed menu items from `.sublime-menu` resources |
+| `get_active_panel` | Active panel id and, for output panels, the current panel content |
 
 ### Navigate
 | Tool | Description |
