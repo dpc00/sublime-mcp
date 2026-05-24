@@ -91,6 +91,30 @@ def get_project_data() -> dict:
 
 
 @mcp.tool()
+def add_folder(path: str) -> dict:
+    """Add a folder to the current project."""
+    data = _get("/project_data").get("project_data") or {}
+    folders = data.get("folders", [])
+    if not any(f.get("path") == path for f in folders):
+        folders.append({"path": path})
+        data["folders"] = folders
+        return _post("/set_project_data", data=data)
+    return {"ok": True, "note": "already present"}
+
+
+@mcp.tool()
+def remove_folder(path: str) -> dict:
+    """Remove a folder from the current project by path."""
+    data = _get("/project_data").get("project_data") or {}
+    folders = data.get("folders", [])
+    new_folders = [f for f in folders if f.get("path") != path]
+    if len(new_folders) == len(folders):
+        return {"ok": False, "note": "folder not found"}
+    data["folders"] = new_folders
+    return _post("/set_project_data", data=data)
+
+
+@mcp.tool()
 def get_variables() -> dict:
     """Return Sublime Text's build variables: $file, $project_path, $platform, etc."""
     return _get("/variables")
@@ -157,6 +181,207 @@ def run_build(cmd: list = None, shell_cmd: str = None, working_dir: str = "") ->
 def set_status(value: str, key: str = "sublime_mcp") -> dict:
     """Write a message to Sublime Text's status bar."""
     return _post("/set_status", key=key, value=value)
+
+
+# ── file ops ──────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def save_file() -> dict:
+    """Save the active file."""
+    return _post("/save_file")
+
+
+@mcp.tool()
+def save_all() -> dict:
+    """Save all open files."""
+    return _post("/save_all")
+
+
+@mcp.tool()
+def close_file(path: str = "") -> dict:
+    """Close a file by path, or close the active file if path is omitted."""
+    return _post("/close_file", path=path)
+
+
+@mcp.tool()
+def revert_file() -> dict:
+    """Revert the active file to its last saved state, discarding unsaved changes."""
+    return _post("/revert_file")
+
+
+# ── edit ops ──────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def undo() -> dict:
+    """Undo the last edit in the active file."""
+    return _post("/undo")
+
+
+@mcp.tool()
+def redo() -> dict:
+    """Redo the last undone edit in the active file."""
+    return _post("/redo")
+
+
+@mcp.tool()
+def duplicate_line() -> dict:
+    """Duplicate the current line(s) in the active file."""
+    return _post("/duplicate_line")
+
+
+@mcp.tool()
+def toggle_comment(block: bool = False) -> dict:
+    """Toggle line comment (or block comment if block=True) on the current selection."""
+    return _post("/toggle_comment", block=block)
+
+
+@mcp.tool()
+def sort_lines(case_sensitive: bool = False) -> dict:
+    """Sort the selected lines (or all lines if nothing is selected)."""
+    return _post("/sort_lines", case_sensitive=case_sensitive)
+
+
+@mcp.tool()
+def select_lines(begin: int, end: int = 0) -> dict:
+    """Select lines begin through end (1-based, inclusive).  end defaults to begin."""
+    return _post("/select_lines", begin=begin, end=end or begin)
+
+
+@mcp.tool()
+def fold_lines(begin: int, end: int) -> dict:
+    """Fold (collapse) lines begin through end (1-based) in the active file."""
+    return _post("/fold_lines", begin=begin, end=end)
+
+
+@mcp.tool()
+def insert_snippet(contents: str) -> dict:
+    """Insert a snippet at the cursor using Sublime Text's snippet syntax (e.g. $1 for tab stops)."""
+    return _post("/insert_snippet", contents=contents)
+
+
+# ── search ────────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def find_in_file(pattern: str, case_sensitive: bool = False, regex: bool = False) -> dict:
+    """Find all occurrences of pattern in the active file.  Returns list of {line, col, text}."""
+    return _post("/find_in_file", pattern=pattern, case_sensitive=case_sensitive, regex=regex)
+
+
+@mcp.tool()
+def find_in_files(
+    pattern: str,
+    folders: list = None,
+    case_sensitive: bool = False,
+    regex: bool = False,
+    max_results: int = 200,
+) -> dict:
+    """Search for pattern across project folders (or the supplied folder list).
+    Skips .git, __pycache__, node_modules, .venv.  Returns list of {path, line, match}."""
+    body = dict(pattern=pattern, case_sensitive=case_sensitive, regex=regex, max_results=max_results)
+    if folders:
+        body["folders"] = folders
+    return _post("/find_in_files", **body)
+
+
+# ── syntax / encoding ─────────────────────────────────────────────────────────
+
+@mcp.tool()
+def get_syntaxes() -> dict:
+    """List all syntax definitions available in Sublime Text (name + path)."""
+    return _get("/syntaxes")
+
+
+@mcp.tool()
+def set_syntax(name: str) -> dict:
+    """Set the syntax of the active file by name (case-insensitive partial match is fine)."""
+    return _post("/set_syntax", name=name)
+
+
+@mcp.tool()
+def get_encoding() -> dict:
+    """Return the character encoding of the active file."""
+    return _get("/encoding")
+
+
+@mcp.tool()
+def set_encoding(encoding: str) -> dict:
+    """Set the character encoding of the active file (e.g. 'UTF-8', 'Western (Windows 1252)')."""
+    return _post("/set_encoding", encoding=encoding)
+
+
+# ── cursor / scope ────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def get_scope_at_cursor() -> dict:
+    """Return the full syntax scope string at the cursor position."""
+    return _get("/scope_at_cursor")
+
+
+@mcp.tool()
+def get_word_at_cursor() -> dict:
+    """Return the word under the cursor and its line/col."""
+    return _get("/word_at_cursor")
+
+
+@mcp.tool()
+def get_bookmarks() -> dict:
+    """Return all bookmarked positions in the active file."""
+    return _get("/bookmarks")
+
+
+@mcp.tool()
+def get_line_count() -> dict:
+    """Return the total number of lines in the active file."""
+    return _get("/line_count")
+
+
+# ── settings ──────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def get_setting(key: str, scope: str = "view") -> dict:
+    """Get a Sublime Text setting by key.  scope='view' (default) or 'window'."""
+    return _post("/get_setting", key=key, scope=scope)
+
+
+@mcp.tool()
+def set_setting(key: str, value, scope: str = "view") -> dict:
+    """Set a Sublime Text setting by key.  scope='view' (default) or 'window'."""
+    return _post("/set_setting", key=key, value=value, scope=scope)
+
+
+# ── window / layout ───────────────────────────────────────────────────────────
+
+@mcp.tool()
+def toggle_sidebar() -> dict:
+    """Show or hide the Sublime Text sidebar."""
+    return _post("/toggle_sidebar")
+
+
+@mcp.tool()
+def get_layout() -> dict:
+    """Return the current window layout (groups, cells) and which files are in each group."""
+    return _get("/layout")
+
+
+@mcp.tool()
+def focus_group(group: int) -> dict:
+    """Move focus to a pane group by 0-based index."""
+    return _post("/focus_group", group=group)
+
+
+@mcp.tool()
+def set_layout(layout: dict) -> dict:
+    """Set the window pane layout.  layout must be a ST layout dict with cols, rows, cells keys."""
+    return _post("/set_layout", layout=layout)
+
+
+# ── scripting ─────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def eval_python(code: str) -> dict:
+    """Execute arbitrary Python in Sublime Text's main thread.
+    Locals: sublime, window, view, print.  Returns captured stdout in 'output'."""
+    return _post("/eval_python", code=code)
 
 
 if __name__ == "__main__":

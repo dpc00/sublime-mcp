@@ -5,7 +5,11 @@ can read and control Sublime Text.
 
 Install: copy this file to Packages/User/ (or symlink it there).
 """
+import contextlib
+import io
 import json
+import os
+import re
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -187,7 +191,96 @@ def _get_variables(params):
     return _on_main(fn)
 
 
+def _get_bookmarks(params):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        out = []
+        for r in v.get_regions("bookmarks"):
+            row, col = v.rowcol(r.begin())
+            out.append({"line": row + 1, "col": col + 1})
+        return {"path": v.file_name(), "bookmarks": out}
+    return _on_main(fn)
+
+
+def _get_line_count(params):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        return {"path": v.file_name(), "line_count": v.rowcol(v.size())[0] + 1}
+    return _on_main(fn)
+
+
+def _get_syntaxes(params):
+    def fn():
+        return {"syntaxes": [{"name": s.name, "path": s.path} for s in sublime.list_syntaxes()]}
+    return _on_main(fn)
+
+
+def _get_scope_at_cursor(params):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        sel = v.sel()
+        pt = sel[0].begin() if sel else 0
+        return {"scope": v.scope_name(pt).strip()}
+    return _on_main(fn)
+
+
+def _get_encoding(params):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        return {"path": v.file_name(), "encoding": v.encoding()}
+    return _on_main(fn)
+
+
+def _get_word_at_cursor(params):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        sel = v.sel()
+        pt = sel[0].begin() if sel else 0
+        word_region = v.word(pt)
+        row, col = v.rowcol(pt)
+        return {
+            "word":  v.substr(word_region),
+            "line":  row + 1,
+            "col":   col + 1,
+        }
+    return _on_main(fn)
+
+
+def _get_layout(params):
+    def fn():
+        w = sublime.active_window()
+        layout = w.layout()
+        views_by_group = {}
+        for g in range(w.num_groups()):
+            views_by_group[g] = [
+                {"path": v.file_name(), "name": v.name()}
+                for v in w.views_in_group(g)
+            ]
+        return {"layout": layout, "num_groups": w.num_groups(), "views_by_group": views_by_group}
+    return _on_main(fn)
+
+
 # ── POST handlers ─────────────────────────────────────────────────────────────
+
+def _set_project_data(body):
+    data = body.get("data")
+    if data is None:
+        return {"error": "data required"}
+    def fn():
+        sublime.active_window().set_project_data(data)
+        return {"ok": True}
+    return _on_main(fn)
+
 
 def _open_file(body):
     path = body.get("path")
@@ -295,23 +388,355 @@ def _set_status(body):
     return _on_main(fn)
 
 
+def _save_file(body):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("save")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _save_all(body):
+    def fn():
+        sublime.active_window().run_command("save_all")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _close_file(body):
+    path = body.get("path")
+    def fn():
+        w = sublime.active_window()
+        if path:
+            v = w.find_open_file(path)
+            if not v:
+                return {"error": f"not open: {path}"}
+        else:
+            v = w.active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.close()
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _find_in_files(body):
+    """Runs on HTTP thread — no ST API needed for file I/O."""
+    pattern  = body.get("pattern", "")
+    folders  = body.get("folders") or []
+    case     = body.get("case_sensitive", False)
+    use_re   = body.get("regex", False)
+    max_hits = int(body.get("max_results", 200))
+    if not pattern:
+        return {"error": "pattern required"}
+    if not folders:
+        folders = _on_main(lambda: sublime.active_window().folders())
+    SKIP = {".git", "__pycache__", "node_modules", ".venv", ".mypy_cache"}
+    flags = 0 if case else re.IGNORECASE
+    try:
+        rx = re.compile(pattern if use_re else re.escape(pattern), flags)
+    except re.error as e:
+        return {"error": f"bad pattern: {e}"}
+    results = []
+    for folder in folders:
+        for dirpath, dirnames, filenames in os.walk(folder):
+            dirnames[:] = [d for d in dirnames if d not in SKIP]
+            for fname in filenames:
+                fpath = os.path.join(dirpath, fname)
+                try:
+                    text = open(fpath, encoding="utf-8", errors="replace").read()
+                except OSError:
+                    continue
+                for m in rx.finditer(text):
+                    line_no = text[:m.start()].count("\n") + 1
+                    results.append({"path": fpath, "line": line_no, "match": m.group()})
+                    if len(results) >= max_hits:
+                        return {"results": results, "truncated": True}
+    return {"results": results, "truncated": False}
+
+
+def _find_in_file(body):
+    pattern = body.get("pattern", "")
+    case    = body.get("case_sensitive", False)
+    use_re  = body.get("regex", False)
+    if not pattern:
+        return {"error": "pattern required"}
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        flags = 0
+        if not case:
+            flags |= sublime.IGNORECASE
+        if not use_re:
+            flags |= sublime.LITERAL
+        out = []
+        for r in v.find_all(pattern, flags):
+            row, col = v.rowcol(r.begin())
+            out.append({"line": row + 1, "col": col + 1, "text": v.substr(r)})
+        return {"path": v.file_name(), "matches": out}
+    return _on_main(fn)
+
+
+def _set_syntax(body):
+    name = body.get("name", "")
+    if not name:
+        return {"error": "name required"}
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        syns = sublime.list_syntaxes()
+        match = next((s for s in syns if s.name.lower() == name.lower()), None)
+        if not match:
+            match = next((s for s in syns if name.lower() in s.name.lower()), None)
+        if not match:
+            return {"error": f"syntax not found: {name}"}
+        v.assign_syntax(match.path)
+        return {"ok": True, "syntax": match.name}
+    return _on_main(fn)
+
+
+def _toggle_comment(body):
+    block = bool(body.get("block", False))
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("toggle_comment", {"block": block})
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _toggle_sidebar(body):
+    def fn():
+        sublime.active_window().run_command("toggle_side_bar")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _select_lines(body):
+    begin = body.get("begin")
+    end   = body.get("end")
+    if begin is None:
+        return {"error": "begin required"}
+    if end is None:
+        end = begin
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        start_pt = v.text_point(begin - 1, 0)
+        end_pt   = v.full_line(v.text_point(end - 1, 0)).end()
+        v.sel().clear()
+        v.sel().add(sublime.Region(start_pt, end_pt))
+        v.show_at_center(start_pt)
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _sort_lines(body):
+    case = bool(body.get("case_sensitive", False))
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("sort_lines", {"case_sensitive": case})
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _eval_python(body):
+    code = body.get("code", "")
+    if not code:
+        return {"error": "code required"}
+    buf = io.StringIO()
+    def fn():
+        env = {
+            "sublime": sublime,
+            "window":  sublime.active_window(),
+            "view":    sublime.active_window().active_view(),
+            "print":   lambda *a, **kw: print(*a, **kw, file=buf),
+        }
+        exec(code, env)  # noqa: S102
+        return buf.getvalue()
+    try:
+        output = _on_main(fn)
+        return {"ok": True, "output": output}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "output": buf.getvalue()}
+
+
+def _fold_lines(body):
+    begin = body.get("begin")
+    end   = body.get("end")
+    if begin is None or end is None:
+        return {"error": "begin and end required"}
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        start_pt = v.text_point(begin - 1, 0)
+        end_pt   = v.full_line(v.text_point(end - 1, 0)).end()
+        v.fold(sublime.Region(start_pt, end_pt))
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _set_encoding(body):
+    encoding = body.get("encoding", "")
+    if not encoding:
+        return {"error": "encoding required"}
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.set_encoding(encoding)
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _revert_file(body):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("revert")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _undo(body):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("undo")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _redo(body):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("redo")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _duplicate_line(body):
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("duplicate_line")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _insert_snippet(body):
+    contents = body.get("contents", "")
+    if not contents:
+        return {"error": "contents required"}
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("insert_snippet", {"contents": contents})
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _get_setting(body):
+    key = body.get("key", "")
+    if not key:
+        return {"error": "key required"}
+    scope = body.get("scope", "view")
+    def fn():
+        w = sublime.active_window()
+        if scope == "view":
+            v = w.active_view()
+            if not v:
+                return {"error": "no active view"}
+            return {"key": key, "value": v.settings().get(key), "scope": "view"}
+        else:
+            return {"key": key, "value": w.settings().get(key), "scope": "window"}
+    return _on_main(fn)
+
+
+def _set_setting(body):
+    key   = body.get("key", "")
+    value = body.get("value")
+    scope = body.get("scope", "view")
+    if not key:
+        return {"error": "key required"}
+    if value is None:
+        return {"error": "value required"}
+    def fn():
+        w = sublime.active_window()
+        if scope == "view":
+            v = w.active_view()
+            if not v:
+                return {"error": "no active view"}
+            v.settings().set(key, value)
+        else:
+            w.settings().set(key, value)
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _focus_group(body):
+    group = body.get("group")
+    if group is None:
+        return {"error": "group required"}
+    def fn():
+        w = sublime.active_window()
+        if group >= w.num_groups():
+            return {"error": f"group {group} out of range (have {w.num_groups()})"}
+        w.focus_group(group)
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _set_layout(body):
+    layout = body.get("layout")
+    if not layout:
+        return {"error": "layout required"}
+    def fn():
+        sublime.active_window().run_command("set_layout", layout)
+        return {"ok": True}
+    return _on_main(fn)
+
+
 # ── routing ───────────────────────────────────────────────────────────────────
 
 _GET = {
-    "/active_file":     _get_active_file,
-    "/selection":       _get_selection,
-    "/cursor_context":  _get_cursor_context,
-    "/open_files":      _get_open_files,
-    "/project_folders": _get_project_folders,
-    "/file_content":    _get_file_content,
-    "/output_panel":    _get_output_panel,
-    "/symbols":         _get_symbols,
-    "/lookup_symbol":   _lookup_symbol,
-    "/project_data":    _get_project_data,
-    "/variables":       _get_variables,
+    "/active_file":      _get_active_file,
+    "/selection":        _get_selection,
+    "/cursor_context":   _get_cursor_context,
+    "/open_files":       _get_open_files,
+    "/project_folders":  _get_project_folders,
+    "/file_content":     _get_file_content,
+    "/output_panel":     _get_output_panel,
+    "/symbols":          _get_symbols,
+    "/lookup_symbol":    _lookup_symbol,
+    "/project_data":     _get_project_data,
+    "/variables":        _get_variables,
+    "/bookmarks":        _get_bookmarks,
+    "/line_count":       _get_line_count,
+    "/syntaxes":         _get_syntaxes,
+    "/scope_at_cursor":  _get_scope_at_cursor,
+    "/encoding":         _get_encoding,
+    "/word_at_cursor":   _get_word_at_cursor,
+    "/layout":           _get_layout,
 }
 
 _POST = {
+    "/set_project_data":   _set_project_data,
     "/open_file":          _open_file,
     "/goto_line":          _goto_line,
     "/show_panel":         _show_panel,
@@ -320,6 +745,28 @@ _POST = {
     "/run_command":        _run_command,
     "/run_build":          _run_build,
     "/set_status":         _set_status,
+    "/save_file":          _save_file,
+    "/save_all":           _save_all,
+    "/close_file":         _close_file,
+    "/find_in_files":      _find_in_files,
+    "/find_in_file":       _find_in_file,
+    "/set_syntax":         _set_syntax,
+    "/toggle_comment":     _toggle_comment,
+    "/toggle_sidebar":     _toggle_sidebar,
+    "/select_lines":       _select_lines,
+    "/sort_lines":         _sort_lines,
+    "/eval_python":        _eval_python,
+    "/fold_lines":         _fold_lines,
+    "/set_encoding":       _set_encoding,
+    "/revert_file":        _revert_file,
+    "/undo":               _undo,
+    "/redo":               _redo,
+    "/duplicate_line":     _duplicate_line,
+    "/insert_snippet":     _insert_snippet,
+    "/get_setting":        _get_setting,
+    "/set_setting":        _set_setting,
+    "/focus_group":        _focus_group,
+    "/set_layout":         _set_layout,
 }
 
 
