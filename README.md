@@ -61,6 +61,9 @@ Then restart Claude Code.
 | `lookup_symbol` | Find a symbol's definition across open files |
 | `get_project_data` | Raw `.sublime-project` JSON |
 | `get_variables` | ST build variables (`$file`, `$project_path`, etc.) |
+| `get_command_palette` | Installed Command Palette entries from `.sublime-commands` resources |
+| `get_commands` | Runnable command ids from loaded command classes, optionally merged with palette metadata |
+| `get_menu_items` | Installed menu items from `.sublime-menu` resources |
 
 ### Navigate
 | Tool | Description |
