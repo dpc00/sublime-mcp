@@ -75,6 +75,23 @@ def get_view_content(name: str = "") -> dict:
 
 
 @mcp.tool()
+def get_view_size(name: str = "") -> dict:
+    """Return the total character count of any open tab by name (partial match, case-insensitive).
+    Use before get_view_chars to compute offsets — e.g. begin=size-5000, end=size for the tail.
+    Omit name for the active view."""
+    return _get("/view_size", name=name)
+
+
+@mcp.tool()
+def get_view_chars(begin: int, end: int, name: str = "") -> dict:
+    """Return text at character offsets begin..end (0-based, end exclusive) from any open tab.
+    Works for Terminus tabs and any other view.  Clamps to buffer bounds automatically.
+    Use get_view_size first, then e.g. begin=size-5000, end=size to read the last 5000 chars.
+    Omit name for the active view."""
+    return _get("/view_chars", name=name, begin=begin, end=end)
+
+
+@mcp.tool()
 def send_to_view(text: str, name: str = "") -> dict:
     """Send a string to any open tab by name (partial match, case-insensitive).
     For Terminus tabs this types the text into the terminal as if the user typed it.

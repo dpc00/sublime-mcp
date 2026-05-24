@@ -317,6 +317,55 @@ def _get_layout(params):
     return _on_main(fn)
 
 
+def _get_view_size(params):
+    name = params.get("name", [None])[0]
+    def fn():
+        w = sublime.active_window()
+        views = w.views()
+        if name:
+            match = next((v for v in views if name.lower() in v.name().lower()), None)
+            if not match:
+                return {"error": f"no view matching {name!r}", "open_views": [v.name() for v in views]}
+            v = match
+        else:
+            v = w.active_view()
+        if not v:
+            return {"error": "no view found"}
+        return {"name": v.name(), "path": v.file_name(), "size": v.size()}
+    return _on_main(fn)
+
+
+def _get_view_chars(params):
+    name  = params.get("name",  [None])[0]
+    begin = int(params.get("begin", [0])[0])
+    end_p = params.get("end",  [None])[0]
+    def fn():
+        w = sublime.active_window()
+        views = w.views()
+        if name:
+            match = next((v for v in views if name.lower() in v.name().lower()), None)
+            if not match:
+                return {"error": f"no view matching {name!r}", "open_views": [v.name() for v in views]}
+            v = match
+        else:
+            v = w.active_view()
+        if not v:
+            return {"error": "no view found"}
+        size    = v.size()
+        end_c   = int(end_p) if end_p is not None else size
+        begin_c = max(0, begin)
+        end_c   = min(size, end_c)
+        return {
+            "name":    v.name(),
+            "path":    v.file_name(),
+            "size":    size,
+            "begin":   begin_c,
+            "end":     end_c,
+            "content": v.substr(sublime.Region(begin_c, end_c)),
+        }
+    return _on_main(fn)
+
+
 # ── POST handlers ─────────────────────────────────────────────────────────────
 
 def _set_project_data(body):
@@ -769,6 +818,8 @@ _GET = {
     "/project_folders":  _get_project_folders,
     "/file_content":     _get_file_content,
     "/view_content":     _get_view_content,
+    "/view_size":        _get_view_size,
+    "/view_chars":       _get_view_chars,
     "/output_panel":     _get_output_panel,
     "/symbols":          _get_symbols,
     "/lookup_symbol":    _lookup_symbol,
