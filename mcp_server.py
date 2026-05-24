@@ -67,6 +67,23 @@ def get_file_content(path: str) -> dict:
 
 
 @mcp.tool()
+def get_view_content(name: str = "") -> dict:
+    """Return the full content of any open tab by name (partial match, case-insensitive).
+    Works for Terminus tabs and other nameless views that have no file path.
+    Omit name to read the active view."""
+    return _get("/view_content", name=name)
+
+
+@mcp.tool()
+def send_to_view(text: str, name: str = "") -> dict:
+    """Send a string to any open tab by name (partial match, case-insensitive).
+    For Terminus tabs this types the text into the terminal as if the user typed it.
+    Include a trailing newline (\\n) to execute a command.
+    Omit name to target the active view."""
+    return _post("/send_to_view", text=text, name=name)
+
+
+@mcp.tool()
 def get_output_panel(name: str = "exec") -> dict:
     """Return the text content of an output panel.  Use name='exec' for build output."""
     return _get("/output_panel", name=name)

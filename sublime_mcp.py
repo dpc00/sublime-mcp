@@ -143,6 +143,53 @@ def _get_file_content(params):
     return _on_main(fn)
 
 
+def _get_view_content(params):
+    name = params.get("name", [None])[0]
+    def fn():
+        w = sublime.active_window()
+        views = w.views()
+        if name:
+            match = next((v for v in views if name.lower() in v.name().lower()), None)
+            if not match:
+                names = [v.name() for v in views]
+                return {"error": f"no view matching {name!r}", "open_views": names}
+            v = match
+        else:
+            v = w.active_view()
+        if not v:
+            return {"error": "no view found"}
+        return {"name": v.name(), "path": v.file_name(), "content": v.substr(sublime.Region(0, v.size()))}
+    return _on_main(fn)
+
+
+def _send_to_view(body):
+    name = body.get("name", "")
+    text = body.get("text", "")
+    if not text:
+        return {"error": "text required"}
+    def fn():
+        w = sublime.active_window()
+        views = w.views()
+        if name:
+            match = next((v for v in views if name.lower() in v.name().lower()), None)
+            if not match:
+                names = [v.name() for v in views]
+                return {"error": f"no view matching {name!r}", "open_views": names}
+            v = match
+        else:
+            v = w.active_view()
+        if not v:
+            return {"error": "no view found"}
+        tag = v.settings().get("terminus_view.tag")
+        if tag:
+            w.run_command("terminus_send_string", {"string": text, "tag": tag})
+        else:
+            w.focus_view(v)
+            w.run_command("terminus_send_string", {"string": text})
+        return {"ok": True, "name": v.name(), "tag": tag}
+    return _on_main(fn)
+
+
 def _get_output_panel(params):
     name = params.get("name", ["exec"])[0]
     def fn():
@@ -721,6 +768,7 @@ _GET = {
     "/open_files":       _get_open_files,
     "/project_folders":  _get_project_folders,
     "/file_content":     _get_file_content,
+    "/view_content":     _get_view_content,
     "/output_panel":     _get_output_panel,
     "/symbols":          _get_symbols,
     "/lookup_symbol":    _lookup_symbol,
@@ -767,6 +815,7 @@ _POST = {
     "/set_setting":        _set_setting,
     "/focus_group":        _focus_group,
     "/set_layout":         _set_layout,
+    "/send_to_view":       _send_to_view,
 }
 
 
