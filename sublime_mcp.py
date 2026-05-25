@@ -713,10 +713,17 @@ def _replace_lines(body):
     begin = body.get("begin")
     end   = body.get("end")
     text  = body.get("text", "")
+    path  = body.get("path")
     if begin is None or end is None:
         return {"error": "begin and end required"}
     def fn():
-        v = _active_view()
+        w = sublime.active_window()
+        if path:
+            v = w.find_open_file(path)
+            if not v:
+                return {"error": f"not open: {path}"}
+        else:
+            v = _active_view()
         if not v:
             return {"error": "no active view"}
         start_pt = v.text_point(begin - 1, 0)

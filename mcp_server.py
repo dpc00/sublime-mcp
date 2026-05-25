@@ -191,9 +191,10 @@ def replace_selection(text: str) -> dict:
 
 
 @mcp.tool()
-def replace_lines(begin: int, end: int, text: str) -> dict:
-    """Replace lines begin through end (inclusive, 1-based) in the active file with text."""
-    return _post("/replace_lines", begin=begin, end=end, text=text)
+def replace_lines(begin: int, end: int, text: str, path: str = "") -> dict:
+    """Replace lines begin through end (inclusive, 1-based) in the active file with text.
+    Pass path to target a specific open file regardless of which tab is focused."""
+    return _post("/replace_lines", begin=begin, end=end, text=text, path=path)
 
 
 @mcp.tool()
