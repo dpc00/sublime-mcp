@@ -1,0 +1,41 @@
+sublime-mcp
+===========
+
+Sublime Text MCP server — lets Claude Code (or any MCP client) read and
+control a running ST instance via a local HTTP bridge. 58 tools covering
+reading, navigation, editing, searching, build, Terminus integration,
+settings, layout, and live Python scripting.
+
+
+SETUP (two steps required)
+---------------------------
+
+1. Install the MCP server dependencies (run once in your terminal):
+
+       pip install mcp httpx
+
+2. Register the MCP server with Claude Code.
+
+   Find the path to mcp_server.py in your ST Packages folder:
+     Windows:  %APPDATA%\Sublime Text\Packages\sublime-mcp\mcp_server.py
+     macOS:    ~/Library/Application Support/Sublime Text/Packages/sublime-mcp/mcp_server.py
+     Linux:    ~/.config/sublime-text/Packages/sublime-mcp/mcp_server.py
+
+   Add to ~/.claude/settings.json:
+
+       {
+           "mcpServers": {
+               "sublime": {
+                   "command": "python",
+                   "args": ["<path to mcp_server.py above>"]
+               }
+           }
+       }
+
+3. Restart Claude Code. Tools appear with the mcp__sublime__ prefix.
+
+The ST plugin (sublime_mcp.py) starts automatically with Sublime Text and
+listens on 127.0.0.1:9500. Check View > Show Console for:
+  sublime-mcp: listening on 127.0.0.1:9500
+
+Full documentation: https://github.com/dpc00/sublime-mcp
