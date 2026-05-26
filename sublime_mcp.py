@@ -772,8 +772,15 @@ def _set_status(body):
 
 
 def _save_file(body):
+    path = body.get("path")
     def fn():
-        v = _active_view()
+        w = sublime.active_window()
+        if path:
+            v = w.find_open_file(path)
+            if not v:
+                return {"error": f"not open: {path}"}
+        else:
+            v = _active_view()
         if not v:
             return {"error": "no active view"}
         v.run_command("save")

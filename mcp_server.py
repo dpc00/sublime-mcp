@@ -229,9 +229,9 @@ def set_status(value: str, key: str = "sublime_mcp") -> dict:
 # ── file ops ──────────────────────────────────────────────────────────────────
 
 @mcp.tool()
-def save_file() -> dict:
-    """Save the active file."""
-    return _post("/save_file")
+def save_file(path: str = "") -> dict:
+    """Save a file. Pass path to save a specific open file; omit path to save the active file."""
+    return _post("/save_file", path=path) if path else _post("/save_file")
 
 
 @mcp.tool()
