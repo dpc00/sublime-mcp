@@ -10,7 +10,7 @@ Register:     add to ~/.claude/settings.json mcpServers
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-BASE    = "http://127.0.0.1:9500"
+BASE = "http://127.0.0.1:9500"
 TIMEOUT = 10.0
 
 mcp = FastMCP("sublime-mcp")
@@ -29,6 +29,7 @@ def _post(endpoint: str, **body) -> dict:
 
 
 # ── read ──────────────────────────────────────────────────────────────────────
+
 
 @mcp.tool()
 def get_active_file() -> dict:
@@ -110,7 +111,8 @@ def send_to_view(text: str, name: str = "") -> dict:
 @mcp.tool()
 def get_output_panel(name: str = "") -> dict:
     """Return the text content of an output panel.
-    If name is omitted, read the active output panel.  Use name='exec' for build output."""
+    If name is omitted, read the active output panel.  Use name='exec' for build output.
+    """
     return _get("/output_panel", name=name)
 
 
@@ -164,6 +166,7 @@ def get_variables() -> dict:
 
 # ── navigate ──────────────────────────────────────────────────────────────────
 
+
 @mcp.tool()
 def open_file(path: str, line: int = 0, col: int = 0) -> dict:
     """Open a file in Sublime Text, optionally jumping to a specific line and column."""
@@ -183,6 +186,7 @@ def show_panel(name: str = "exec") -> dict:
 
 
 # ── edit ──────────────────────────────────────────────────────────────────────
+
 
 @mcp.tool()
 def replace_selection(text: str) -> dict:
@@ -205,6 +209,7 @@ def run_command(command: str, args: dict = None, scope: str = "window") -> dict:
 
 # ── build ─────────────────────────────────────────────────────────────────────
 
+
 @mcp.tool()
 def run_build(cmd: list = None, shell_cmd: str = None, working_dir: str = "") -> dict:
     """Trigger the current build system, or pass cmd/shell_cmd to run a specific command."""
@@ -220,6 +225,7 @@ def run_build(cmd: list = None, shell_cmd: str = None, working_dir: str = "") ->
 
 # ── misc ──────────────────────────────────────────────────────────────────────
 
+
 @mcp.tool()
 def set_status(value: str, key: str = "sublime_mcp") -> dict:
     """Write a message to Sublime Text's status bar."""
@@ -227,6 +233,7 @@ def set_status(value: str, key: str = "sublime_mcp") -> dict:
 
 
 # ── file ops ──────────────────────────────────────────────────────────────────
+
 
 @mcp.tool()
 def save_file(path: str = "") -> dict:
@@ -253,6 +260,7 @@ def revert_file() -> dict:
 
 
 # ── edit ops ──────────────────────────────────────────────────────────────────
+
 
 @mcp.tool()
 def undo() -> dict:
@@ -304,10 +312,15 @@ def insert_snippet(contents: str) -> dict:
 
 # ── search ────────────────────────────────────────────────────────────────────
 
+
 @mcp.tool()
-def find_in_file(pattern: str, case_sensitive: bool = False, regex: bool = False) -> dict:
+def find_in_file(
+    pattern: str, case_sensitive: bool = False, regex: bool = False
+) -> dict:
     """Find all occurrences of pattern in the active file.  Returns list of {line, col, text}."""
-    return _post("/find_in_file", pattern=pattern, case_sensitive=case_sensitive, regex=regex)
+    return _post(
+        "/find_in_file", pattern=pattern, case_sensitive=case_sensitive, regex=regex
+    )
 
 
 @mcp.tool()
@@ -319,14 +332,21 @@ def find_in_files(
     max_results: int = 200,
 ) -> dict:
     """Search for pattern across project folders (or the supplied folder list).
-    Skips .git, __pycache__, node_modules, .venv.  Returns list of {path, line, match}."""
-    body = dict(pattern=pattern, case_sensitive=case_sensitive, regex=regex, max_results=max_results)
+    Skips .git, __pycache__, node_modules, .venv.  Returns list of {path, line, match}.
+    """
+    body = dict(
+        pattern=pattern,
+        case_sensitive=case_sensitive,
+        regex=regex,
+        max_results=max_results,
+    )
     if folders:
         body["folders"] = folders
     return _post("/find_in_files", **body)
 
 
 # ── syntax / encoding ─────────────────────────────────────────────────────────
+
 
 @mcp.tool()
 def get_syntaxes() -> dict:
@@ -335,17 +355,26 @@ def get_syntaxes() -> dict:
 
 
 @mcp.tool()
-def get_command_palette(package: str = "", command: str = "", caption: str = "") -> dict:
+def get_command_palette(
+    package: str = "", command: str = "", caption: str = ""
+) -> dict:
     """List Command Palette entries from installed *.sublime-commands resources.
     Optional filters: package, command id, or caption substring."""
     return _get("/command_palette", package=package, command=command, caption=caption)
 
 
 @mcp.tool()
-def get_commands(package: str = "", command: str = "", include_palette: bool = True) -> dict:
+def get_commands(
+    package: str = "", command: str = "", include_palette: bool = True
+) -> dict:
     """List runnable Sublime command ids from loaded command classes, optionally enriched
     with matching Command Palette entries from installed packages."""
-    return _get("/commands", package=package, command=command, include_palette=str(include_palette).lower())
+    return _get(
+        "/commands",
+        package=package,
+        command=command,
+        include_palette=str(include_palette).lower(),
+    )
 
 
 @mcp.tool()
@@ -381,6 +410,7 @@ def set_encoding(encoding: str) -> dict:
 
 # ── cursor / scope ────────────────────────────────────────────────────────────
 
+
 @mcp.tool()
 def get_scope_at_cursor() -> dict:
     """Return the full syntax scope string at the cursor position."""
@@ -407,6 +437,7 @@ def get_line_count() -> dict:
 
 # ── settings ──────────────────────────────────────────────────────────────────
 
+
 @mcp.tool()
 def get_setting(key: str, scope: str = "view") -> dict:
     """Get a Sublime Text setting by key.  scope='view' (default) or 'window'."""
@@ -420,6 +451,7 @@ def set_setting(key: str, value, scope: str = "view") -> dict:
 
 
 # ── window / layout ───────────────────────────────────────────────────────────
+
 
 @mcp.tool()
 def toggle_sidebar() -> dict:
@@ -447,6 +479,7 @@ def set_layout(layout: dict) -> dict:
 
 # ── scripting ─────────────────────────────────────────────────────────────────
 
+
 @mcp.tool()
 def eval_python(code: str) -> dict:
     """Execute arbitrary Python in Sublime Text's main thread.
@@ -454,5 +487,9 @@ def eval_python(code: str) -> dict:
     return _post("/eval_python", code=code)
 
 
-if __name__ == "__main__":
+def main():
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()

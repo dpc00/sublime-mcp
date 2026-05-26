@@ -1,5 +1,8 @@
 # sublime-mcp
 
+<!-- mcp-name: io.github.dpc00/sublime-mcp -->
+
+
 MCP server for Sublime Text 4. Lets Claude Code (or any MCP client) read and
 control a running ST instance via a local HTTP bridge.
 
@@ -45,10 +48,10 @@ sublime-mcp: listening on 127.0.0.1:9500
 
 in the ST console (`View › Show Console`).
 
-### 2. Install the MCP server dependencies
+### 2. Install the MCP server
 
 ```
-pip install mcp httpx
+pip install sublime-mcp
 ```
 
 ### 3. Register with Claude Code
@@ -59,12 +62,13 @@ Add to `~/.claude/settings.json`:
 {
   "mcpServers": {
     "sublime": {
-      "command": "python",
-      "args": ["C:/path/to/sublime-mcp/mcp_server.py"]
+      "command": "sublime-mcp"
     }
   }
 }
 ```
+
+Then restart Claude Code. Tools will appear with the `mcp__sublime__` prefix.
 
 Then restart Claude Code. Tools will appear with the `mcp__sublime__` prefix.
 
