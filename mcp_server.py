@@ -68,11 +68,12 @@ def get_file_content(path: str) -> dict:
 
 
 @mcp.tool()
-def get_view_content(name: str = "") -> dict:
+def get_view_content(name: str = "", index: int = -1) -> dict:
     """Return the full content of any open tab by name (partial match, case-insensitive).
     Works for Terminus tabs and other nameless views that have no file path.
-    Omit name to read the active view."""
-    return _get("/view_content", name=name)
+    Use index (0-based, from get_open_files) to target a tab by position instead of name.
+    Omit both to read the active view."""
+    return _get("/view_content", name=name, index=index)
 
 
 @mcp.tool()
@@ -100,12 +101,13 @@ def get_view_phantoms(name: str = "", key: str = "") -> dict:
 
 
 @mcp.tool()
-def send_to_view(text: str, name: str = "") -> dict:
+def send_to_view(text: str, name: str = "", index: int = -1) -> dict:
     """Send a string to any open tab by name (partial match, case-insensitive).
     For Terminus tabs this types the text into the terminal as if the user typed it.
     Include a trailing newline (\\n) to execute a command.
-    Omit name to target the active view."""
-    return _post("/send_to_view", text=text, name=name)
+    Use index (0-based, from get_open_files) to target a tab by position instead of name.
+    Omit both name and index to target the active view."""
+    return _post("/send_to_view", text=text, name=name, index=index)
 
 
 @mcp.tool()
@@ -195,10 +197,15 @@ def replace_selection(text: str) -> dict:
 
 
 @mcp.tool()
-def replace_lines(begin: int, end: int, text: str, path: str = "") -> dict:
+def replace_lines(
+    begin: int, end: int, text: str, path: str = "", index: int = -1
+) -> dict:
     """Replace lines begin through end (inclusive, 1-based) in the active file with text.
-    Pass path to target a specific open file regardless of which tab is focused."""
-    return _post("/replace_lines", begin=begin, end=end, text=text, path=path)
+    Pass path to target a specific open file regardless of which tab is focused.
+    Use index (0-based, from get_open_files) to target a nameless tab by position."""
+    return _post(
+        "/replace_lines", begin=begin, end=end, text=text, path=path, index=index
+    )
 
 
 @mcp.tool()
