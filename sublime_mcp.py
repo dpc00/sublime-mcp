@@ -131,6 +131,37 @@ def _clean_phantom_text(text):
     return "\n".join(line for line in lines if line.strip()).strip()
 
 
+# ── console log capture ───────────────────────────────────────────────────────
+
+_console_buf = []
+_console_patched = False
+
+
+def _install_console_capture():
+    global _console_patched
+    if _console_patched:
+        return
+    import sublime_api as _sapi
+
+    _orig_log = _sapi.log_message
+
+    def _capture_log(msg):
+        _console_buf.append(msg)
+        _orig_log(msg)
+
+    _sapi.log_message = _capture_log
+
+    orig_write = sys.stdout.write
+
+    def _capture_write(s):
+        _console_buf.append(f"[stdout]{s}")
+        return orig_write(s)
+
+    sys.stdout.write = _capture_write
+    sys.stdout._capture_patched = True
+    _console_patched = True
+
+
 # ── GET handlers ──────────────────────────────────────────────────────────────
 
 
@@ -228,7 +259,6 @@ def _get_open_files(params):
             ]
         }
 
-    return _on_main(fn)
     return _on_main(fn)
 
 
@@ -332,6 +362,13 @@ def _get_output_panel(params):
         return {"name": panel_name, "content": v.substr(sublime.Region(0, v.size()))}
 
     return _on_main(fn)
+
+
+def _get_console_log(params):
+    _install_console_capture()
+    tail = int(params.get("tail", ["200"])[0])
+    entries = _console_buf[-tail:] if tail > 0 else list(_console_buf)
+    return {"entries": entries, "total": len(_console_buf)}
 
 
 def _get_symbols(params):
@@ -1297,6 +1334,7 @@ _GET = {
     "/view_chars": _get_view_chars,
     "/view_phantoms": _get_view_phantoms,
     "/output_panel": _get_output_panel,
+    "/console_log": _get_console_log,
     "/symbols": _get_symbols,
     "/lookup_symbol": _lookup_symbol,
     "/project_data": _get_project_data,
@@ -1395,6 +1433,7 @@ _server = None
 
 def plugin_loaded():
     global _server
+    _install_console_capture()
     _server = HTTPServer(("127.0.0.1", _PORT), _Handler)
     t = threading.Thread(target=_server.serve_forever, daemon=True)
     t.start()
