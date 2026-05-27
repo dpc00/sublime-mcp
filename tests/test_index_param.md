@@ -18,13 +18,18 @@ that cannot be addressed by name.
 ### get_view_content?name=sublime_mcp
 - **Result: PASS** — name-based lookup still works (unaffected by change)
 
-## MCP tool tests (via mcp__sublime__get_view_content)
+## MCP tool tests (via MCP tools after full ST restart + pybackup deploy)
 
-### get_view_content(index=3)
-- **Result: INCONCLUSIVE** — MCP tool returned Claude tab regardless of index value
-- Likely cause: FastMCP may not be forwarding the `index` param as a query string param,
-  or it sends `index=-1` as default overriding the specified value
-- Needs further investigation: check what URL FastMCP actually sends to the HTTP server
+### get_view_content(index=1)
+- **Result: PASS** — returned "Command Prompt" (Terminus tab at index 1)
+
+### send_to_view(index=1, text="echo index_test_ok\n")
+- **Result: PASS** — command executed in Command Prompt tab, not Claude tab
+- Output confirmed: `index_test_ok` appeared in terminal
+
+### Pre-restart tests showed INCONCLUSIVE results
+- Root cause: plugin file was not yet deployed; old code was still running
+- Fix: run pybackup to deploy, then restart ST
 
 ## Plugin reload procedure
 After copying `sublime_mcp.py` to `Packages/User/`, the HTTP server thread must be
