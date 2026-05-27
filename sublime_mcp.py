@@ -210,14 +210,25 @@ def _get_cursor_context(params):
 
 def _get_open_files(params):
     def fn():
+        import os
+
         w = sublime.active_window()
+
+        def _name(v):
+            n = v.name()
+            if n:
+                return n
+            fp = v.file_name()
+            return os.path.basename(fp) if fp else ""
+
         return {
             "files": [
-                {"path": v.file_name(), "name": v.name(), "is_dirty": v.is_dirty()}
+                {"path": v.file_name(), "name": _name(v), "is_dirty": v.is_dirty()}
                 for v in w.views()
             ]
         }
 
+    return _on_main(fn)
     return _on_main(fn)
 
 
