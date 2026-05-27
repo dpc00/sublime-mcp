@@ -1,0 +1,7 @@
+[
+    { "caption": "MCP: Browse Commands",        "command": "mcp_browse_commands" },
+    { "caption": "MCP: Browse Menu Items",       "command": "mcp_browse_menu_items" },
+    { "caption": "MCP: Browse Command Palette",  "command": "mcp_browse_command_palette" },
+    { "caption": "MCP: Browse Syntaxes",         "command": "mcp_browse_syntaxes" },
+    { "caption": "MCP: Browse Variables",        "command": "mcp_browse_variables" }
+]
