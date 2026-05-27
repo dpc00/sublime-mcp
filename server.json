@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.dpc00/sublime-mcp",
+  "title": "Sublime Text MCP",
+  "description": "MCP server for Sublime Text 4. Lets Claude Code read and control a running ST instance.",
+  "repository": {
+    "url": "https://github.com/dpc00/sublime-mcp",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "sublime-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
