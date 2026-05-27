@@ -336,6 +336,10 @@ def _send_to_view(body):
             return {"error": "no view found"}
         tag = v.settings().get("terminus_view.tag")
         if tag:
+            import platform
+
+            if platform.system() == "Windows":
+                text = text.replace("\r\n", "\n").replace("\n", "\r\n")
             w.run_command("terminus_send_string", {"string": text, "tag": tag})
         else:
             w.focus_view(v)
