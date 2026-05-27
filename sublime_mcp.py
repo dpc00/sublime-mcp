@@ -1006,6 +1006,8 @@ def _find_in_files(body):
     case = body.get("case_sensitive", False)
     use_re = body.get("regex", False)
     max_hits = int(body.get("max_results", 200))
+    max_files = int(body.get("max_files", 500))
+    max_file_bytes = int(body.get("max_file_bytes", 1048576))  # 1 MB
     if not pattern:
         return {"error": "pattern required"}
     if not folders:
@@ -1017,21 +1019,46 @@ def _find_in_files(body):
     except re.error as e:
         return {"error": f"bad pattern: {e}"}
     results = []
+    files_scanned = 0
+    files_skipped_size = 0
     for folder in folders:
         for dirpath, dirnames, filenames in os.walk(folder):
             dirnames[:] = [d for d in dirnames if d not in SKIP]
             for fname in filenames:
+                if files_scanned >= max_files:
+                    return {
+                        "error": f"file limit reached: {max_files} files scanned across {folders}. "
+                        f"Narrow folders or increase max_files.",
+                        "results": results,
+                        "files_scanned": files_scanned,
+                        "files_skipped_size": files_skipped_size,
+                        "truncated": True,
+                    }
                 fpath = os.path.join(dirpath, fname)
                 try:
+                    if os.path.getsize(fpath) > max_file_bytes:
+                        files_skipped_size += 1
+                        continue
                     text = open(fpath, encoding="utf-8", errors="replace").read()
                 except OSError:
                     continue
+                files_scanned += 1
                 for m in rx.finditer(text):
                     line_no = text[: m.start()].count("\n") + 1
                     results.append({"path": fpath, "line": line_no, "match": m.group()})
                     if len(results) >= max_hits:
-                        return {"results": results, "truncated": True}
-    return {"results": results, "truncated": False}
+                        return {
+                            "results": results,
+                            "files_scanned": files_scanned,
+                            "files_skipped_size": files_skipped_size,
+                            "truncated": True,
+                        }
+    return {
+        "results": results,
+        "files_scanned": files_scanned,
+        "files_skipped_size": files_skipped_size,
+        "truncated": False,
+    }
 
 
 def _find_in_file(body):
