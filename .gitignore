@@ -16,12 +16,7 @@
 .venv
 .venv/
 __pycache__/
-__pycache__/
 client_secrets2.json
 credentials.json
-depwire-output.json
-index.html
 out.*
-script.js
-styles.css
 venv/
