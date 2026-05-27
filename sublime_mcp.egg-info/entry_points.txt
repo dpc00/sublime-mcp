@@ -1,0 +1,2 @@
+[console_scripts]
+sublime-mcp = mcp_server:main
