@@ -7,6 +7,8 @@ Requirements: pip install mcp httpx
 Run:          python mcp_server.py
 Register:     add to ~/.claude/settings.json mcpServers
 """
+from typing import Optional
+
 import httpx
 from mcp.server.fastmcp import FastMCP
 
@@ -209,7 +211,7 @@ def replace_lines(
 
 
 @mcp.tool()
-def run_command(command: str, args: dict = None, scope: str = "window") -> dict:
+def run_command(command: str, args: Optional[dict] = None, scope: str = "window") -> dict:
     """Run any Sublime Text command.  scope='window' (default) or 'view'."""
     return _post("/run_command", command=command, args=args or {}, scope=scope)
 
@@ -218,7 +220,7 @@ def run_command(command: str, args: dict = None, scope: str = "window") -> dict:
 
 
 @mcp.tool()
-def run_build(cmd: list = None, shell_cmd: str = None, working_dir: str = "") -> dict:
+def run_build(cmd: Optional[list] = None, shell_cmd: Optional[str] = None, working_dir: str = "") -> dict:
     """Trigger the current build system, or pass cmd/shell_cmd to run a specific command."""
     body = {}
     if cmd:
@@ -333,7 +335,7 @@ def find_in_file(
 @mcp.tool()
 def find_in_files(
     pattern: str,
-    folders: list = None,
+    folders: Optional[list] = None,
     case_sensitive: bool = False,
     regex: bool = False,
     max_results: int = 200,
@@ -452,7 +454,7 @@ def get_setting(key: str, scope: str = "view") -> dict:
 
 
 @mcp.tool()
-def set_setting(key: str, value, scope: str = "view") -> dict:
+def set_setting(key: str, value: object, scope: str = "view") -> dict:
     """Set a Sublime Text setting by key.  scope='view' (default) or 'window'."""
     return _post("/set_setting", key=key, value=value, scope=scope)
 
