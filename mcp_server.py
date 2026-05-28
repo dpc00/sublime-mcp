@@ -494,6 +494,13 @@ def eval_python(code: str) -> dict:
     return _post("/eval_python", code=code)
 
 
+@mcp.tool()
+def get_console_log(tail: int = 100) -> dict:
+    """Return recent Sublime Text console output (plugin log messages and stdout).
+    tail=N limits to the last N entries. tail=0 returns all captured entries."""
+    return _get("/console_log", tail=tail)
+
+
 def main():
     mcp.run()
 
