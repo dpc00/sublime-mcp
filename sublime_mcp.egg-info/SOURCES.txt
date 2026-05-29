@@ -7,3 +7,4 @@ sublime_mcp.egg-info/dependency_links.txt
 sublime_mcp.egg-info/entry_points.txt
 sublime_mcp.egg-info/requires.txt
 sublime_mcp.egg-info/top_level.txt
+tests/test_http_api.py
