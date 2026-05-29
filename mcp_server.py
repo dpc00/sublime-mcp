@@ -211,7 +211,9 @@ def replace_lines(
 
 
 @mcp.tool()
-def run_command(command: str, args: Optional[dict] = None, scope: str = "window") -> dict:
+def run_command(
+    command: str, args: Optional[dict] = None, scope: str = "window"
+) -> dict:
     """Run any Sublime Text command.  scope='window' (default) or 'view'."""
     return _post("/run_command", command=command, args=args or {}, scope=scope)
 
@@ -220,7 +222,9 @@ def run_command(command: str, args: Optional[dict] = None, scope: str = "window"
 
 
 @mcp.tool()
-def run_build(cmd: Optional[list] = None, shell_cmd: Optional[str] = None, working_dir: str = "") -> dict:
+def run_build(
+    cmd: Optional[list] = None, shell_cmd: Optional[str] = None, working_dir: str = ""
+) -> dict:
     """Trigger the current build system, or pass cmd/shell_cmd to run a specific command."""
     body = {}
     if cmd:
