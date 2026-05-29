@@ -6,7 +6,7 @@
 MCP server for Sublime Text 4. Lets Claude Code (or any MCP client) read and
 control a running ST instance via a local HTTP bridge.
 
-58 tools covering reading, navigation, editing, searching, build, Terminus
+59 tools covering reading, navigation, editing, searching, build, Terminus
 integration, settings, layout, and live Python scripting.
 
 ## Architecture
@@ -119,6 +119,7 @@ Then restart Claude Code. Tools will appear with the `mcp__sublime__` prefix.
 
 | Tool | Description |
 |------|-------------|
+| `edit_file` | ST-native editor: `str_replace` (unique match), `insert` (after line N), `create` (new file), `view` (numbered content). Full undo, gutter diff, 30s highlight. Auto-opens file if needed |
 | `replace_selection` | Replace the current selection(s) with text |
 | `replace_lines` | Replace lines begin..end (inclusive, 1-based) in the active file |
 | `insert_snippet` | Insert at the cursor using ST snippet syntax (`$1` for tab stops, etc.) |
