@@ -510,11 +510,11 @@ def edit_file(
       old_str must match exactly once in the buffer (whitespace-sensitive).
       Returns error if 0 or 2+ matches, listing ambiguous line numbers.
       After edit: green underline + right-margin annotation show the change;
-      gutter diff markers show the before/after delta; auto-clears after 8s.
+      gutter diff markers show the before/after delta; auto-clears after 30s.
 
     command='insert': insert insert_text after line insert_line (1-based).
       insert_line=0 inserts at the very start of the file.
-      Blue underline + annotation mark the inserted block.
+      Cyan underline + annotation mark the inserted block.
 
     command='create': create a new file at path with file_text content.
       Syntax is auto-detected from the file extension. Errors if path exists.
