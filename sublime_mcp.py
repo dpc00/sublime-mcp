@@ -262,6 +262,63 @@ def _get_open_files(params):
     return _on_main(fn)
 
 
+def _get_sheets(params):
+    def fn():
+        w = sublime.active_window()
+        out = []
+        for i, s in enumerate(w.sheets()):
+            kind = type(s).__name__
+            path = None
+            try:
+                path = s.file_name()
+            except Exception:
+                pass
+            v = s.view()
+            out.append({
+                "index": i,
+                "id": s.id(),
+                "type": kind,
+                "path": path,
+                "name": v.name() if v else None,
+                "is_dirty": v.is_dirty() if v else False,
+            })
+        return {"sheets": out}
+
+    return _on_main(fn)
+
+
+def _get_sheet_content(params):
+    index = int(params.get("index", [0])[0])
+
+    def fn():
+        w = sublime.active_window()
+        sheets = w.sheets()
+        if index >= len(sheets):
+            return {"error": f"index {index} out of range (have {len(sheets)} sheets)"}
+        s = sheets[index]
+        kind = type(s).__name__
+        path = None
+        try:
+            path = s.file_name()
+        except Exception:
+            pass
+        if kind == "ImageSheet":
+            return {"index": index, "type": kind, "path": path, "content": None,
+                    "note": "image — use path to read the file directly"}
+        v = s.view()
+        if not v:
+            return {"error": f"sheet {index} has no text view"}
+        return {
+            "index": index,
+            "type": kind,
+            "path": path,
+            "name": v.name(),
+            "content": v.substr(sublime.Region(0, v.size())),
+        }
+
+    return _on_main(fn)
+
+
 def _get_project_folders(params):
     def fn():
         return {"folders": sublime.active_window().folders()}
@@ -337,8 +394,14 @@ def _send_to_view(body):
         tag = v.settings().get("terminus_view.tag")
         if tag:
             import platform
-            s = text.replace("\r\n", "\n").replace("\n", "\r\n") if platform.system() == "Windows" else text
-            w.run_command("terminus_send_string", {"string": s, "tag": tag})        else:
+
+            s = (
+                text.replace("\r\n", "\n").replace("\n", "\r\n")
+                if platform.system() == "Windows"
+                else text
+            )
+            w.run_command("terminus_send_string", {"string": s, "tag": tag})
+        else:
             w.focus_view(v)
             w.run_command("terminus_send_string", {"string": text})
         return {"ok": True, "name": v.name(), "tag": tag}
@@ -1425,12 +1488,16 @@ def _edit_file(body):
                 end = min(total, int(view_range[1]) if view_range[1] != -1 else total)
                 if start > end:
                     return {"error": "invalid view_range"}
-                slice_lines = lines[start - 1:end]
+                slice_lines = lines[start - 1 : end]
                 numbered = "\n".join(
                     f"{start + i}: {l}" for i, l in enumerate(slice_lines)
                 )
-                return {"content": numbered, "total_lines": total,
-                        "start_line": start, "end_line": end}
+                return {
+                    "content": numbered,
+                    "total_lines": total,
+                    "start_line": start,
+                    "end_line": end,
+                }
             else:
                 numbered = "\n".join(f"{i + 1}: {l}" for i, l in enumerate(lines))
                 return {"content": numbered, "total_lines": total}
@@ -1449,23 +1516,28 @@ def _edit_file(body):
         def str_replace_fn():
             regions = v.find_all(old_str, sublime.LITERAL)
             if len(regions) == 0:
-                return {"error": "No match found for old_str. Check whitespace and indentation."}
+                return {
+                    "error": "No match found for old_str. Check whitespace and indentation."
+                }
             if len(regions) > 1:
                 lns = [v.rowcol(r.begin())[0] + 1 for r in regions]
                 return {
                     "error": f"Found {len(regions)} matches at lines {lns}. "
-                             f"Add more surrounding context to old_str to make it unique."
+                    f"Add more surrounding context to old_str to make it unique."
                 }
             region = regions[0]
             row, _ = v.rowcol(region.begin())
             # Save current state as reference so gutter shows the diff
             original = v.substr(sublime.Region(0, v.size()))
             v.set_reference_document(original)
-            v.run_command("sublime_mcp_str_replace", {
-                "begin": region.begin(),
-                "end": region.end(),
-                "new_str": new_str,
-            })
+            v.run_command(
+                "sublime_mcp_str_replace",
+                {
+                    "begin": region.begin(),
+                    "end": region.end(),
+                    "new_str": new_str,
+                },
+            )
             return {"ok": True, "line": row + 1}
 
         return _on_main(str_replace_fn)
@@ -1491,17 +1563,26 @@ def _edit_file(body):
                 text += "\n"
             original = v.substr(sublime.Region(0, v.size()))
             v.set_reference_document(original)
-            v.run_command("sublime_mcp_insert_text", {
-                "insert_pt": pt,
-                "insert_text": text,
-            })
+            v.run_command(
+                "sublime_mcp_insert_text",
+                {
+                    "insert_pt": pt,
+                    "insert_text": text,
+                },
+            )
             row, _ = v.rowcol(pt)
-            return {"ok": True, "after_line": insert_line, "inserted_at_pt": pt,
-                    "visible_line": row + 1}
+            return {
+                "ok": True,
+                "after_line": insert_line,
+                "inserted_at_pt": pt,
+                "visible_line": row + 1,
+            }
 
         return _on_main(insert_fn)
 
-    return {"error": f"unknown command: {command!r}. Use: str_replace, insert, create, view"}
+    return {
+        "error": f"unknown command: {command!r}. Use: str_replace, insert, create, view"
+    }
 
 
 # ── routing ───────────────────────────────────────────────────────────────────
@@ -1511,6 +1592,8 @@ _GET = {
     "/selection": _get_selection,
     "/cursor_context": _get_cursor_context,
     "/open_files": _get_open_files,
+    "/sheets": _get_sheets,
+    "/sheet_content": _get_sheet_content,
     "/project_folders": _get_project_folders,
     "/file_content": _get_file_content,
     "/view_content": _get_view_content,
@@ -1656,7 +1739,7 @@ class SublimeMcpStrReplaceCommand(sublime_plugin.TextCommand):
             sublime.DRAW_NO_FILL | sublime.DRAW_SOLID_UNDERLINE,
             annotations=[
                 f'<div style="font-size:0.9em; padding:1px 4px;">'
-                f'&#x270F; Claude &mdash; line {row + 1}</div>'
+                f"&#x270F; Claude &mdash; line {row + 1}</div>"
             ],
             annotation_color="#4CAF50",
         )
@@ -1679,7 +1762,7 @@ class SublimeMcpInsertTextCommand(sublime_plugin.TextCommand):
             sublime.DRAW_NO_FILL | sublime.DRAW_SOLID_UNDERLINE,
             annotations=[
                 f'<div style="font-size:0.9em; padding:1px 4px;">'
-                f'&#x2795; Claude inserted &mdash; line {row + 1}</div>'
+                f"&#x2795; Claude inserted &mdash; line {row + 1}</div>"
             ],
             annotation_color="#2196F3",
         )

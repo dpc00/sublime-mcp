@@ -58,6 +58,22 @@ def get_open_files() -> dict:
 
 
 @mcp.tool()
+def get_sheets() -> dict:
+    """List ALL sheets (tabs) in the current window by index, including images and untitled buffers.
+    Returns index, type (TextSheet/ImageSheet), path, name, is_dirty for each.
+    Use index with get_sheet_content to read a specific tab."""
+    return _get("/sheets")
+
+
+@mcp.tool()
+def get_sheet_content(index: int) -> dict:
+    """Return the content of any tab by its sheet index (from get_sheets).
+    Works for text tabs including untitled buffers and Terminus tabs.
+    For image tabs returns the file path only."""
+    return _get("/sheet_content", index=index)
+
+
+@mcp.tool()
 def get_project_folders() -> dict:
     """Return the project's root folder paths."""
     return _get("/project_folders")
@@ -493,7 +509,7 @@ def set_layout(layout: dict) -> dict:
 # ── scripting ─────────────────────────────────────────────────────────────────
 
 
-@mcp.tool()
+@mcp.tool(name="str_replace_based_edit_tool")
 def edit_file(
     command: str,
     path: str = "",
@@ -504,17 +520,16 @@ def edit_file(
     file_text: Optional[str] = None,
     view_range: Optional[list] = None,
 ) -> dict:
-    """ST-native file editor with full undo, gutter diff, and live highlighting.
+    """ST-native file editor implementing the standard str_replace_based_edit_tool interface.
+    Edits appear live in Sublime Text with full undo (Ctrl+Z), gutter diff markers,
+    and 30-second highlight annotations showing what changed.
 
     command='str_replace': replace old_str with new_str in path.
-      old_str must match exactly once in the buffer (whitespace-sensitive).
+      old_str must match exactly once (whitespace-sensitive).
       Returns error if 0 or 2+ matches, listing ambiguous line numbers.
-      After edit: green underline + right-margin annotation show the change;
-      gutter diff markers show the before/after delta; auto-clears after 30s.
 
     command='insert': insert insert_text after line insert_line (1-based).
       insert_line=0 inserts at the very start of the file.
-      Cyan underline + annotation mark the inserted block.
 
     command='create': create a new file at path with file_text content.
       Syntax is auto-detected from the file extension. Errors if path exists.
@@ -522,8 +537,7 @@ def edit_file(
     command='view': return file content with 1-based line numbers prepended.
       Optional view_range=[start, end] to read a slice (end=-1 for EOF).
 
-    All commands auto-open the file in ST if not already open.
-    Edits go through ST's buffer: every change is undoable with Ctrl+Z."""
+    All commands auto-open the file in ST if not already open."""
     body: dict = {"command": command, "path": path}
     if old_str is not None:
         body["old_str"] = old_str
