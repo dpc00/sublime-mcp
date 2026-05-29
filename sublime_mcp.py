@@ -1348,6 +1348,162 @@ def _set_layout(body):
     return _on_main(fn)
 
 
+# ── str_replace_based_edit ────────────────────────────────────────────────────
+
+_EDIT_HIGHLIGHT_MS = 30000  # how long green underline stays visible
+
+
+def _ensure_view(path):
+    """Open path in ST if not already open; wait for async load.
+    Returns (view, None) on success or (None, error_dict) on failure.
+    Safe: polls from the HTTP thread so the ST main thread stays free.
+    """
+    import time
+
+    def _open():
+        w = sublime.active_window()
+        v = w.find_open_file(path)
+        if v:
+            return v, None
+        if not os.path.isfile(path):
+            return None, {"error": f"file not found: {path}"}
+        return w.open_file(path), None
+
+    v, err = _on_main(_open)
+    if err:
+        return None, err
+
+    # Poll until loaded (each _on_main is brief; main thread free between sleeps)
+    for _ in range(50):
+        if not _on_main(lambda: v.is_loading()):
+            return v, None
+        time.sleep(0.1)
+
+    return None, {"error": f"timeout waiting for file to load: {path}"}
+
+
+def _edit_file(body):
+    command = body.get("command", "").strip()
+    path = body.get("path", "").strip()
+
+    if command == "create":
+        file_text = body.get("file_text", "")
+        if not path:
+            return {"error": "path required"}
+
+        def create_fn():
+            w = sublime.active_window()
+            if os.path.exists(path):
+                return {"error": f"file already exists: {path}"}
+            v = w.new_file()
+            v.retarget(path)
+            syn = sublime.find_syntax_for_file(path)
+            if syn:
+                v.assign_syntax(syn)
+            v.run_command("sublime_mcp_create_file", {"file_text": file_text})
+            return {"ok": True, "path": path}
+
+        return _on_main(create_fn)
+
+    # view / str_replace / insert all need an open view
+    if not path:
+        return {"error": "path required"}
+
+    v, err = _ensure_view(path)
+    if err:
+        return err
+
+    if command == "view":
+        view_range = body.get("view_range")
+
+        def view_fn():
+            content = v.substr(sublime.Region(0, v.size()))
+            lines = content.split("\n")
+            total = len(lines)
+            if view_range and len(view_range) >= 2:
+                start = max(1, int(view_range[0]))
+                end = min(total, int(view_range[1]) if view_range[1] != -1 else total)
+                if start > end:
+                    return {"error": "invalid view_range"}
+                slice_lines = lines[start - 1:end]
+                numbered = "\n".join(
+                    f"{start + i}: {l}" for i, l in enumerate(slice_lines)
+                )
+                return {"content": numbered, "total_lines": total,
+                        "start_line": start, "end_line": end}
+            else:
+                numbered = "\n".join(f"{i + 1}: {l}" for i, l in enumerate(lines))
+                return {"content": numbered, "total_lines": total}
+
+        return _on_main(view_fn)
+
+    if command == "str_replace":
+        old_str = body.get("old_str", "")
+        new_str = body.get("new_str", "")
+        if not old_str:
+            return {"error": "old_str required"}
+        # Normalize line endings to match ST's internal \n representation
+        old_str = old_str.replace("\r\n", "\n").replace("\r", "\n")
+        new_str = new_str.replace("\r\n", "\n").replace("\r", "\n")
+
+        def str_replace_fn():
+            regions = v.find_all(old_str, sublime.LITERAL)
+            if len(regions) == 0:
+                return {"error": "No match found for old_str. Check whitespace and indentation."}
+            if len(regions) > 1:
+                lns = [v.rowcol(r.begin())[0] + 1 for r in regions]
+                return {
+                    "error": f"Found {len(regions)} matches at lines {lns}. "
+                             f"Add more surrounding context to old_str to make it unique."
+                }
+            region = regions[0]
+            row, _ = v.rowcol(region.begin())
+            # Save current state as reference so gutter shows the diff
+            original = v.substr(sublime.Region(0, v.size()))
+            v.set_reference_document(original)
+            v.run_command("sublime_mcp_str_replace", {
+                "begin": region.begin(),
+                "end": region.end(),
+                "new_str": new_str,
+            })
+            return {"ok": True, "line": row + 1}
+
+        return _on_main(str_replace_fn)
+
+    if command == "insert":
+        insert_line = body.get("insert_line")
+        insert_text = body.get("insert_text", "")
+        if insert_line is None:
+            return {"error": "insert_line required"}
+        insert_line = int(insert_line)
+
+        def insert_fn():
+            total_lines = v.rowcol(v.size())[0] + 1
+            if insert_line == 0:
+                pt = 0
+            else:
+                clamped = min(insert_line, total_lines)
+                line_region = v.full_line(v.text_point(clamped - 1, 0))
+                pt = line_region.end()
+            # Normalize line endings
+            text = insert_text.replace("\r\n", "\n").replace("\r", "\n")
+            if not text.endswith("\n"):
+                text += "\n"
+            original = v.substr(sublime.Region(0, v.size()))
+            v.set_reference_document(original)
+            v.run_command("sublime_mcp_insert_text", {
+                "insert_pt": pt,
+                "insert_text": text,
+            })
+            row, _ = v.rowcol(pt)
+            return {"ok": True, "after_line": insert_line, "inserted_at_pt": pt,
+                    "visible_line": row + 1}
+
+        return _on_main(insert_fn)
+
+    return {"error": f"unknown command: {command!r}. Use: str_replace, insert, create, view"}
+
+
 # ── routing ───────────────────────────────────────────────────────────────────
 
 _GET = {
@@ -1413,6 +1569,7 @@ _POST = {
     "/focus_group": _focus_group,
     "/set_layout": _set_layout,
     "/send_to_view": _send_to_view,
+    "/edit_file": _edit_file,
 }
 
 
@@ -1476,9 +1633,63 @@ def plugin_unloaded():
     print("sublime-mcp: stopped")
 
 
-# ── helper text command (needed for replace_lines) ────────────────────────────
+# ── helper text commands ──────────────────────────────────────────────────────
 
 
 class SublimeMcpReplaceRegionCommand(sublime_plugin.TextCommand):
     def run(self, edit, begin, end, text):
         self.view.replace(edit, sublime.Region(begin, end), text)
+
+
+class SublimeMcpStrReplaceCommand(sublime_plugin.TextCommand):
+    def run(self, edit, begin, end, new_str):
+        region = sublime.Region(begin, end)
+        self.view.replace(edit, region, new_str)
+        new_end = begin + len(new_str)
+        new_region = sublime.Region(begin, new_end)
+        row, _ = self.view.rowcol(begin)
+        self.view.add_regions(
+            "mcp_edit",
+            [new_region],
+            "region.greenish",
+            "circle",
+            sublime.DRAW_NO_FILL | sublime.DRAW_SOLID_UNDERLINE,
+            annotations=[
+                f'<div style="font-size:0.9em; padding:1px 4px;">'
+                f'&#x270F; Claude &mdash; line {row + 1}</div>'
+            ],
+            annotation_color="#4CAF50",
+        )
+        self.view.show_at_center(new_region)
+        sublime.set_timeout(
+            lambda: self.view.erase_regions("mcp_edit"), _EDIT_HIGHLIGHT_MS
+        )
+
+
+class SublimeMcpInsertTextCommand(sublime_plugin.TextCommand):
+    def run(self, edit, insert_pt, insert_text):
+        self.view.insert(edit, insert_pt, insert_text)
+        new_region = sublime.Region(insert_pt, insert_pt + len(insert_text))
+        row, _ = self.view.rowcol(insert_pt)
+        self.view.add_regions(
+            "mcp_edit",
+            [new_region],
+            "region.cyanish",
+            "dot",
+            sublime.DRAW_NO_FILL | sublime.DRAW_SOLID_UNDERLINE,
+            annotations=[
+                f'<div style="font-size:0.9em; padding:1px 4px;">'
+                f'&#x2795; Claude inserted &mdash; line {row + 1}</div>'
+            ],
+            annotation_color="#2196F3",
+        )
+        self.view.show_at_center(new_region)
+        sublime.set_timeout(
+            lambda: self.view.erase_regions("mcp_edit"), _EDIT_HIGHLIGHT_MS
+        )
+
+
+class SublimeMcpCreateFileCommand(sublime_plugin.TextCommand):
+    def run(self, edit, file_text):
+        self.view.insert(edit, 0, file_text)
+        self.view.show_at_center(0)

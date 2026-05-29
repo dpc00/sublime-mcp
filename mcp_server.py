@@ -490,6 +490,53 @@ def set_layout(layout: dict) -> dict:
 
 
 @mcp.tool()
+def edit_file(
+    command: str,
+    path: str = "",
+    old_str: Optional[str] = None,
+    new_str: Optional[str] = None,
+    insert_line: Optional[int] = None,
+    insert_text: Optional[str] = None,
+    file_text: Optional[str] = None,
+    view_range: Optional[list] = None,
+) -> dict:
+    """ST-native file editor with full undo, gutter diff, and live highlighting.
+
+    command='str_replace': replace old_str with new_str in path.
+      old_str must match exactly once in the buffer (whitespace-sensitive).
+      Returns error if 0 or 2+ matches, listing ambiguous line numbers.
+      After edit: green underline + right-margin annotation show the change;
+      gutter diff markers show the before/after delta; auto-clears after 8s.
+
+    command='insert': insert insert_text after line insert_line (1-based).
+      insert_line=0 inserts at the very start of the file.
+      Blue underline + annotation mark the inserted block.
+
+    command='create': create a new file at path with file_text content.
+      Syntax is auto-detected from the file extension. Errors if path exists.
+
+    command='view': return file content with 1-based line numbers prepended.
+      Optional view_range=[start, end] to read a slice (end=-1 for EOF).
+
+    All commands auto-open the file in ST if not already open.
+    Edits go through ST's buffer: every change is undoable with Ctrl+Z."""
+    body: dict = {"command": command, "path": path}
+    if old_str is not None:
+        body["old_str"] = old_str
+    if new_str is not None:
+        body["new_str"] = new_str
+    if insert_line is not None:
+        body["insert_line"] = insert_line
+    if insert_text is not None:
+        body["insert_text"] = insert_text
+    if file_text is not None:
+        body["file_text"] = file_text
+    if view_range is not None:
+        body["view_range"] = view_range
+    return _post("/edit_file", **body)
+
+
+@mcp.tool()
 def eval_python(code: str) -> dict:
     """Execute arbitrary Python in Sublime Text's main thread.
     Locals: sublime, window, view, print.  Returns captured stdout in 'output'."""
