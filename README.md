@@ -72,6 +72,19 @@ Then restart Claude Code. Tools will appear with the `mcp__sublime__` prefix.
 
 Then restart Claude Code. Tools will appear with the `mcp__sublime__` prefix.
 
+## Tab and Sheet Indexing
+
+**IMPORTANT:** Users refer to tabs by 1-based numbering (tab 1, tab 2, etc.), but 
+`get_sheets()` returns 0-based indexes. Always convert user tab references before using:
+- User **tab 1** = index 0
+- User **tab 2** = index 1
+- User **tab 3** = index 2
+- etc.
+
+When closing or targeting a specific tab, always verify the index by calling `get_sheets()` 
+first, and close by path (preferred) or by focusing then closing the active file. 
+**Never change focus without user awareness.**
+
 ## Tools
 
 ### Read / Introspect
