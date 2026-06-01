@@ -7,12 +7,13 @@ Requirements: pip install mcp httpx
 Run:          python mcp_server.py
 Register:     add to ~/.claude/settings.json mcpServers
 """
+import os
 from typing import Optional
 
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-BASE = "http://127.0.0.1:9500"
+BASE = os.environ.get("SUBLIME_MCP_BASE", "http://127.0.0.1:9500")
 TIMEOUT = 10.0
 
 mcp = FastMCP("sublime-mcp")
