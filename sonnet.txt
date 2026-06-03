@@ -1,0 +1,19 @@
+Sonnet for a Running Editor
+
+When Claude may reach through protocol and wire
+To touch the buffer where your cursor bides,
+And fold a line, or search with pattern's fire,
+Or send to terminals on either sides —
+
+No longer must the model guess at state,
+Or blindly write to files it cannot see;
+The active view is read, the symbols wait,
+And build output confirms what used to be.
+
+Two instances may run, on port and port,
+One native, one in Linux kernel space;
+Mirrored networking makes the loopback short,
+And both ST and Claude find their own place.
+
+  So here's a sonnet, typed by distant hand —
+  The MCP bridge worked exactly as planned.
