@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sublime-mcp
-Version: 1.2.0
+Version: 1.2.1
 Summary: MCP server for Sublime Text 4 — lets Claude Code read and control a running ST instance
 Author-email: Donald Chitester <donaldchitester@gmail.com>
 License-Expression: MIT
@@ -20,9 +20,13 @@ Requires-Dist: httpx
 
 <!-- mcp-name: io.github.dpc00/sublime-mcp -->
 
-
-MCP server for Sublime Text 4. Lets Claude Code (or any MCP client) read and
-control a running ST instance via a local HTTP bridge.
+The most complete Sublime Text / AI integration available. sublime-mcp lets
+Claude Code (or any MCP client) do anything in ST that a human can do from the
+keyboard — read files, navigate, edit with full undo history, search across the
+project, run builds, send commands to a Terminus terminal, evaluate arbitrary
+Python in ST's main thread, and more. If you use ST as your primary editor,
+this closes the gap between "AI that edits files" and "AI that works in your
+editor."
 
 63 tools covering reading, navigation, editing, searching, build, Terminus
 integration, settings, layout, menus, console log, and live Python scripting.
@@ -260,3 +264,52 @@ authentication. Do not expose port 9500 to a network interface.
 - Python 3.10+ (for the MCP server process)
 - `pip install mcp httpx`
 - Terminus package (optional, required only for `send_to_view` on terminal tabs)
+
+## Getting Claude to use the tools well
+
+Add a section like this to your project's `CLAUDE.md` (or `~/.claude/CLAUDE.md`
+for global use):
+
+```markdown
+## Sublime Text MCP tools
+
+sublime-mcp is connected. Prefer it over standard file tools when working in ST:
+
+- Read files with `get_active_file` or `get_file_content` rather than Read tool
+- Edit with `str_replace_based_edit_tool` — edits appear live with gutter diff and undo
+- Use `find_in_files` for project-wide search
+- Use `send_to_view` to run commands in a Terminus terminal tab
+- Use `eval_python` for one-off ST scripting (no plugin file needed)
+- Check `get_console_log` when a plugin isn't behaving as expected
+
+Tab indexing: `get_sheets()` returns 0-based indexes; users refer to tabs
+1-based. Always call `get_sheets()` first when targeting a specific tab.
+```
+
+## Known limitations / Roadmap
+
+- **No multi-window support** — tools target the most recently focused ST window only
+- **No image editing** — `get_sheet_content` returns the path for image tabs, not pixel data
+- **Terminus dependency is optional** — `send_to_view` degrades gracefully if Terminus isn't installed, but terminal interaction requires it
+- **No ST3 support** — the plugin uses ST4 APIs throughout
+
+Contributions welcome in any of these areas. See below.
+
+## Contributing
+
+The project has two independent pieces — the ST plugin (`sublime_mcp.py`) and
+the MCP server (`mcp_server.py`) — which makes it easy to contribute to either
+without touching the other.
+
+**Adding a tool:**
+1. Add an HTTP handler in `sublime_mcp.py` (runs on ST's main thread via `_on_main`)
+2. Add the corresponding `@mcp.tool()` function in `mcp_server.py`
+3. Add a row to the Tools table in `README.md`
+
+**Good first issues:**
+- Multi-window support (`sublime.windows()` instead of `sublime.active_window()`)
+- `get_diagnostics` — expose LSP error/warning annotations
+- `set_bookmark` / `clear_bookmarks` — write counterparts to `get_bookmarks`
+- Any gap identified in the [JetBrains MCP feature set](https://github.com/JetBrains/mcp-jetbrains)
+
+Open an issue or PR on [GitHub](https://github.com/dpc00/sublime-mcp).
