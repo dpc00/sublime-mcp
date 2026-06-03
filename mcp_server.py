@@ -8,13 +8,19 @@ Run:          python mcp_server.py
 Register:     add to ~/.claude/settings.json mcpServers
 """
 import os
+import sys
 from typing import Optional
 
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-BASE = os.environ.get("SUBLIME_MCP_BASE", "http://127.0.0.1:9500")
+# Platform detection: Windows ST uses 9500, WSL/Linux ST uses 9501
+DEFAULT_PORT = 9500 if sys.platform == 'win32' else 9501
+BASE = os.environ.get("SUBLIME_MCP_BASE", f"http://127.0.0.1:{DEFAULT_PORT}")
 TIMEOUT = 10.0
+
+print(f"sublime-mcp: BASE={BASE} sys.platform={sys.platform}", file=sys.stderr)
+sys.stderr.flush()
 
 mcp = FastMCP("sublime-mcp")
 
