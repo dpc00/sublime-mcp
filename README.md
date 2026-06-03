@@ -76,61 +76,86 @@ Then restart Claude Code. Tools will appear with the `mcp__sublime-mcp__` prefix
 
 ## Windows + WSL setup
 
-If you run Sublime Text on **both** Windows and WSL, you can register two MCP
-entries so Claude Code reaches the right ST instance wherever you are.
+If you run Sublime Text on **both** Windows and WSL, you can give Claude Code
+in each environment its own MCP entry pointing at the local ST instance, plus
+an optional cross-side entry for the other one.
+
+**Requirements:** WSL2 with [mirrored networking](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking)
+(Windows 11 default). This makes `127.0.0.1` on the WSL side reach Windows
+ports, and vice versa.
 
 ### How it works
 
-| Where Claude runs | MCP entry | Connects to |
+| ST instance | Port | Reached from |
 |---|---|---|
-| Windows (native) | `sublime-mcp` | Windows ST on `127.0.0.1:9500` |
-| WSL | `sublime-mcp-wsl` | WSL ST on `127.0.0.1:9501` |
+| Windows ST | `9500` | Windows `127.0.0.1:9500` or WSL `127.0.0.1:9500` (mirrored) |
+| WSL ST | `9501` | WSL `127.0.0.1:9501` |
 
-Each ST instance runs its own copy of `sublime_mcp.py` on its own port.
+Each ST instance runs its own copy of `sublime_mcp.py` on its own port. The
+MCP server process always runs on the same side as Claude Code — it just points
+at the right port via `SUBLIME_MCP_BASE`.
 
 ### Step 1 — Install the plugin in both ST instances
 
 **Windows ST** — copy to `%APPDATA%\Sublime Text\Packages\User\sublime_mcp.py`.
-Port stays at the default `9500`.
+Leave `_PORT = 9500` (the default).
 
 **WSL ST** — copy to `~/.config/sublime-text/Packages/User/sublime_mcp.py`
-and change the port to `9501`:
+and change the port:
 
 ```python
 _PORT = 9501   # line 22 of sublime_mcp.py
 ```
 
-### Step 2 — Register both MCP entries
-
-In `~/.claude/mcp.json` on Windows:
+### Step 2 — Windows `~/.claude/mcp.json`
 
 ```json
 {
   "mcpServers": {
     "sublime-mcp": {
       "command": "python",
-      "args": ["C:/Users/<you>/projects/sublime-mcp/mcp_server.py"]
+      "args": ["C:/path/to/sublime-mcp/mcp_server.py"]
     },
     "sublime-mcp-wsl": {
       "command": "wsl",
-      "args": ["python3", "/mnt/c/Users/<you>/projects/sublime-mcp/mcp_server.py"],
+      "args": ["python3", "/mnt/c/path/to/sublime-mcp/mcp_server.py"],
       "env": { "SUBLIME_MCP_BASE": "http://127.0.0.1:9501" }
     }
   }
 }
 ```
 
-The `sublime-mcp-wsl` entry uses `wsl` as the command so the MCP server
-process runs inside WSL. Its `127.0.0.1` therefore refers to the WSL
-loopback, where WSL ST is listening on `9501`.
+- `sublime-mcp` runs the MCP server as a Windows process → auto-detects port `9500` → Windows ST
+- `sublime-mcp-wsl` runs it inside WSL via the `wsl` command → `127.0.0.1:9501` is WSL's loopback → WSL ST
 
-### Step 3 — Use the right prefix
+### Step 3 — WSL `~/.claude/mcp.json`
 
-- In a Windows Claude Code session: use `mcp__sublime-mcp__*` tools
-- In a WSL Claude Code session: use `mcp__sublime-mcp-wsl__*` tools
+```json
+{
+  "mcpServers": {
+    "sublime-mcp": {
+      "command": "python3",
+      "args": ["/mnt/c/path/to/sublime-mcp/mcp_server.py"],
+      "env": { "SUBLIME_MCP_BASE": "http://127.0.0.1:9501" }
+    },
+    "sublime-mcp-win": {
+      "command": "python3",
+      "args": ["/mnt/c/path/to/sublime-mcp/mcp_server.py"],
+      "env": { "SUBLIME_MCP_BASE": "http://127.0.0.1:9500" }
+    }
+  }
+}
+```
 
-Both entries are always registered; Claude Code simply uses whichever set of
-tools you address.
+- `sublime-mcp` runs in WSL → `127.0.0.1:9501` → WSL ST
+- `sublime-mcp-win` runs in WSL → `127.0.0.1:9500` reaches Windows ST via mirrored networking
+
+### Tool prefixes
+
+| Claude Code session | Tool prefix for WSL ST | Tool prefix for Windows ST |
+|---|---|---|
+| Windows | `mcp__sublime-mcp-wsl__` | `mcp__sublime-mcp__` |
+| WSL | `mcp__sublime-mcp__` | `mcp__sublime-mcp-win__` |
 
 ## Tab and Sheet Indexing
 
