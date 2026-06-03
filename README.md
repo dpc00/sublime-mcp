@@ -60,19 +60,77 @@ pip install sublime-mcp
 
 ### 3. Register with Claude Code
 
-Add to `~/.claude/settings.json`:
+Add to `~/.claude/mcp.json` (or `~/.claude/settings.json`):
 
 ```json
 {
   "mcpServers": {
-    "sublime": {
+    "sublime-mcp": {
       "command": "sublime-mcp"
     }
   }
 }
 ```
 
-Then restart Claude Code. Tools will appear with the `mcp__sublime__` prefix.
+Then restart Claude Code. Tools will appear with the `mcp__sublime-mcp__` prefix.
+
+## Windows + WSL setup
+
+If you run Sublime Text on **both** Windows and WSL, you can register two MCP
+entries so Claude Code reaches the right ST instance wherever you are.
+
+### How it works
+
+| Where Claude runs | MCP entry | Connects to |
+|---|---|---|
+| Windows (native) | `sublime-mcp` | Windows ST on `127.0.0.1:9500` |
+| WSL | `sublime-mcp-wsl` | WSL ST on `127.0.0.1:9501` |
+
+Each ST instance runs its own copy of `sublime_mcp.py` on its own port.
+
+### Step 1 — Install the plugin in both ST instances
+
+**Windows ST** — copy to `%APPDATA%\Sublime Text\Packages\User\sublime_mcp.py`.
+Port stays at the default `9500`.
+
+**WSL ST** — copy to `~/.config/sublime-text/Packages/User/sublime_mcp.py`
+and change the port to `9501`:
+
+```python
+_PORT = 9501   # line 22 of sublime_mcp.py
+```
+
+### Step 2 — Register both MCP entries
+
+In `~/.claude/mcp.json` on Windows:
+
+```json
+{
+  "mcpServers": {
+    "sublime-mcp": {
+      "command": "python",
+      "args": ["C:/Users/<you>/projects/sublime-mcp/mcp_server.py"]
+    },
+    "sublime-mcp-wsl": {
+      "command": "wsl",
+      "args": ["python3", "/mnt/c/Users/<you>/projects/sublime-mcp/mcp_server.py"],
+      "env": { "SUBLIME_MCP_BASE": "http://127.0.0.1:9501" }
+    }
+  }
+}
+```
+
+The `sublime-mcp-wsl` entry uses `wsl` as the command so the MCP server
+process runs inside WSL. Its `127.0.0.1` therefore refers to the WSL
+loopback, where WSL ST is listening on `9501`.
+
+### Step 3 — Use the right prefix
+
+- In a Windows Claude Code session: use `mcp__sublime-mcp__*` tools
+- In a WSL Claude Code session: use `mcp__sublime-mcp-wsl__*` tools
+
+Both entries are always registered; Claude Code simply uses whichever set of
+tools you address.
 
 ## Tab and Sheet Indexing
 
