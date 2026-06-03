@@ -391,19 +391,15 @@ def _send_to_view(body):
             return err
         if not v:
             return {"error": "no view found"}
-        tag = v.settings().get("terminus_view.tag")
-        if tag:
-            import platform
-
-            s = (
-                text.replace("\r\n", "\n").replace("\n", "\r\n")
-                if platform.system() == "Windows"
-                else text
-            )
-            w.run_command("terminus_send_string", {"string": s, "tag": tag})
+        import sys
+        Terminal = sys.modules.get("Terminus.terminus.terminal", None)
+        Terminal = Terminal.Terminal if Terminal else None
+        if Terminal and Terminal.from_id(v.id()):
+            v.run_command("terminus_paste_text", {"text": text, "bracketed": False})
         else:
             w.focus_view(v)
             w.run_command("terminus_send_string", {"string": text})
+        tag = v.settings().get("terminus_view.tag")
         return {"ok": True, "name": v.name(), "tag": tag}
 
     return _on_main(fn)
