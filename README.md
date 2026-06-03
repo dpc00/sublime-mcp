@@ -6,8 +6,8 @@
 MCP server for Sublime Text 4. Lets Claude Code (or any MCP client) read and
 control a running ST instance via a local HTTP bridge.
 
-59 tools covering reading, navigation, editing, searching, build, Terminus
-integration, settings, layout, and live Python scripting.
+63 tools covering reading, navigation, editing, searching, build, Terminus
+integration, settings, layout, menus, console log, and live Python scripting.
 
 ## Architecture
 
@@ -70,8 +70,6 @@ Add to `~/.claude/settings.json`:
 
 Then restart Claude Code. Tools will appear with the `mcp__sublime__` prefix.
 
-Then restart Claude Code. Tools will appear with the `mcp__sublime__` prefix.
-
 ## Tab and Sheet Indexing
 
 **IMPORTANT:** Users refer to tabs by 1-based numbering (tab 1, tab 2, etc.), but 
@@ -95,6 +93,8 @@ first, and close by path (preferred) or by focusing then closing the active file
 | `get_selection` | Current selection(s): text and begin/end line+col for each |
 | `get_cursor_context` | `lines` lines above and below cursor, with 1-based line numbers prepended |
 | `get_open_files` | All files open in the current window (path, name, is_dirty) |
+| `get_sheets` | All sheets (tabs) in the window by index — includes images and untitled buffers. Returns index, type, path, name, is_dirty |
+| `get_sheet_content` | Content of any tab by sheet index (from `get_sheets`). Works for text, untitled, and Terminus tabs; returns path only for image tabs |
 | `get_project_folders` | Project root folder paths |
 | `get_file_content` | Full content of any already-open file by path |
 | `get_view_content` | Full content of any open tab by name (partial match). Works for Terminus tabs and nameless views |
@@ -132,7 +132,7 @@ first, and close by path (preferred) or by focusing then closing the active file
 
 | Tool | Description |
 |------|-------------|
-| `edit_file` | ST-native editor: `str_replace` (unique match), `insert` (after line N), `create` (new file), `view` (numbered content). Full undo, gutter diff, 30s highlight. Auto-opens file if needed |
+| `str_replace_based_edit_tool` | ST-native editor: `str_replace` (unique match), `insert` (after line N), `create` (new file), `view` (numbered content). Full undo, gutter diff, 30s highlight. Auto-opens file if needed |
 | `replace_selection` | Replace the current selection(s) with text |
 | `replace_lines` | Replace lines begin..end (inclusive, 1-based) in the active file |
 | `insert_snippet` | Insert at the cursor using ST snippet syntax (`$1` for tab stops, etc.) |
@@ -201,12 +201,30 @@ inserting into a buffer.
 | Tool | Description |
 |------|-------------|
 | `eval_python` | Execute arbitrary Python in ST's main thread. Locals available: `sublime`, `window`, `view`, `print`. Returns captured stdout in `output` |
+| `get_console_log` | Recent ST console output (plugin log messages and stdout). `tail=N` limits to last N entries; `tail=0` returns all |
 
 ## Configuration
 
 ### Port
 
-Default is `9500`. To change it, edit `_PORT` in `sublime_mcp.py` and `BASE` in `mcp_server.py`.
+The plugin listens on `9500` by default. The MCP server auto-detects the port:
+- Windows → `9500`
+- WSL / Linux → `9501`
+
+Override with the `SUBLIME_MCP_BASE` environment variable:
+
+```json
+{
+  "mcpServers": {
+    "sublime-mcp": {
+      "command": "sublime-mcp",
+      "env": { "SUBLIME_MCP_BASE": "http://127.0.0.1:9500" }
+    }
+  }
+}
+```
+
+To change the plugin's port, edit `_PORT` in `sublime_mcp.py`.
 
 ### Timeout
 
