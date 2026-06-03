@@ -107,40 +107,49 @@ and change the port:
 _PORT = 9501   # line 22 of sublime_mcp.py
 ```
 
-### Step 2 — Windows `~/.claude/mcp.json`
+### Step 2 — Install the MCP server on both sides
+
+**Windows:**
+```
+pip install sublime-mcp
+```
+
+**WSL:**
+```
+pip3 install sublime-mcp
+```
+
+### Step 3 — Windows `~/.claude/mcp.json`
 
 ```json
 {
   "mcpServers": {
     "sublime-mcp": {
-      "command": "python",
-      "args": ["C:/path/to/sublime-mcp/mcp_server.py"]
+      "command": "sublime-mcp"
     },
     "sublime-mcp-wsl": {
       "command": "wsl",
-      "args": ["python3", "/mnt/c/path/to/sublime-mcp/mcp_server.py"],
+      "args": ["sublime-mcp"],
       "env": { "SUBLIME_MCP_BASE": "http://127.0.0.1:9501" }
     }
   }
 }
 ```
 
-- `sublime-mcp` runs the MCP server as a Windows process → auto-detects port `9500` → Windows ST
-- `sublime-mcp-wsl` runs it inside WSL via the `wsl` command → `127.0.0.1:9501` is WSL's loopback → WSL ST
+- `sublime-mcp` runs as a Windows process → auto-detects port `9500` → Windows ST
+- `sublime-mcp-wsl` runs inside WSL via the `wsl` command → `127.0.0.1:9501` is WSL's loopback → WSL ST
 
-### Step 3 — WSL `~/.claude/mcp.json`
+### Step 4 — WSL `~/.claude/mcp.json`
 
 ```json
 {
   "mcpServers": {
     "sublime-mcp": {
-      "command": "python3",
-      "args": ["/mnt/c/path/to/sublime-mcp/mcp_server.py"],
+      "command": "sublime-mcp",
       "env": { "SUBLIME_MCP_BASE": "http://127.0.0.1:9501" }
     },
     "sublime-mcp-win": {
-      "command": "python3",
-      "args": ["/mnt/c/path/to/sublime-mcp/mcp_server.py"],
+      "command": "sublime-mcp",
       "env": { "SUBLIME_MCP_BASE": "http://127.0.0.1:9500" }
     }
   }
