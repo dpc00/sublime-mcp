@@ -18,8 +18,8 @@ Only `mcp_server.py` ships in the PyPI dist (`[tool.setuptools] py-modules = ["m
 
 ## ST MCP tool usage
 
-- `str_replace_based_edit_tool create` writes to disk immediately — no need to call `save_file` right after.
-- Call `save_file` after subsequent edits that leave the buffer dirty, or when a linter/pyright needs the saved state.
+- `str_replace_based_edit_tool create` opens in ST's buffer but does NOT flush to disk until `save_file` is called.
+- Call `save_file` when the file needs to be on disk (git, linter, pyright). For casual editing, save when done.
 - When creating a new file with no path specified, default to the project directory.
 
 ## Ports
