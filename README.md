@@ -369,6 +369,20 @@ Tab indexing: `get_sheets()` returns 0-based indexes; users refer to tabs
 
 Contributions welcome in any of these areas. See below.
 
+## Testing
+
+The test suite requires Sublime Text to be running with `sublime_mcp.py` loaded.
+
+```
+cd C:\Users\donal\projects\sublime-mcp
+pip install httpx pytest
+pytest tests/test_http_api.py -v
+```
+
+111 tests covering all 60 HTTP API endpoints. Expected result: 109 passed, 2 skipped
+(the skips are environment-dependent: one requires an open saved file, one requires
+a Terminus tab). Zero failures on a clean ST session.
+
 ## Contributing
 
 The project has two independent pieces — the ST plugin (`sublime_mcp.py`) and
