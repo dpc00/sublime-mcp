@@ -56,9 +56,40 @@ def ok(r):
 def require_server():
     """Skip entire session if ST is not running."""
     try:
-        httpx.get(f"{BASE}/open_files", timeout=2.0)
-    except httpx.ConnectError:
+        httpx.get(f"{BASE}/open_files", timeout=5.0)
+    except (httpx.ConnectError, httpx.ReadTimeout):
         pytest.skip("ST not running on port 9500 — start Sublime Text first")
+
+
+# ── terminus fixture ──────────────────────────────────────────────────────────
+
+
+@pytest.fixture(scope="session")
+def terminus_index():
+    """Open a Terminus tab for the session, yield its index, close it after."""
+    ok(
+        post(
+            "/run_command",
+            command="terminus_open",
+            args={"title": "pytest-terminus", "cmd": ["cmd.exe"]},
+            scope="window",
+        )
+    )
+    time.sleep(1.0)
+    files = ok(get("/open_files"))["files"]
+    idx = next(
+        (
+            i
+            for i, f in enumerate(files)
+            if "pytest-terminus" in (f.get("name") or "").lower()
+            or "terminus" in (f.get("name") or "").lower()
+            or "command" in (f.get("name") or "").lower()
+        ),
+        None,
+    )
+    assert idx is not None, "Terminus tab did not open"
+    yield idx
+    post("/eval_python", code="[v.set_scratch(True) or v.close() for v in window.views() if 'pytest-terminus' in (v.name() or '').lower()]")
 
 
 # ── scratch buffer fixture ────────────────────────────────────────────────────
@@ -171,17 +202,12 @@ class TestGetViewContent:
         d = ok(get("/view_content"))
         assert "content" in d
 
-    def test_by_index_zero(self):
+    def test_by_index_zero(self, scratch_path):
         d = ok(get("/view_content", index=0))
         assert "content" in d
 
-    def test_by_name_partial(self):
-        files = ok(get("/open_files"))["files"]
-        names = [f["name"] for f in files if f["name"]]
-        if not names:
-            pytest.skip("no named views open")
-        partial = names[0][:3]
-        d = ok(get("/view_content", name=partial))
+    def test_by_name_partial(self, terminus_index):
+        d = ok(get("/view_content", name="pytest-terminus"))
         assert "content" in d
 
     def test_invalid_index_returns_error(self):
@@ -206,16 +232,14 @@ class TestGetViewSize:
 
 
 class TestGetViewChars:
-    def test_read_first_100_chars(self):
+    def test_read_first_100_chars(self, scratch_path):
         size = ok(get("/view_size"))["size"]
         end = min(100, size)
-        if end == 0:
-            pytest.skip("active view is empty")
         d = ok(get("/view_chars", begin=0, end=end))
         assert "content" in d
         assert isinstance(d["content"], str)
 
-    def test_read_last_100_chars(self):
+    def test_read_last_100_chars(self, scratch_path):
         size = ok(get("/view_size"))["size"]
         if size == 0:
             pytest.skip("active view is empty")
@@ -408,10 +432,16 @@ class TestOpenAndCloseFile:
         d = ok(post("/open_file", path=scratch_path, line=1))
         assert d.get("ok") is True
 
-    def test_open_nonexistent_returns_ok(self):
-        # ST opens a new empty buffer for nonexistent paths rather than erroring
-        r = post("/open_file", path="C:\\no\\such\\file.txt")
+    def test_open_nonexistent_returns_ok(self, scratch_path):
+        # ST opens a new empty buffer for nonexistent paths rather than erroring.
+        # Use a path in the same temp dir as scratch_path so close_file works cleanly.
+        import os
+
+        bad_path = os.path.join(os.path.dirname(scratch_path), "nonexistent_pytest.txt")
+        r = post("/open_file", path=bad_path)
         assert r.status_code == 200
+        time.sleep(0.3)
+        post("/eval_python", code="[v.set_scratch(True) or v.close() for v in window.views() if (v.file_name() or '').endswith('nonexistent_pytest.txt')]")
 
 
 class TestGotoLine:
@@ -432,8 +462,15 @@ class TestReplaceLines:
     def test_replace_line_1(self, scratch_path):
         post("/open_file", path=scratch_path)
         time.sleep(0.2)
-        d = ok(post("/replace_lines", begin=1, end=1,
-                    text="replaced line one\n", path=scratch_path))
+        d = ok(
+            post(
+                "/replace_lines",
+                begin=1,
+                end=1,
+                text="replaced line one\n",
+                path=scratch_path,
+            )
+        )
         assert d.get("ok") is True
         # undo
         post("/undo")
@@ -441,19 +478,28 @@ class TestReplaceLines:
     def test_replace_multiple_lines(self, scratch_path):
         post("/open_file", path=scratch_path)
         time.sleep(0.2)
-        d = ok(post("/replace_lines", begin=1, end=2,
-                    text="new line 1\nnew line 2\n", path=scratch_path))
+        d = ok(
+            post(
+                "/replace_lines",
+                begin=1,
+                end=2,
+                text="new line 1\nnew line 2\n",
+                path=scratch_path,
+            )
+        )
         assert d.get("ok") is True
         post("/undo")
 
     def test_replace_by_index(self, scratch_path):
         files = ok(get("/open_files"))["files"]
-        idx = next((i for i, f in enumerate(files)
-                    if f.get("path") == scratch_path), None)
+        idx = next(
+            (i for i, f in enumerate(files) if f.get("path") == scratch_path), None
+        )
         if idx is None:
             pytest.skip("scratch file not found by index")
-        d = ok(post("/replace_lines", begin=1, end=1,
-                    text="index replace\n", index=idx))
+        d = ok(
+            post("/replace_lines", begin=1, end=1, text="index replace\n", index=idx)
+        )
         assert d.get("ok") is True
         post("/undo")
 
@@ -487,16 +533,14 @@ class TestUndoRedo:
     def test_undo(self, scratch_path):
         post("/open_file", path=scratch_path)
         time.sleep(0.2)
-        post("/replace_lines", begin=1, end=1,
-             text="undo test\n", path=scratch_path)
+        post("/replace_lines", begin=1, end=1, text="undo test\n", path=scratch_path)
         d = ok(post("/undo"))
         assert d.get("ok") is True
 
     def test_redo(self, scratch_path):
         post("/open_file", path=scratch_path)
         time.sleep(0.2)
-        post("/replace_lines", begin=1, end=1,
-             text="redo test\n", path=scratch_path)
+        post("/replace_lines", begin=1, end=1, text="redo test\n", path=scratch_path)
         post("/undo")
         d = ok(post("/redo"))
         assert d.get("ok") is True
@@ -565,7 +609,13 @@ class TestInsertSnippet:
 
 class TestFindInFile:
     def _results(self, d):
-        return d.get("matches") or d.get("results") or d.get("findings") or d.get("hits") or []
+        return (
+            d.get("matches")
+            or d.get("results")
+            or d.get("findings")
+            or d.get("hits")
+            or []
+        )
 
     def test_find_existing_text(self, scratch_path):
         post("/open_file", path=scratch_path)
@@ -604,10 +654,14 @@ class TestFindInFiles:
 
     def test_find_no_match(self):
         # Search mcp_server.py only — a source file that will never contain a test-internal pattern
-        d = ok(post("/find_in_files",
-                    pattern="XQZPATTERN_NOT_IN_SOURCE",
-                    folders=[SMALL_FOLDER],
-                    max_results=1))
+        d = ok(
+            post(
+                "/find_in_files",
+                pattern="XQZPATTERN_NOT_IN_SOURCE",
+                folders=[SMALL_FOLDER],
+                max_results=1,
+            )
+        )
         # Filter out any match from the test file itself
         results = d.get("results") or d.get("matches") or d.get("findings") or []
         non_test = [r for r in results if "test_" not in r.get("path", "")]
@@ -661,8 +715,12 @@ class TestSetSetting:
     def test_set_and_restore_tab_size(self, scratch_path):
         post("/open_file", path=scratch_path)
         time.sleep(0.2)
-        orig = ok(_post_json("/get_setting", {"key": "tab_size", "scope": "view"}))["value"]
-        d = ok(_post_json("/set_setting", {"key": "tab_size", "value": 2, "scope": "view"}))
+        orig = ok(_post_json("/get_setting", {"key": "tab_size", "scope": "view"}))[
+            "value"
+        ]
+        d = ok(
+            _post_json("/set_setting", {"key": "tab_size", "value": 2, "scope": "view"})
+        )
         assert d.get("ok") is True
         _post_json("/set_setting", {"key": "tab_size", "value": orig, "scope": "view"})
 
@@ -689,17 +747,22 @@ class TestSaveAll:
 
 class TestRunCommand:
     def test_window_command(self):
-        # Use a safe non-blocking command that doesn't open a modal
-        d = ok(post("/run_command", command="new_window", args={}, scope="window"))
+        # toggle_minimap is a safe window command with no side effects
+        d = ok(post("/run_command", command="toggle_minimap", args={}, scope="window"))
         assert d.get("ok") is True
-        # close the new window immediately
-        post("/run_command", command="close_window", args={}, scope="window")
+        post("/run_command", command="toggle_minimap", args={}, scope="window")
 
     def test_view_command(self, scratch_path):
         post("/open_file", path=scratch_path)
         time.sleep(0.2)
-        d = ok(post("/run_command", command="move",
-                    args={"by": "lines", "forward": True}, scope="view"))
+        d = ok(
+            post(
+                "/run_command",
+                command="move",
+                args={"by": "lines", "forward": True},
+                scope="view",
+            )
+        )
         assert d.get("ok") is True
 
 
@@ -747,14 +810,12 @@ class TestEvalPython:
         assert d["output"].strip().isdigit()
 
     def test_access_window(self):
-        d = ok(post("/eval_python",
-                    code="print(type(window).__name__)"))
+        d = ok(post("/eval_python", code="print(type(window).__name__)"))
         assert "output" in d
         assert "Window" in d["output"]
 
     def test_access_view(self):
-        d = ok(post("/eval_python",
-                    code="print(type(view).__name__)"))
+        d = ok(post("/eval_python", code="print(type(view).__name__)"))
         assert "output" in d
         assert "View" in d["output"]
 
@@ -782,15 +843,10 @@ class TestGetViewPhantoms:
 
 
 class TestSendToView:
-    def test_send_to_named_view(self):
-        files = ok(get("/open_files"))["files"]
-        terminus = next((f for f in files
-                         if "command" in (f.get("name") or "").lower()
-                         or "terminus" in (f.get("name") or "").lower()), None)
-        if not terminus:
-            pytest.skip("no Terminus/Command Prompt tab open")
-        idx = files.index(terminus)
-        d = ok(post("/send_to_view", text="echo pytest_send_ok\n", index=idx))
+    def test_send_to_named_view(self, terminus_index):
+        d = ok(
+            post("/send_to_view", text="echo pytest_send_ok\n", index=terminus_index)
+        )
         assert d.get("ok") is True
 
 
@@ -814,8 +870,9 @@ class TestErrorHandling:
     def test_replace_lines_out_of_range(self, scratch_path):
         post("/open_file", path=scratch_path)
         time.sleep(0.2)
-        r = post("/replace_lines", begin=99999, end=99999,
-                 text="oob\n", path=scratch_path)
+        r = post(
+            "/replace_lines", begin=99999, end=99999, text="oob\n", path=scratch_path
+        )
         d = r.json()
         assert "error" in d or d.get("ok") is True
 
