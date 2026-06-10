@@ -2,40 +2,36 @@ sublime-mcp
 ===========
 
 Sublime Text MCP server — lets Claude Code (or any MCP client) read and
-control a running ST instance via a local HTTP bridge. 58 tools covering
+control a running ST instance via a local HTTP bridge. 63 tools covering
 reading, navigation, editing, searching, build, Terminus integration,
 settings, layout, and live Python scripting.
 
+The ST plugin is now running. To complete setup:
 
-SETUP (two steps required)
----------------------------
 
-1. Install the MCP server dependencies (run once in your terminal):
+STEP 1 — Install the MCP server (run once in your terminal)
+------------------------------------------------------------
 
-       pip install mcp httpx
+    pip install sublime-mcp
 
-2. Register the MCP server with Claude Code.
 
-   Find the path to mcp_server.py in your ST Packages folder:
-     Windows:  %APPDATA%\Sublime Text\Packages\sublime-mcp\mcp_server.py
-     macOS:    ~/Library/Application Support/Sublime Text/Packages/sublime-mcp/mcp_server.py
-     Linux:    ~/.config/sublime-text/Packages/sublime-mcp/mcp_server.py
+STEP 2 — Register with Claude Code
+-----------------------------------
 
-   Add to ~/.claude/settings.json:
+Add to ~/.claude/mcp.json (or ~/.claude/settings.json):
 
-       {
-           "mcpServers": {
-               "sublime": {
-                   "command": "python",
-                   "args": ["<path to mcp_server.py above>"]
-               }
-           }
-       }
+    {
+        "mcpServers": {
+            "sublime-mcp": {
+                "command": "sublime-mcp"
+            }
+        }
+    }
 
-3. Restart Claude Code. Tools appear with the mcp__sublime__ prefix.
+Restart Claude Code. Tools appear with the mcp__sublime-mcp__ prefix.
 
-The ST plugin (sublime_mcp.py) starts automatically with Sublime Text and
-listens on 127.0.0.1:9500. Check View > Show Console for:
+
+The plugin listens on 127.0.0.1:9500. Check View > Show Console for:
   sublime-mcp: listening on 127.0.0.1:9500
 
 Full documentation: https://github.com/dpc00/sublime-mcp
