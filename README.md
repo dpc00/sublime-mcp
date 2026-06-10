@@ -35,22 +35,22 @@ Claude Code (MCP client)
 
 ## Installation
 
-### 1. Install the ST plugin
+### 1. Install the ST plugin via Package Control
 
-Copy `sublime_mcp.py` to your Sublime Text `Packages/User/` folder:
+1. Open the Command Palette (`Ctrl+Shift+P`)
+2. Run **Package Control: Install Package**
+3. Search for **sublime-mcp** and install
 
-```
-%APPDATA%\Sublime Text\Packages\User\sublime_mcp.py
-```
-
-ST loads it automatically on start (or via `Tools › Developer › New Plugin…`
-then save over it). You should see:
+ST loads it automatically. You should see:
 
 ```
 sublime-mcp: listening on 127.0.0.1:9500
 ```
 
 in the ST console (`View › Show Console`).
+
+> **Manual install (alternative):** copy `sublime_mcp.py` and `sublime_mcp_browse.py`
+> from the repo into your `Packages/User/` folder.
 
 ### 2. Install the MCP server
 
@@ -97,11 +97,13 @@ at the right port via `SUBLIME_MCP_BASE`.
 
 ### Step 1 — Install the plugin in both ST instances
 
-**Windows ST** — copy to `%APPDATA%\Sublime Text\Packages\User\sublime_mcp.py`.
-Leave `_PORT = 9500` (the default).
+Install via Package Control in each ST instance (Windows and WSL ST separately).
 
-**WSL ST** — copy to `~/.config/sublime-text/Packages/User/sublime_mcp.py`
-and change the port:
+**WSL ST** — after installing, edit the port in the installed plugin:
+
+```
+~/.config/sublime-text/Packages/sublime-mcp/sublime_mcp.py
+```
 
 ```python
 _PORT = 9501   # line 22 of sublime_mcp.py
@@ -320,7 +322,7 @@ Override with the `SUBLIME_MCP_BASE` environment variable:
 }
 ```
 
-To change the plugin's port, edit `_PORT` in `sublime_mcp.py`.
+To change the plugin's port, edit `_PORT` near the top of `sublime_mcp.py` in your ST `Packages/sublime-mcp/` folder.
 
 ### Timeout
 
