@@ -1,0 +1,10 @@
+tests/                  export-ignore
+dist/                   export-ignore
+sublime_mcp.egg-info/   export-ignore
+pyproject.toml          export-ignore
+requirements.txt        export-ignore
+server.json             export-ignore
+sonnet.txt              export-ignore
+claude-guide.md         export-ignore
+CLAUDE.md               export-ignore
+.gitignore              export-ignore
