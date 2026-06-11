@@ -1,9 +1,58 @@
-"""sublime-mcp — Sublime Text plugin.
+"""sublime_mcp.py — HTTP bridge that exposes the Sublime Text API to Claude.
 
-Exposes a local HTTP API on 127.0.0.1:9500 so an external MCP server
-can read and control Sublime Text.
+Architecture
+------------
+An external MCP server (the Node.js/Python process that Claude talks to) cannot
+call Sublime's Python API directly because ST's API is only available inside
+ST's embedded Python interpreter.  This plugin solves that by starting a
+lightweight HTTP server on 127.0.0.1:9500 inside ST.  The MCP server sends
+HTTP requests; this plugin handles them on ST's main thread and returns JSON.
+
+Thread model
+------------
+The HTTP server runs on a daemon thread (one request at a time, no thread pool).
+ST's Python API is NOT thread-safe — every call must be on the main thread.
+_on_main(fn) is the bridge:
+  1. Wraps fn() in a closure that captures exceptions and signals a threading.Event.
+  2. Schedules the closure on the main thread via sublime.set_timeout(..., 0).
+  3. Blocks the HTTP thread on done.wait(5.0) until the main thread runs it.
+This gives the HTTP thread a synchronous result while keeping all ST API calls
+on the correct thread.
+
+Routing
+-------
+GET  /endpoint  → handler(params)   where params = parse_qs(query_string)
+POST /endpoint  → handler(body)     where body = json.loads(request_body)
+
+The _GET and _POST dicts map URL paths to handler functions.  Every handler
+returns a plain dict that is serialised to JSON and sent back.
+
+Console capture
+---------------
+_install_console_capture() monkey-patches sublime_api.log_message and
+sys.stdout.write so that all print() calls and ST console output are captured
+into _console_buf.  The /console_log endpoint exposes the tail of that buffer.
+This lets Claude read the ST console without the user having to open it.
+
+Phantom inspection
+------------------
+_get_view_phantoms walks sys.modules looking for any module that has a
+_phantom_sets dict (the standard pattern used by plugins including this one
+and pybackup_ui.py).  It then extracts the HTML content of each phantom and
+strips tags to produce readable plain text.
+
+str_replace_based_edit
+----------------------
+_edit_file implements the same four-command interface as the Claude Code
+str_replace_based_edit_tool so the external MCP server can delegate file
+edits directly into open ST views with gutter highlighting:
+  view       → return numbered file content
+  str_replace→ find unique old_str, replace with new_str, highlight in green
+  insert     → insert text after a given line, highlight in blue
+  create     → create a new file with initial content
 
 Install: copy this file to Packages/User/ (or symlink it there).
+Port: 9500  (change _PORT if it conflicts with another service)
 """
 import contextlib
 import html
@@ -26,7 +75,14 @@ _PORT = 9500
 
 
 def _on_main(fn):
-    """Run fn() on ST's main thread; block caller until done."""
+    """Run fn() on ST's main thread and return its result (or re-raise its exception).
+
+    ST's Python API is not thread-safe; this is the only correct way to call
+    it from the HTTP handler thread.  Uses a threading.Event as a one-shot
+    barrier: the HTTP thread blocks on done.wait() while the main thread
+    executes fn() via sublime.set_timeout(..., 0).  Times out after 5 s so
+    a deadlock doesn't hang the HTTP thread forever.
+    """
     result = [None]
     exc = [None]
     done = threading.Event()
@@ -51,6 +107,11 @@ def _active_view():
 
 
 def _command_name_from_class(cls):
+    """Convert a Command class name to ST's snake_case command string.
+
+    ST strips the 'Command' suffix and lowercases the CamelCase remainder.
+    Example: OpenClaudeTerminusHereCommand -> 'open_claude_terminus_here'
+    """
     name = cls.__name__
     if name.endswith("Command"):
         name = name[:-7]
@@ -118,6 +179,13 @@ def _find_view_by_name(window, name):
 
 
 def _clean_phantom_text(text):
+    """Strip HTML from phantom content and return readable plain text.
+
+    Phantoms store their content as raw HTML including inline CSS.  This
+    function removes <style> and <script> blocks entirely, converts block
+    elements (div, p, a closing tags, br) to newlines, strips remaining tags,
+    unescapes HTML entities, and collapses blank lines.
+    """
     text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(
         r"<script[^>]*>.*?</script>", "", text, flags=re.IGNORECASE | re.DOTALL
@@ -138,6 +206,16 @@ _console_patched = False
 
 
 def _install_console_capture():
+    """Monkey-patch ST's console and stdout to capture messages into _console_buf.
+
+    Called once (guarded by _console_patched).  Wraps two entry points:
+      1. sublime_api.log_message — the C-level function behind ST's console;
+         every ST internal log and print() that goes through sublime_api passes here.
+      2. sys.stdout.write — captures print() output from plugin code that
+         hasn't gone through sublime_api (tagged with '[stdout]' prefix).
+
+    The buffer is a plain list; callers slice the tail with _console_buf[-n:].
+    """
     global _console_patched
     if _console_patched:
         return
@@ -814,6 +892,16 @@ def _get_view_chars(params):
 
 
 def _get_view_phantoms(params):
+    """Return all phantoms attached to a view, with HTML stripped to plain text.
+
+    ST doesn't expose a public API to enumerate phantom sets; instead we walk
+    sys.modules looking for any loaded plugin module that has a _phantom_sets
+    attribute (a dict mapping view ID -> PhantomSet).  The optional 'key' param
+    filters by the PhantomSet's key string.
+
+    Each phantom entry includes both the raw HTML 'content' and a 'text' field
+    with tags stripped, for easier reading.
+    """
     name = params.get("name", [None])[0]
     key = params.get("key", [""])[0].strip()
 
@@ -1060,7 +1148,22 @@ def _close_file(body):
 
 
 def _find_in_files(body):
-    """Runs on HTTP thread — no ST API needed for file I/O."""
+    """Search files in project folders for a pattern and return match locations.
+
+    Runs entirely on the HTTP thread — no ST API needed for raw file I/O, so
+    we don't need _on_main().  Skips common build/cache dirs (.git, node_modules,
+    etc.) and binary-large files (> max_file_bytes, default 1 MB).  Returns
+    early with truncated=True if max_results or max_files limits are hit.
+
+    Body params:
+      pattern          search string or regex
+      folders          list of absolute paths (defaults to project folders)
+      case_sensitive   bool (default False)
+      regex            bool — treat pattern as regex (default False = literal)
+      max_results      int (default 200)
+      max_files        int (default 500)
+      max_file_bytes   int (default 1048576)
+    """
     pattern = body.get("pattern", "")
     folders = body.get("folders") or []
     case = body.get("case_sensitive", False)
@@ -1413,9 +1516,14 @@ _EDIT_HIGHLIGHT_MS = 30000  # how long green underline stays visible
 
 
 def _ensure_view(path):
-    """Open path in ST if not already open; wait for async load.
-    Returns (view, None) on success or (None, error_dict) on failure.
-    Safe: polls from the HTTP thread so the ST main thread stays free.
+    """Open *path* in ST if not already open, then wait for the async load to complete.
+
+    ST's window.open_file() returns immediately with a loading view; the file
+    content is not available until view.is_loading() returns False.  We poll
+    from the HTTP thread (50 × 100 ms = 5 s max) so the ST main thread stays
+    free to process the load callback.  Each _on_main call is brief.
+
+    Returns (view, None) on success or (None, {"error": ...}) on failure.
     """
     import time
 
@@ -1716,11 +1824,31 @@ def plugin_unloaded():
 
 
 class SublimeMcpReplaceRegionCommand(sublime_plugin.TextCommand):
+    """Internal helper: replace an arbitrary character-offset region with new text.
+
+    Called by _replace_lines() which converts line numbers to character offsets
+    before dispatching here.  TextCommand is required because view.replace()
+    needs an edit token.
+    """
+
     def run(self, edit, begin, end, text):
         self.view.replace(edit, sublime.Region(begin, end), text)
 
 
 class SublimeMcpStrReplaceCommand(sublime_plugin.TextCommand):
+    """Internal helper: replace a region and show a green underline highlight.
+
+    Called by _edit_file(command='str_replace') after the unique match is found.
+    Steps:
+      1. Replace the matched region with new_str.
+      2. Add a green 'mcp_edit' region with an annotation showing line number.
+      3. Scroll the view to centre on the change.
+      4. Schedule the region to be erased after _EDIT_HIGHLIGHT_MS milliseconds.
+
+    Also sets the view's reference document to the pre-edit content so the
+    ST gutter shows the diff markers.
+    """
+
     def run(self, edit, begin, end, new_str):
         region = sublime.Region(begin, end)
         self.view.replace(edit, region, new_str)
@@ -1746,6 +1874,12 @@ class SublimeMcpStrReplaceCommand(sublime_plugin.TextCommand):
 
 
 class SublimeMcpInsertTextCommand(sublime_plugin.TextCommand):
+    """Internal helper: insert text at a character offset and show a cyan underline.
+
+    Same highlight pattern as SublimeMcpStrReplaceCommand but cyan/blue to
+    distinguish insertions from replacements.
+    """
+
     def run(self, edit, insert_pt, insert_text):
         self.view.insert(edit, insert_pt, insert_text)
         new_region = sublime.Region(insert_pt, insert_pt + len(insert_text))
@@ -1769,6 +1903,8 @@ class SublimeMcpInsertTextCommand(sublime_plugin.TextCommand):
 
 
 class SublimeMcpCreateFileCommand(sublime_plugin.TextCommand):
+    """Internal helper: populate a newly created (empty, retargeted) view with content."""
+
     def run(self, edit, file_text):
         self.view.insert(edit, 0, file_text)
         self.view.show_at_center(0)
