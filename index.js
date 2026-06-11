@@ -383,7 +383,7 @@ server.registerTool('get_console_full', {
 }, async () => ok(await get('/console_full')));
 
 server.registerTool('eval_python_latest', {
-  description: "Execute Python code using the system Python 3.12 interpreter (via 'py -3.12') outside Sublime Text's embedded Python 3.8 sandbox.\nUseful for code that requires Python 3.9+ syntax, newer stdlib features, or third-party packages not available in ST.\nReturns stdout, stderr, and returncode.",
+  description: "Execute Python code using the system Python interpreter outside Sublime Text's embedded sandbox.\nUseful for newer stdlib features or third-party packages not available in ST's embedded Python.\nReturns stdout, stderr, and returncode.",
   inputSchema: { code: z.string() },
 }, async ({ code }) => ok(await post('/eval_python_latest', { code })));
 
