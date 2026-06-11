@@ -21,3 +21,5 @@ credentials.json
 out.*
 venv/
 *.sublime-*
+node_modules/
+package-lock.json

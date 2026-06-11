@@ -2,19 +2,18 @@
 
 ## Project structure
 
-- `mcp_server.py` — MCP server. Published to PyPI as `sublime-mcp`. This is the only file in the PyPI package.
-- `sublime_mcp.py` — ST plugin. NOT in the PyPI package. Distributed via Package Control.
+- `index.js` — MCP server. Published to npm as `sublime-mcp`. Run via `npx sublime-mcp`.
+- `package.json` — single source of version truth.
+- `sublime_mcp.py` — ST plugin. NOT in the npm package. Distributed via Package Control.
 - `sublime_mcp_browse.py` — ST browse commands. Also distributed via Package Control.
-- `pyproject.toml` — single source of version truth.
 
 ## Publishing
 
-1. Bump `version` in `pyproject.toml`
-2. `python -m build`
-3. `twine upload dist/sublime_mcp-<ver>*`
-4. Commit dist files + pyproject.toml + egg-info
+### MCP server (npm)
+1. Bump `version` in `package.json`
+2. `npm publish`
 
-Only `mcp_server.py` ships in the PyPI dist (`[tool.setuptools] py-modules = ["mcp_server"]`).
+### ST plugin (Package Control)
 `sublime_mcp.py` and `sublime_mcp_browse.py` are distributed via Package Control (PR #9447).
 `.gitattributes` marks dev/build files as `export-ignore` so Package Control only installs the plugin files.
 
