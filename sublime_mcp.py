@@ -1057,7 +1057,7 @@ def _replace_lines(body):
         start_pt = v.text_point(begin - 1, 0)
         end_pt = v.full_line(v.text_point(end - 1, 0)).end()
         v.run_command(
-            "sublime_mcp_replace_region",
+            "mcp_replace_region",
             {
                 "begin": start_pt,
                 "end": end_pt,
@@ -1576,7 +1576,7 @@ def _edit_file(body):
             syn = sublime.find_syntax_for_file(path)
             if syn:
                 v.assign_syntax(syn)
-            v.run_command("sublime_mcp_create_file", {"file_text": file_text})
+            v.run_command("mcp_create_file", {"file_text": file_text})
             return {"ok": True, "path": path}
 
         return _on_main(create_fn)
@@ -1644,7 +1644,7 @@ def _edit_file(body):
             original = v.substr(sublime.Region(0, v.size()))
             v.set_reference_document(original)
             v.run_command(
-                "sublime_mcp_str_replace",
+                "mcp_str_replace",
                 {
                     "begin": region.begin(),
                     "end": region.end(),
@@ -1677,7 +1677,7 @@ def _edit_file(body):
             original = v.substr(sublime.Region(0, v.size()))
             v.set_reference_document(original)
             v.run_command(
-                "sublime_mcp_insert_text",
+                "mcp_insert_text",
                 {
                     "insert_pt": pt,
                     "insert_text": text,
@@ -1832,7 +1832,7 @@ def plugin_unloaded():
 # ── helper text commands ──────────────────────────────────────────────────────
 
 
-class SublimeMcpReplaceRegionCommand(sublime_plugin.TextCommand):
+class McpReplaceRegionCommand(sublime_plugin.TextCommand):
     """Internal helper: replace an arbitrary character-offset region with new text.
 
     Called by _replace_lines() which converts line numbers to character offsets
@@ -1844,7 +1844,7 @@ class SublimeMcpReplaceRegionCommand(sublime_plugin.TextCommand):
         self.view.replace(edit, sublime.Region(begin, end), text)
 
 
-class SublimeMcpStrReplaceCommand(sublime_plugin.TextCommand):
+class McpStrReplaceCommand(sublime_plugin.TextCommand):
     """Internal helper: replace a region and show a green underline highlight.
 
     Called by _edit_file(command='str_replace') after the unique match is found.
@@ -1882,10 +1882,10 @@ class SublimeMcpStrReplaceCommand(sublime_plugin.TextCommand):
         )
 
 
-class SublimeMcpInsertTextCommand(sublime_plugin.TextCommand):
+class McpInsertTextCommand(sublime_plugin.TextCommand):
     """Internal helper: insert text at a character offset and show a cyan underline.
 
-    Same highlight pattern as SublimeMcpStrReplaceCommand but cyan/blue to
+    Same highlight pattern as McpStrReplaceCommand but cyan/blue to
     distinguish insertions from replacements.
     """
 
@@ -1911,7 +1911,7 @@ class SublimeMcpInsertTextCommand(sublime_plugin.TextCommand):
         )
 
 
-class SublimeMcpCreateFileCommand(sublime_plugin.TextCommand):
+class McpCreateFileCommand(sublime_plugin.TextCommand):
     """Internal helper: populate a newly created (empty, retargeted) view with content."""
 
     def run(self, edit, file_text):
