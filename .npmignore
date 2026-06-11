@@ -1,0 +1,29 @@
+# Python build artifacts
+dist/
+sublime_mcp.egg-info/
+requirements.txt
+pyproject.toml
+*.py
+
+# ST plugin files (not needed in npm package)
+messages/
+messages.json
+server.json
+
+# Dev/scratch files
+console_log.txt
+sonnet.txt
+claude-guide.md
+CLAUDE.md
+
+# Tests
+tests/
+
+# Git
+.gitattributes
+
+# Python cache
+__pycache__/
+
+# Claude Code local settings (sensitive)
+.claude/
