@@ -7,6 +7,7 @@ Requirements: pip install mcp httpx
 Run:          python mcp_server.py
 Register:     add to ~/.claude/settings.json mcpServers
 """
+
 import os
 import sys
 from typing import Optional
@@ -15,7 +16,7 @@ import httpx
 from mcp.server.fastmcp import FastMCP
 
 # Platform detection: Windows ST uses 9500, WSL/Linux ST uses 9501
-DEFAULT_PORT = 9500 if sys.platform == 'win32' else 9501
+DEFAULT_PORT = 9500 if sys.platform == "win32" else 9501
 BASE = os.environ.get("SUBLIME_MCP_BASE", f"http://127.0.0.1:{DEFAULT_PORT}")
 TIMEOUT = 10.0
 
@@ -42,59 +43,135 @@ def _post(endpoint: str, **body) -> dict:
 # Each entry: (tool_name, "GET"|"POST", endpoint, docstring)
 
 _PASSTHROUGH = [
-    ("get_active_file",     "GET",  "/active_file",
-     "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name."),
-    ("get_selection",       "GET",  "/selection",
-     "Return the current selection(s): text and begin/end line+col for each."),
-    ("get_open_files",      "GET",  "/open_files",
-     "List all files open in the current window (path, name, is_dirty)."),
-    ("get_sheets",          "GET",  "/sheets",
-     "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\n"
-     "Returns index, type (TextSheet/ImageSheet), path, name, is_dirty for each.\n"
-     "Use index with get_sheet_content to read a specific tab."),
-    ("get_project_folders", "GET",  "/project_folders",
-     "Return the project's root folder paths."),
-    ("get_symbols",         "GET",  "/symbols",
-     "Return all symbols (functions, classes, etc.) in the active file with line numbers."),
-    ("get_project_data",    "GET",  "/project_data",
-     "Return the raw .sublime-project JSON data for the current project."),
-    ("get_variables",       "GET",  "/variables",
-     "Return Sublime Text's build variables: $file, $project_path, $platform, etc."),
-    ("get_active_panel",    "GET",  "/active_panel",
-     "Return the active panel id and, if it is an output panel, its content."),
-    ("get_syntaxes",        "GET",  "/syntaxes",
-     "List all syntax definitions available in Sublime Text (name + path)."),
-    ("get_encoding",        "GET",  "/encoding",
-     "Return the character encoding of the active file."),
-    ("get_scope_at_cursor", "GET",  "/scope_at_cursor",
-     "Return the full syntax scope string at the cursor position."),
-    ("get_word_at_cursor",  "GET",  "/word_at_cursor",
-     "Return the word under the cursor and its line/col."),
-    ("get_bookmarks",       "GET",  "/bookmarks",
-     "Return all bookmarked positions in the active file."),
-    ("get_line_count",      "GET",  "/line_count",
-     "Return the total number of lines in the active file."),
-    ("get_layout",          "GET",  "/layout",
-     "Return the current window layout (groups, cells) and which files are in each group."),
-    ("save_all",            "POST", "/save_all",
-     "Save all open files."),
-    ("revert_file",         "POST", "/revert_file",
-     "Revert the active file to its last saved state, discarding unsaved changes."),
-    ("undo",                "POST", "/undo",
-     "Undo the last edit in the active file."),
-    ("redo",                "POST", "/redo",
-     "Redo the last undone edit in the active file."),
-    ("duplicate_line",      "POST", "/duplicate_line",
-     "Duplicate the current line(s) in the active file."),
-    ("toggle_sidebar",      "POST", "/toggle_sidebar",
-     "Show or hide the Sublime Text sidebar."),
+    (
+        "get_active_file",
+        "GET",
+        "/active_file",
+        "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name.",
+    ),
+    (
+        "get_selection",
+        "GET",
+        "/selection",
+        "Return the current selection(s): text and begin/end line+col for each.",
+    ),
+    (
+        "get_open_files",
+        "GET",
+        "/open_files",
+        "List all files open in the current window (path, name, is_dirty).",
+    ),
+    (
+        "get_sheets",
+        "GET",
+        "/sheets",
+        "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\n"
+        "Returns index, type (TextSheet/ImageSheet), path, name, is_dirty for each.\n"
+        "Use index with get_sheet_content to read a specific tab.",
+    ),
+    (
+        "get_project_folders",
+        "GET",
+        "/project_folders",
+        "Return the project's root folder paths.",
+    ),
+    (
+        "get_symbols",
+        "GET",
+        "/symbols",
+        "Return all symbols (functions, classes, etc.) in the active file with line numbers.",
+    ),
+    (
+        "get_project_data",
+        "GET",
+        "/project_data",
+        "Return the raw .sublime-project JSON data for the current project.",
+    ),
+    (
+        "get_variables",
+        "GET",
+        "/variables",
+        "Return Sublime Text's build variables: $file, $project_path, $platform, etc.",
+    ),
+    (
+        "get_active_panel",
+        "GET",
+        "/active_panel",
+        "Return the active panel id and, if it is an output panel, its content.",
+    ),
+    (
+        "get_syntaxes",
+        "GET",
+        "/syntaxes",
+        "List all syntax definitions available in Sublime Text (name + path).",
+    ),
+    (
+        "get_encoding",
+        "GET",
+        "/encoding",
+        "Return the character encoding of the active file.",
+    ),
+    (
+        "get_scope_at_cursor",
+        "GET",
+        "/scope_at_cursor",
+        "Return the full syntax scope string at the cursor position.",
+    ),
+    (
+        "get_word_at_cursor",
+        "GET",
+        "/word_at_cursor",
+        "Return the word under the cursor and its line/col.",
+    ),
+    (
+        "get_bookmarks",
+        "GET",
+        "/bookmarks",
+        "Return all bookmarked positions in the active file.",
+    ),
+    (
+        "get_line_count",
+        "GET",
+        "/line_count",
+        "Return the total number of lines in the active file.",
+    ),
+    (
+        "get_layout",
+        "GET",
+        "/layout",
+        "Return the current window layout (groups, cells) and which files are in each group.",
+    ),
+    ("save_all", "POST", "/save_all", "Save all open files."),
+    (
+        "revert_file",
+        "POST",
+        "/revert_file",
+        "Revert the active file to its last saved state, discarding unsaved changes.",
+    ),
+    ("undo", "POST", "/undo", "Undo the last edit in the active file."),
+    ("redo", "POST", "/redo", "Redo the last undone edit in the active file."),
+    (
+        "duplicate_line",
+        "POST",
+        "/duplicate_line",
+        "Duplicate the current line(s) in the active file.",
+    ),
+    (
+        "toggle_sidebar",
+        "POST",
+        "/toggle_sidebar",
+        "Show or hide the Sublime Text sidebar.",
+    ),
 ]
 
 for _name, _method, _endpoint, _doc in _PASSTHROUGH:
+
     def _make(_m=_method, _e=_endpoint):
         def _tool() -> dict:
             return (_get if _m == "GET" else _post)(_e)
+
         return _tool
+
     _f = _make()
     _f.__name__ = _name
     _f.__doc__ = _doc

@@ -54,6 +54,7 @@ edits directly into open ST views with gutter highlighting:
 Install: copy this file to Packages/User/ (or symlink it there).
 Port: 9500  (change _PORT if it conflicts with another service)
 """
+
 import contextlib
 import html
 import io
@@ -352,14 +353,16 @@ def _get_sheets(params):
             except Exception:
                 pass
             v = s.view()
-            out.append({
-                "index": i,
-                "id": s.id(),
-                "type": kind,
-                "path": path,
-                "name": v.name() if v else None,
-                "is_dirty": v.is_dirty() if v else False,
-            })
+            out.append(
+                {
+                    "index": i,
+                    "id": s.id(),
+                    "type": kind,
+                    "path": path,
+                    "name": v.name() if v else None,
+                    "is_dirty": v.is_dirty() if v else False,
+                }
+            )
         return {"sheets": out}
 
     return _on_main(fn)
@@ -381,8 +384,13 @@ def _get_sheet_content(params):
         except Exception:
             pass
         if kind == "ImageSheet":
-            return {"index": index, "type": kind, "path": path, "content": None,
-                    "note": "image — use path to read the file directly"}
+            return {
+                "index": index,
+                "type": kind,
+                "path": path,
+                "content": None,
+                "note": "image — use path to read the file directly",
+            }
         v = s.view()
         if not v:
             return {"error": f"sheet {index} has no text view"}
@@ -470,6 +478,7 @@ def _send_to_view(body):
         if not v:
             return {"error": "no view found"}
         import sys
+
         Terminal = sys.modules.get("Terminus.terminus.terminal", None)
         Terminal = Terminal.Terminal if Terminal else None
         if Terminal and Terminal.from_id(v.id()):

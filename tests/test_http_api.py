@@ -89,7 +89,10 @@ def terminus_index():
     )
     assert idx is not None, "Terminus tab did not open"
     yield idx
-    post("/eval_python", code="[v.set_scratch(True) or v.close() for v in window.views() if 'pytest-terminus' in (v.name() or '').lower()]")
+    post(
+        "/eval_python",
+        code="[v.set_scratch(True) or v.close() for v in window.views() if 'pytest-terminus' in (v.name() or '').lower()]",
+    )
 
 
 # ── scratch buffer fixture ────────────────────────────────────────────────────
@@ -441,7 +444,10 @@ class TestOpenAndCloseFile:
         r = post("/open_file", path=bad_path)
         assert r.status_code == 200
         time.sleep(0.3)
-        post("/eval_python", code="[v.set_scratch(True) or v.close() for v in window.views() if (v.file_name() or '').endswith('nonexistent_pytest.txt')]")
+        post(
+            "/eval_python",
+            code="[v.set_scratch(True) or v.close() for v in window.views() if (v.file_name() or '').endswith('nonexistent_pytest.txt')]",
+        )
 
 
 class TestGotoLine:
