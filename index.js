@@ -377,6 +377,16 @@ server.registerTool('get_console_log', {
   inputSchema: { tail: z.number().int().default(100) },
 }, async ({ tail }) => ok(await get('/console_log', { tail })));
 
+server.registerTool('get_console_full', {
+  description: 'Capture the FULL Sublime Text Python console (entire session history) by simulating Ctrl+A, Ctrl+C in the console output panel and reading the clipboard.\nReturns the complete text including startup messages, plugin load events, and all errors.\nNote: briefly takes keyboard focus from ST to perform the macro.',
+  inputSchema: {},
+}, async () => ok(await get('/console_full')));
+
+server.registerTool('eval_python_latest', {
+  description: "Execute Python code using the system Python 3.12 interpreter (via 'py -3.12') outside Sublime Text's embedded Python 3.8 sandbox.\nUseful for code that requires Python 3.9+ syntax, newer stdlib features, or third-party packages not available in ST.\nReturns stdout, stderr, and returncode.",
+  inputSchema: { code: z.string() },
+}, async ({ code }) => ok(await post('/eval_python_latest', { code })));
+
 // ── startup ───────────────────────────────────────────────────────────────────
 
 const transport = new StdioServerTransport();

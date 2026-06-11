@@ -518,6 +518,107 @@ def _get_console_log(params):
     return {"entries": entries, "total": len(_console_buf)}
 
 
+def _get_console_full(params):
+    """Capture the entire ST console by simulating click → Ctrl+A → Ctrl+C, then reading the clipboard."""
+    import ctypes
+    import ctypes.wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    user32.GetClipboardData.restype = ctypes.c_void_p
+    kernel32.GlobalLock.restype = ctypes.c_void_p
+    kernel32.GlobalLock.argtypes = [ctypes.c_void_p]
+    kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
+
+    # Find ST HWND
+    _hwnd = [None]
+    def _enum(h, _):
+        buf = ctypes.create_unicode_buffer(256)
+        user32.GetWindowTextW(h, buf, 256)
+        if "Sublime Text" in buf.value:
+            _hwnd[0] = h
+        return True
+    user32.EnumWindows(ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_size_t, ctypes.c_size_t)(_enum), 0)
+    hwnd = _hwnd[0]
+    if not hwnd:
+        return {"error": "ST window not found"}
+
+    rect = ctypes.wintypes.RECT()
+    user32.GetWindowRect(hwnd, ctypes.byref(rect))
+    cx = (rect.left + rect.right) // 2
+    cy = rect.bottom - 80  # in console output area, ~80px above window bottom
+
+    result = {"text": None, "error": None}
+    done = threading.Event()
+
+    def _make_input():
+        class MI(ctypes.Structure):
+            _fields_ = [("dx", ctypes.c_long), ("dy", ctypes.c_long), ("mouseData", ctypes.c_ulong),
+                        ("dwFlags", ctypes.c_ulong), ("time", ctypes.c_ulong), ("dwExtraInfo", ctypes.c_uint64)]
+        class KI(ctypes.Structure):
+            _fields_ = [("wVk", ctypes.c_ushort), ("wScan", ctypes.c_ushort), ("dwFlags", ctypes.c_ulong),
+                        ("time", ctypes.c_ulong), ("dwExtraInfo", ctypes.c_uint64)]
+        class _U(ctypes.Union):
+            _fields_ = [("mi", MI), ("ki", KI)]
+        class INP(ctypes.Structure):
+            _fields_ = [("type", ctypes.c_ulong), ("_u", _U)]
+        return INP
+
+    def do_show():
+        sublime.active_window().run_command("show_panel", {"panel": "console"})
+        sublime.set_timeout(do_click, 300)
+
+    def do_click():
+        INP = _make_input()
+        user32.SetForegroundWindow(hwnd)
+        user32.SetCursorPos(cx, cy)
+        dn = INP(type=0); dn._u.mi.dwFlags = 0x0002
+        up = INP(type=0); up._u.mi.dwFlags = 0x0004
+        user32.SendInput(1, ctypes.byref(dn), ctypes.sizeof(INP))
+        user32.SendInput(1, ctypes.byref(up), ctypes.sizeof(INP))
+        sublime.set_timeout(do_ctrl_a, 300)
+
+    def do_ctrl_a():
+        INP = _make_input()
+        def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        kd(0x11); kd(0x41); ku(0x41); ku(0x11)
+        sublime.set_timeout(do_ctrl_c, 250)
+
+    def do_ctrl_c():
+        INP = _make_input()
+        def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        kd(0x11); kd(0x43); ku(0x43); ku(0x11)
+        sublime.set_timeout(read_clip, 400)
+
+    def read_clip():
+        CF_UNICODETEXT = 13
+        if user32.OpenClipboard(0):
+            h = user32.GetClipboardData(CF_UNICODETEXT)
+            if h:
+                ptr = kernel32.GlobalLock(h)
+                if ptr:
+                    result["text"] = ctypes.wstring_at(ptr)
+                    kernel32.GlobalUnlock(h)
+                else:
+                    result["error"] = "GlobalLock failed"
+            else:
+                result["error"] = "no text on clipboard"
+            user32.CloseClipboard()
+        else:
+            result["error"] = "OpenClipboard failed"
+        done.set()
+
+    sublime.set_timeout(do_show, 0)
+    if not done.wait(timeout=5.0):
+        return {"error": "timeout waiting for console capture"}
+
+    if result["text"] is not None:
+        return {"text": result["text"], "length": len(result["text"])}
+    return {"error": result.get("error", "unknown")}
+
+
 def _get_symbols(params):
     def fn():
         v = _active_view()
@@ -1358,6 +1459,31 @@ def _eval_python(body):
         return {"ok": False, "error": str(e), "output": buf.getvalue()}
 
 
+def _eval_python_latest(body):
+    """Run code via the system Python 3.12 interpreter (py -3.12) outside ST's sandbox."""
+    import os
+    import subprocess
+    import tempfile
+
+    code = body.get("code", "")
+    if not code:
+        return {"error": "code required"}
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as f:
+        f.write(code)
+        fname = f.name
+    try:
+        r = subprocess.run(["py", "-3.12", fname], capture_output=True, text=True, timeout=30)
+        return {"ok": True, "stdout": r.stdout, "stderr": r.stderr, "returncode": r.returncode}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "timeout after 30s"}
+    except FileNotFoundError:
+        return {"ok": False, "error": "py launcher not found — is Python 3.12 installed?"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+    finally:
+        os.unlink(fname)
+
+
 def _fold_lines(body):
     begin = body.get("begin")
     end = body.get("end")
@@ -1715,6 +1841,7 @@ _GET = {
     "/view_phantoms": _get_view_phantoms,
     "/output_panel": _get_output_panel,
     "/console_log": _get_console_log,
+    "/console_full": _get_console_full,
     "/symbols": _get_symbols,
     "/lookup_symbol": _lookup_symbol,
     "/project_data": _get_project_data,
@@ -1753,6 +1880,7 @@ _POST = {
     "/select_lines": _select_lines,
     "/sort_lines": _sort_lines,
     "/eval_python": _eval_python,
+    "/eval_python_latest": _eval_python_latest,
     "/fold_lines": _fold_lines,
     "/set_encoding": _set_encoding,
     "/revert_file": _revert_file,
