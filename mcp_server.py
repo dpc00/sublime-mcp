@@ -23,33 +23,85 @@ print(f"sublime-mcp: BASE={BASE} sys.platform={sys.platform}", file=sys.stderr)
 sys.stderr.flush()
 
 mcp = FastMCP("sublime-mcp")
+_client = httpx.Client(base_url=BASE, timeout=TIMEOUT)
 
 
 def _get(endpoint: str, **params) -> dict:
-    r = httpx.get(f"{BASE}{endpoint}", params=params, timeout=TIMEOUT)
+    r = _client.get(endpoint, params=params)
     r.raise_for_status()
     return r.json()
 
 
 def _post(endpoint: str, **body) -> dict:
-    r = httpx.post(f"{BASE}{endpoint}", json=body, timeout=TIMEOUT)
+    r = _client.post(endpoint, json=body)
     r.raise_for_status()
     return r.json()
 
 
-# ── read ──────────────────────────────────────────────────────────────────────
+# ── no-parameter pass-through tools ───────────────────────────────────────────
+# Each entry: (tool_name, "GET"|"POST", endpoint, docstring)
+
+_PASSTHROUGH = [
+    ("get_active_file",     "GET",  "/active_file",
+     "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name."),
+    ("get_selection",       "GET",  "/selection",
+     "Return the current selection(s): text and begin/end line+col for each."),
+    ("get_open_files",      "GET",  "/open_files",
+     "List all files open in the current window (path, name, is_dirty)."),
+    ("get_sheets",          "GET",  "/sheets",
+     "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\n"
+     "Returns index, type (TextSheet/ImageSheet), path, name, is_dirty for each.\n"
+     "Use index with get_sheet_content to read a specific tab."),
+    ("get_project_folders", "GET",  "/project_folders",
+     "Return the project's root folder paths."),
+    ("get_symbols",         "GET",  "/symbols",
+     "Return all symbols (functions, classes, etc.) in the active file with line numbers."),
+    ("get_project_data",    "GET",  "/project_data",
+     "Return the raw .sublime-project JSON data for the current project."),
+    ("get_variables",       "GET",  "/variables",
+     "Return Sublime Text's build variables: $file, $project_path, $platform, etc."),
+    ("get_active_panel",    "GET",  "/active_panel",
+     "Return the active panel id and, if it is an output panel, its content."),
+    ("get_syntaxes",        "GET",  "/syntaxes",
+     "List all syntax definitions available in Sublime Text (name + path)."),
+    ("get_encoding",        "GET",  "/encoding",
+     "Return the character encoding of the active file."),
+    ("get_scope_at_cursor", "GET",  "/scope_at_cursor",
+     "Return the full syntax scope string at the cursor position."),
+    ("get_word_at_cursor",  "GET",  "/word_at_cursor",
+     "Return the word under the cursor and its line/col."),
+    ("get_bookmarks",       "GET",  "/bookmarks",
+     "Return all bookmarked positions in the active file."),
+    ("get_line_count",      "GET",  "/line_count",
+     "Return the total number of lines in the active file."),
+    ("get_layout",          "GET",  "/layout",
+     "Return the current window layout (groups, cells) and which files are in each group."),
+    ("save_all",            "POST", "/save_all",
+     "Save all open files."),
+    ("revert_file",         "POST", "/revert_file",
+     "Revert the active file to its last saved state, discarding unsaved changes."),
+    ("undo",                "POST", "/undo",
+     "Undo the last edit in the active file."),
+    ("redo",                "POST", "/redo",
+     "Redo the last undone edit in the active file."),
+    ("duplicate_line",      "POST", "/duplicate_line",
+     "Duplicate the current line(s) in the active file."),
+    ("toggle_sidebar",      "POST", "/toggle_sidebar",
+     "Show or hide the Sublime Text sidebar."),
+]
+
+for _name, _method, _endpoint, _doc in _PASSTHROUGH:
+    def _make(_m=_method, _e=_endpoint):
+        def _tool() -> dict:
+            return (_get if _m == "GET" else _post)(_e)
+        return _tool
+    _f = _make()
+    _f.__name__ = _name
+    _f.__doc__ = _doc
+    mcp.tool(name=_name)(_f)
 
 
-@mcp.tool()
-def get_active_file() -> dict:
-    """Return the active file's path, full content, cursor line/col, dirty flag, and syntax name."""
-    return _get("/active_file")
-
-
-@mcp.tool()
-def get_selection() -> dict:
-    """Return the current selection(s): text and begin/end line+col for each."""
-    return _get("/selection")
+# ── parameterised tools ───────────────────────────────────────────────────────
 
 
 @mcp.tool()
@@ -59,31 +111,11 @@ def get_cursor_context(lines: int = 10) -> dict:
 
 
 @mcp.tool()
-def get_open_files() -> dict:
-    """List all files open in the current window (path, name, is_dirty)."""
-    return _get("/open_files")
-
-
-@mcp.tool()
-def get_sheets() -> dict:
-    """List ALL sheets (tabs) in the current window by index, including images and untitled buffers.
-    Returns index, type (TextSheet/ImageSheet), path, name, is_dirty for each.
-    Use index with get_sheet_content to read a specific tab."""
-    return _get("/sheets")
-
-
-@mcp.tool()
 def get_sheet_content(index: int) -> dict:
     """Return the content of any tab by its sheet index (from get_sheets).
     Works for text tabs including untitled buffers and Terminus tabs.
     For image tabs returns the file path only."""
     return _get("/sheet_content", index=index)
-
-
-@mcp.tool()
-def get_project_folders() -> dict:
-    """Return the project's root folder paths."""
-    return _get("/project_folders")
 
 
 @mcp.tool()
@@ -126,16 +158,6 @@ def get_view_phantoms(name: str = "", key: str = "") -> dict:
 
 
 @mcp.tool()
-def send_to_view(text: str, name: str = "", index: int = -1) -> dict:
-    """Send a string to any open tab by name (partial match, case-insensitive).
-    For Terminus tabs this types the text into the terminal as if the user typed it.
-    Include a trailing newline (\\n) to execute a command.
-    Use index (0-based, from get_open_files) to target a tab by position instead of name.
-    Omit both name and index to target the active view."""
-    return _post("/send_to_view", text=text, name=name, index=index)
-
-
-@mcp.tool()
 def get_output_panel(name: str = "") -> dict:
     """Return the text content of an output panel.
     If name is omitted, read the active output panel.  Use name='exec' for build output.
@@ -144,21 +166,9 @@ def get_output_panel(name: str = "") -> dict:
 
 
 @mcp.tool()
-def get_symbols() -> dict:
-    """Return all symbols (functions, classes, etc.) in the active file with line numbers."""
-    return _get("/symbols")
-
-
-@mcp.tool()
 def lookup_symbol(symbol: str) -> dict:
     """Find where a symbol is defined across all open files."""
     return _get("/lookup_symbol", symbol=symbol)
-
-
-@mcp.tool()
-def get_project_data() -> dict:
-    """Return the raw .sublime-project JSON data for the current project."""
-    return _get("/project_data")
 
 
 @mcp.tool()
@@ -186,12 +196,13 @@ def remove_folder(path: str) -> dict:
 
 
 @mcp.tool()
-def get_variables() -> dict:
-    """Return Sublime Text's build variables: $file, $project_path, $platform, etc."""
-    return _get("/variables")
-
-
-# ── navigate ──────────────────────────────────────────────────────────────────
+def send_to_view(text: str, name: str = "", index: int = -1) -> dict:
+    """Send a string to any open tab by name (partial match, case-insensitive).
+    For Terminus tabs this types the text into the terminal as if the user typed it.
+    Include a trailing newline (\\n) to execute a command.
+    Use index (0-based, from get_open_files) to target a tab by position instead of name.
+    Omit both name and index to target the active view."""
+    return _post("/send_to_view", text=text, name=name, index=index)
 
 
 @mcp.tool()
@@ -210,9 +221,6 @@ def goto_line(line: int, col: int = 1) -> dict:
 def show_panel(name: str = "exec") -> dict:
     """Bring an output panel to the front.  Use name='exec' for the build panel."""
     return _post("/show_panel", name=name)
-
-
-# ── edit ──────────────────────────────────────────────────────────────────────
 
 
 @mcp.tool()
@@ -241,9 +249,6 @@ def run_command(
     return _post("/run_command", command=command, args=args or {}, scope=scope)
 
 
-# ── build ─────────────────────────────────────────────────────────────────────
-
-
 @mcp.tool()
 def run_build(
     cmd: Optional[list] = None, shell_cmd: Optional[str] = None, working_dir: str = ""
@@ -259,16 +264,10 @@ def run_build(
     return _post("/run_build", **body)
 
 
-# ── misc ──────────────────────────────────────────────────────────────────────
-
-
 @mcp.tool()
 def set_status(value: str, key: str = "sublime_mcp") -> dict:
     """Write a message to Sublime Text's status bar."""
     return _post("/set_status", key=key, value=value)
-
-
-# ── file ops ──────────────────────────────────────────────────────────────────
 
 
 @mcp.tool()
@@ -278,42 +277,9 @@ def save_file(path: str = "") -> dict:
 
 
 @mcp.tool()
-def save_all() -> dict:
-    """Save all open files."""
-    return _post("/save_all")
-
-
-@mcp.tool()
 def close_file(path: str = "") -> dict:
     """Close a file by path, or close the active file if path is omitted."""
     return _post("/close_file", path=path)
-
-
-@mcp.tool()
-def revert_file() -> dict:
-    """Revert the active file to its last saved state, discarding unsaved changes."""
-    return _post("/revert_file")
-
-
-# ── edit ops ──────────────────────────────────────────────────────────────────
-
-
-@mcp.tool()
-def undo() -> dict:
-    """Undo the last edit in the active file."""
-    return _post("/undo")
-
-
-@mcp.tool()
-def redo() -> dict:
-    """Redo the last undone edit in the active file."""
-    return _post("/redo")
-
-
-@mcp.tool()
-def duplicate_line() -> dict:
-    """Duplicate the current line(s) in the active file."""
-    return _post("/duplicate_line")
 
 
 @mcp.tool()
@@ -344,9 +310,6 @@ def fold_lines(begin: int, end: int) -> dict:
 def insert_snippet(contents: str) -> dict:
     """Insert a snippet at the cursor using Sublime Text's snippet syntax (e.g. $1 for tab stops)."""
     return _post("/insert_snippet", contents=contents)
-
-
-# ── search ────────────────────────────────────────────────────────────────────
 
 
 @mcp.tool()
@@ -381,15 +344,6 @@ def find_in_files(
     return _post("/find_in_files", **body)
 
 
-# ── syntax / encoding ─────────────────────────────────────────────────────────
-
-
-@mcp.tool()
-def get_syntaxes() -> dict:
-    """List all syntax definitions available in Sublime Text (name + path)."""
-    return _get("/syntaxes")
-
-
 @mcp.tool()
 def get_command_palette(
     package: str = "", command: str = "", caption: str = ""
@@ -421,57 +375,15 @@ def get_menu_items(menu: str = "", caption: str = "", command: str = "") -> dict
 
 
 @mcp.tool()
-def get_active_panel() -> dict:
-    """Return the active panel id and, if it is an output panel, its content."""
-    return _get("/active_panel")
-
-
-@mcp.tool()
 def set_syntax(name: str) -> dict:
     """Set the syntax of the active file by name (case-insensitive partial match is fine)."""
     return _post("/set_syntax", name=name)
 
 
 @mcp.tool()
-def get_encoding() -> dict:
-    """Return the character encoding of the active file."""
-    return _get("/encoding")
-
-
-@mcp.tool()
 def set_encoding(encoding: str) -> dict:
     """Set the character encoding of the active file (e.g. 'UTF-8', 'Western (Windows 1252)')."""
     return _post("/set_encoding", encoding=encoding)
-
-
-# ── cursor / scope ────────────────────────────────────────────────────────────
-
-
-@mcp.tool()
-def get_scope_at_cursor() -> dict:
-    """Return the full syntax scope string at the cursor position."""
-    return _get("/scope_at_cursor")
-
-
-@mcp.tool()
-def get_word_at_cursor() -> dict:
-    """Return the word under the cursor and its line/col."""
-    return _get("/word_at_cursor")
-
-
-@mcp.tool()
-def get_bookmarks() -> dict:
-    """Return all bookmarked positions in the active file."""
-    return _get("/bookmarks")
-
-
-@mcp.tool()
-def get_line_count() -> dict:
-    """Return the total number of lines in the active file."""
-    return _get("/line_count")
-
-
-# ── settings ──────────────────────────────────────────────────────────────────
 
 
 @mcp.tool()
@@ -486,21 +398,6 @@ def set_setting(key: str, value: object, scope: str = "view") -> dict:
     return _post("/set_setting", key=key, value=value, scope=scope)
 
 
-# ── window / layout ───────────────────────────────────────────────────────────
-
-
-@mcp.tool()
-def toggle_sidebar() -> dict:
-    """Show or hide the Sublime Text sidebar."""
-    return _post("/toggle_sidebar")
-
-
-@mcp.tool()
-def get_layout() -> dict:
-    """Return the current window layout (groups, cells) and which files are in each group."""
-    return _get("/layout")
-
-
 @mcp.tool()
 def focus_group(group: int) -> dict:
     """Move focus to a pane group by 0-based index."""
@@ -511,9 +408,6 @@ def focus_group(group: int) -> dict:
 def set_layout(layout: dict) -> dict:
     """Set the window pane layout.  layout must be a ST layout dict with cols, rows, cells keys."""
     return _post("/set_layout", layout=layout)
-
-
-# ── scripting ─────────────────────────────────────────────────────────────────
 
 
 @mcp.tool(name="str_replace_based_edit_tool")
