@@ -1460,7 +1460,7 @@ def _eval_python(body):
 
 
 def _eval_python_latest(body):
-    """Run code via the system Python 3.12 interpreter (py -3.12) outside ST's sandbox."""
+    """Run code via the system Python interpreter (python) outside ST's embedded sandbox."""
     import os
     import subprocess
     import tempfile
@@ -1472,12 +1472,12 @@ def _eval_python_latest(body):
         f.write(code)
         fname = f.name
     try:
-        r = subprocess.run(["py", "-3.12", fname], capture_output=True, text=True, timeout=30)
+        r = subprocess.run(["python", fname], capture_output=True, text=True, timeout=30)
         return {"ok": True, "stdout": r.stdout, "stderr": r.stderr, "returncode": r.returncode}
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout after 30s"}
     except FileNotFoundError:
-        return {"ok": False, "error": "py launcher not found — is Python 3.12 installed?"}
+        return {"ok": False, "error": "python not found on PATH"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
     finally:
