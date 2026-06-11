@@ -1,0 +1,27 @@
+{
+  "name": "sublime-mcp",
+  "version": "1.2.4",
+  "description": "MCP server for Sublime Text 4 — exposes editor state and editing tools to AI assistants via the Model Context Protocol.",
+  "type": "module",
+  "bin": {
+    "sublime-mcp": "./index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dpc00/sublime-mcp.git"
+  },
+  "keywords": ["sublime-text", "mcp", "ai", "claude"],
+  "author": "Donald Chitester",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dpc00/sublime-mcp/issues"
+  },
+  "homepage": "https://github.com/dpc00/sublime-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  }
+}
