@@ -378,7 +378,7 @@ server.registerTool('get_console_log', {
 }, async ({ tail }) => ok(await get('/console_log', { tail })));
 
 server.registerTool('get_console_full', {
-  description: 'Capture the FULL Sublime Text Python console (entire session history) by simulating Ctrl+A, Ctrl+C in the console output panel and reading the clipboard.\nReturns the complete text including startup messages, plugin load events, and all errors.\nNote: briefly takes keyboard focus from ST to perform the macro.',
+  description: 'Return the entire captured ST console buffer with no tail limit.\nIncludes startup messages, plugin load events, and all errors since ST started.\nUse this when get_console_log (tail=N) does not show enough history.',
   inputSchema: {},
 }, async () => ok(await get('/console_full')));
 
