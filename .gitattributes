@@ -15,3 +15,4 @@ mcp_server.py           export-ignore
 docs/                   export-ignore
 __pycache__/            export-ignore
 .ruff_cache/            export-ignore
+console_log.txt         export-ignore
