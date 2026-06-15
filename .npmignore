@@ -19,6 +19,9 @@ CLAUDE.md
 # Tests
 tests/
 
+# Docs/specs
+docs/
+
 # Git
 .gitattributes
 
