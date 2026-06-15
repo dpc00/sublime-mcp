@@ -8,3 +8,10 @@ sonnet.txt              export-ignore
 claude-guide.md         export-ignore
 CLAUDE.md               export-ignore
 .gitignore              export-ignore
+index.js                export-ignore
+package.json            export-ignore
+node_modules/           export-ignore
+mcp_server.py           export-ignore
+docs/                   export-ignore
+__pycache__/            export-ignore
+.ruff_cache/            export-ignore
