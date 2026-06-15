@@ -52,7 +52,7 @@ edits directly into open ST views with gutter highlighting:
   create     → create a new file with initial content
 
 Install: copy this file to Packages/User/ (or symlink it there).
-Port: 9500  (change _PORT if it conflicts with another service)
+Port: 9500 (Windows) / 9501 (Mac/Linux) — override with SUBLIME_MCP_PORT env var
 """
 
 import contextlib
@@ -69,7 +69,7 @@ from urllib.parse import parse_qs, urlparse
 import sublime
 import sublime_plugin
 
-_PORT = 9500
+_PORT = int(os.environ.get("SUBLIME_MCP_PORT", 9500 if sys.platform == "win32" else 9501))
 
 
 # ── main-thread dispatch ──────────────────────────────────────────────────────
