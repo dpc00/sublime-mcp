@@ -23,3 +23,5 @@ venv/
 *.sublime-*
 node_modules/
 package-lock.json
+dist/
+sublime_mcp.egg-info/
