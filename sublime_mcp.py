@@ -1369,6 +1369,7 @@ def _eval_python_latest(body):
     import os
     import subprocess
     import tempfile
+    import shutil
 
     code = body.get("code", "")
     if not code:
@@ -1377,7 +1378,8 @@ def _eval_python_latest(body):
         f.write(code)
         fname = f.name
     try:
-        r = subprocess.run([sys.executable, fname], capture_output=True, text=True, timeout=30)
+        _python = shutil.which("python3") or shutil.which("python") or "python"
+        r = subprocess.run([_python, fname], capture_output=True, text=True, timeout=30)
         return {"ok": True, "stdout": r.stdout, "stderr": r.stderr, "returncode": r.returncode}
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout after 30s"}
