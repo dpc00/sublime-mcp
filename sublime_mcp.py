@@ -1377,7 +1377,7 @@ def _eval_python_latest(body):
         f.write(code)
         fname = f.name
     try:
-        r = subprocess.run(["python", fname], capture_output=True, text=True, timeout=30)
+        r = subprocess.run([sys.executable, fname], capture_output=True, text=True, timeout=30)
         return {"ok": True, "stdout": r.stdout, "stderr": r.stderr, "returncode": r.returncode}
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout after 30s"}
