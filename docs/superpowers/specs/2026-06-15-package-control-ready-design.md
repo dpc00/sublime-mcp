@@ -34,15 +34,35 @@ _PORT = int(os.environ.get("SUBLIME_MCP_PORT", 9500 if sys.platform == "win32" e
 
 This matches the MCP server's existing port logic and lets users override via env var.
 
-### 2. Python MCP Server — restore and update
+### 2. ST Plugin — fix `get_console_full` for cross-platform
+
+The current `_get_console_full` implementation uses `ctypes.windll` (Windows clipboard
+API) — it does not work on Mac/Linux. Replace it with a platform-neutral version that
+returns the entire `_console_buf` buffer (no tail limit), same data source as
+`get_console_log`:
+
+```python
+def _get_console_full(params):
+    _install_console_capture()
+    return {"entries": list(_console_buf), "total": len(_console_buf)}
+```
+
+Also fix `eval_python_latest`: it calls `python` which on Mac/Linux may not be on PATH.
+Use `sys.executable` instead so it always calls the same Python that ST is running:
+
+```python
+r = subprocess.run([sys.executable, fname], ...)
+```
+
+### 3. Python MCP Server — restore and update
 
 - Restore `mcp_server.py` from git commit `d356c6f^` (554 lines, deleted June 11)
 - Add two tools missing from the old version:
-  - `get_console_full` — returns full ST console output
-  - `eval_python_latest` — evaluates Python and returns most recent output
+  - `get_console_full` — returns full ST console output (calls `/console_full`)
+  - `eval_python_latest` — runs code via system Python (calls `/eval_python_latest`)
 - Both tools call their corresponding HTTP endpoints already present in the ST plugin
 
-### 3. .gitattributes — export-ignore additions
+### 4. .gitattributes — export-ignore additions
 
 Add to the existing export-ignore list:
 
@@ -57,13 +77,13 @@ docs/                   export-ignore
 __pycache__/            export-ignore
 ```
 
-### 4. Repo cleanup — remove built artifacts from git
+### 5. Repo cleanup — remove built artifacts from git
 
 - `git rm -r --cached dist/` — stop tracking built wheels/tarballs; they belong on PyPI only
 - `git rm -r --cached sublime_mcp.egg-info/` — generated file, should not be in git
 - Add both to `.gitignore`
 
-### 5. install.txt — rewrite
+### 6. install.txt — rewrite
 
 Clear two-part setup message:
 
@@ -93,12 +113,12 @@ Override with env var SUBLIME_MCP_PORT.
 Full docs: https://github.com/dpc00/sublime-mcp
 ```
 
-### 6. Package Control channel entry (PR #9447)
+### 7. Package Control channel entry (PR #9447)
 
 - Remove `"platforms"` restriction (omitting it means all platforms supported)
 - Reply to reviewer summarising fixes, then request re-review
 
-### 7. pyproject.toml — verify PyPI packaging
+### 8. pyproject.toml — verify PyPI packaging
 
 - Confirm `mcp_server.py` is the console script entry point (`sublime-mcp = mcp_server:main`)
 - Confirm dependencies: `mcp`, `httpx`
