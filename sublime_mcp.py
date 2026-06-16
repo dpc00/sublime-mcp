@@ -64,6 +64,7 @@ import re
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
 from urllib.parse import parse_qs, urlparse
 
 import sublime
@@ -1842,25 +1843,558 @@ class _Handler(BaseHTTPRequestHandler):
             self._json({"error": "not found"}, 404)
 
 
+# ── MCP SSE server (Python 3.8, no external dependencies) ────────────────────
+#
+# Implements the MCP 2024-11-05 SSE transport so agents can connect directly
+# to Sublime Text without running index.js / npx.
+#
+# Claude Code config:
+#   { "type": "sse", "url": "http://127.0.0.1:9502/sse" }   (Windows)
+#   { "type": "sse", "url": "http://127.0.0.1:9503/sse" }   (Mac/Linux)
+# or set SUBLIME_MCP_MCP_PORT to override.
+
+import queue as _queue
+import uuid as _uuid
+
+_MCP_PORT = int(os.environ.get("SUBLIME_MCP_MCP_PORT", 9502 if sys.platform == "win32" else 9503))
+_mcp_sessions = {}  # session_id -> queue.Queue
+
+
+def _to_get_params(args):
+    """Convert MCP args dict to parse_qs list-of-strings format for GET handlers."""
+    return {k: [str(v)] for k, v in args.items() if v is not None}
+
+
+def _mcp_add_folder(args):
+    path = args.get("path")
+    if not path:
+        return {"error": "path required"}
+    data = _get_project_data({}).get("project_data") or {}
+    folders = data.get("folders") or []
+    if any(f.get("path") == path for f in folders):
+        return {"ok": True, "note": "already present"}
+    folders.append({"path": path})
+    data["folders"] = folders
+    return _set_project_data({"data": data})
+
+
+def _mcp_remove_folder(args):
+    path = args.get("path")
+    if not path:
+        return {"error": "path required"}
+    data = _get_project_data({}).get("project_data") or {}
+    folders = data.get("folders") or []
+    new_folders = [f for f in folders if f.get("path") != path]
+    if len(new_folders) == len(folders):
+        return {"ok": False, "note": "folder not found"}
+    data["folders"] = new_folders
+    return _set_project_data({"data": data})
+
+
+def _g(endpoint):
+    """Wrap a GET handler for use as an MCP tool handler."""
+    def handler(args):
+        return _GET[endpoint](_to_get_params(args))
+    return handler
+
+
+def _p(endpoint):
+    """Wrap a POST handler for use as an MCP tool handler."""
+    def handler(args):
+        return _POST[endpoint](args)
+    return handler
+
+
+# (name, description, inputSchema, handler)
+_MCP_TOOLS = [
+    # ── no-parameter GET tools ────────────────────────────────────────────────
+    ("get_active_file",
+     "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name.",
+     {}, _g("/active_file")),
+    ("get_selection",
+     "Return the current selection(s): text and begin/end line+col for each.",
+     {}, _g("/selection")),
+    ("get_open_files",
+     "List all files open in the current window (path, name, is_dirty).",
+     {}, _g("/open_files")),
+    ("get_sheets",
+     "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\n"
+     "Returns index, type (TextSheet/ImageSheet), path, name, is_dirty for each.\n"
+     "Use index with get_sheet_content to read a specific tab.",
+     {}, _g("/sheets")),
+    ("get_project_folders", "Return the project's root folder paths.", {}, _g("/project_folders")),
+    ("get_symbols", "Return all symbols (functions, classes, etc.) in the active file with line numbers.", {}, _g("/symbols")),
+    ("get_project_data", "Return the raw .sublime-project JSON data for the current project.", {}, _g("/project_data")),
+    ("get_variables", "Return Sublime Text's build variables: $file, $project_path, $platform, etc.", {}, _g("/variables")),
+    ("get_active_panel", "Return the active panel id and, if it is an output panel, its content.", {}, _g("/active_panel")),
+    ("get_syntaxes", "List all syntax definitions available in Sublime Text (name + path).", {}, _g("/syntaxes")),
+    ("get_encoding", "Return the character encoding of the active file.", {}, _g("/encoding")),
+    ("get_scope_at_cursor", "Return the full syntax scope string at the cursor position.", {}, _g("/scope_at_cursor")),
+    ("get_word_at_cursor", "Return the word under the cursor and its line/col.", {}, _g("/word_at_cursor")),
+    ("get_bookmarks", "Return all bookmarked positions in the active file.", {}, _g("/bookmarks")),
+    ("get_line_count", "Return the total number of lines in the active file.", {}, _g("/line_count")),
+    ("get_layout", "Return the current window layout (groups, cells) and which files are in each group.", {}, _g("/layout")),
+    # ── no-parameter POST tools ───────────────────────────────────────────────
+    ("save_all", "Save all open files.", {}, _p("/save_all")),
+    ("revert_file", "Revert the active file to its last saved state, discarding unsaved changes.", {}, _p("/revert_file")),
+    ("undo", "Undo the last edit in the active file.", {}, _p("/undo")),
+    ("redo", "Redo the last undone edit in the active file.", {}, _p("/redo")),
+    ("duplicate_line", "Duplicate the current line(s) in the active file.", {}, _p("/duplicate_line")),
+    ("toggle_sidebar", "Show or hide the Sublime Text sidebar.", {}, _p("/toggle_sidebar")),
+    # ── parameterized GET tools ───────────────────────────────────────────────
+    ("get_cursor_context",
+     "Return `lines` lines above and below the cursor with 1-based line numbers prepended.",
+     {"type": "object", "properties": {"lines": {"type": "integer", "default": 10}}},
+     _g("/cursor_context")),
+    ("get_sheet_content",
+     "Return the content of any tab by its sheet index (from get_sheets).\n"
+     "Works for text tabs including untitled buffers and Terminus tabs.\n"
+     "For image tabs returns the file path only.",
+     {"type": "object", "properties": {"index": {"type": "integer"}}, "required": ["index"]},
+     _g("/sheet_content")),
+    ("get_file_content",
+     "Return the full content of an already-open file by its path.",
+     {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
+     _g("/file_content")),
+    ("get_view_content",
+     "Return the full content of any open tab by name (partial match, case-insensitive).\n"
+     "Works for Terminus tabs and other nameless views that have no file path.\n"
+     "Use index (0-based, from get_open_files) to target a tab by position instead of name.\n"
+     "Omit both to read the active view.",
+     {"type": "object", "properties": {
+         "name": {"type": "string", "default": ""},
+         "index": {"type": "integer", "default": -1},
+     }},
+     _g("/view_content")),
+    ("get_view_size",
+     "Return the total character count of any open tab by name (partial match, case-insensitive).\n"
+     "Use before get_view_chars to compute offsets. Omit name for the active view.",
+     {"type": "object", "properties": {"name": {"type": "string", "default": ""}}},
+     _g("/view_size")),
+    ("get_view_chars",
+     "Return text at character offsets begin..end (0-based, end exclusive) from any open tab.\n"
+     "Clamps to buffer bounds automatically. Omit name for the active view.",
+     {"type": "object", "properties": {
+         "begin": {"type": "integer"},
+         "end": {"type": "integer"},
+         "name": {"type": "string", "default": ""},
+     }, "required": ["begin", "end"]},
+     _g("/view_chars")),
+    ("get_view_phantoms",
+     "Return phantom HTML and extracted text from a view by name.\n"
+     "If key is omitted, returns phantoms for all keys.",
+     {"type": "object", "properties": {
+         "name": {"type": "string", "default": ""},
+         "key": {"type": "string", "default": ""},
+     }},
+     _g("/view_phantoms")),
+    ("get_output_panel",
+     "Return the text content of an output panel.\n"
+     "If name is omitted, read the active output panel. Use name='exec' for build output.",
+     {"type": "object", "properties": {"name": {"type": "string", "default": ""}}},
+     _g("/output_panel")),
+    ("lookup_symbol",
+     "Find where a symbol is defined across all open files.",
+     {"type": "object", "properties": {"symbol": {"type": "string"}}, "required": ["symbol"]},
+     _g("/lookup_symbol")),
+    ("get_command_palette",
+     "List Command Palette entries from installed *.sublime-commands resources.\n"
+     "Optional filters: package, command id, or caption substring.",
+     {"type": "object", "properties": {
+         "package": {"type": "string", "default": ""},
+         "command": {"type": "string", "default": ""},
+         "caption": {"type": "string", "default": ""},
+     }},
+     _g("/command_palette")),
+    ("get_commands",
+     "List runnable Sublime command ids from loaded command classes, optionally enriched\n"
+     "with matching Command Palette entries from installed packages.",
+     {"type": "object", "properties": {
+         "package": {"type": "string", "default": ""},
+         "command": {"type": "string", "default": ""},
+         "include_palette": {"type": "boolean", "default": True},
+     }},
+     _g("/commands")),
+    ("get_menu_items",
+     "List installed menu items from *.sublime-menu resources.\n"
+     "Optional filters: menu filename, caption substring, or command id substring.",
+     {"type": "object", "properties": {
+         "menu": {"type": "string", "default": ""},
+         "caption": {"type": "string", "default": ""},
+         "command": {"type": "string", "default": ""},
+     }},
+     _g("/menu_items")),
+    ("get_console_log",
+     "Return recent Sublime Text console output (plugin log messages and stdout).\n"
+     "tail=N limits to the last N entries. tail=0 returns all captured entries.",
+     {"type": "object", "properties": {"tail": {"type": "integer", "default": 100}}},
+     _g("/console_log")),
+    ("get_console_full",
+     "Return the entire captured ST console buffer with no tail limit.\n"
+     "Includes startup messages, plugin load events, and all errors since ST started.",
+     {},
+     _g("/console_full")),
+    # ── parameterized POST tools ──────────────────────────────────────────────
+    ("add_folder",
+     "Add a folder to the current project.",
+     {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
+     _mcp_add_folder),
+    ("remove_folder",
+     "Remove a folder from the current project by path.",
+     {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
+     _mcp_remove_folder),
+    ("send_to_view",
+     "Send a string to any open tab by name (partial match, case-insensitive).\n"
+     "For Terminus tabs this types the text into the terminal as if the user typed it.\n"
+     "Include a trailing newline (\\n) to execute a command.\n"
+     "Use index (0-based, from get_open_files) to target a tab by position instead of name.\n"
+     "Omit both name and index to target the active view.",
+     {"type": "object", "properties": {
+         "text": {"type": "string"},
+         "name": {"type": "string", "default": ""},
+         "index": {"type": "integer", "default": -1},
+     }, "required": ["text"]},
+     _p("/send_to_view")),
+    ("open_file",
+     "Open a file in Sublime Text, optionally jumping to a specific line and column.",
+     {"type": "object", "properties": {
+         "path": {"type": "string"},
+         "line": {"type": "integer", "default": 0},
+         "col": {"type": "integer", "default": 0},
+     }, "required": ["path"]},
+     _p("/open_file")),
+    ("goto_line",
+     "Move the cursor to a line (and optional column) in the active file.",
+     {"type": "object", "properties": {
+         "line": {"type": "integer"},
+         "col": {"type": "integer", "default": 1},
+     }, "required": ["line"]},
+     _p("/goto_line")),
+    ("show_panel",
+     "Bring an output panel to the front. Use name='exec' for the build panel.",
+     {"type": "object", "properties": {"name": {"type": "string", "default": "exec"}}},
+     _p("/show_panel")),
+    ("replace_selection",
+     "Replace the current selection(s) with text.",
+     {"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]},
+     _p("/replace_selection")),
+    ("replace_lines",
+     "Replace lines begin through end (inclusive, 1-based) in the active file with text.\n"
+     "Pass path to target a specific open file regardless of which tab is focused.\n"
+     "Use index (0-based, from get_open_files) to target a nameless tab by position.",
+     {"type": "object", "properties": {
+         "begin": {"type": "integer"},
+         "end": {"type": "integer"},
+         "text": {"type": "string"},
+         "path": {"type": "string", "default": ""},
+         "index": {"type": "integer", "default": -1},
+     }, "required": ["begin", "end", "text"]},
+     _p("/replace_lines")),
+    ("run_command",
+     "Run any Sublime Text command. scope='window' (default) or 'view'.",
+     {"type": "object", "properties": {
+         "command": {"type": "string"},
+         "args": {"type": "object"},
+         "scope": {"type": "string", "default": "window"},
+     }, "required": ["command"]},
+     _p("/run_command")),
+    ("run_build",
+     "Trigger the current build system, or pass cmd/shell_cmd to run a specific command.",
+     {"type": "object", "properties": {
+         "cmd": {"type": "array", "items": {"type": "string"}},
+         "shell_cmd": {"type": "string"},
+         "working_dir": {"type": "string", "default": ""},
+     }},
+     _p("/run_build")),
+    ("set_status",
+     "Write a message to Sublime Text's status bar.",
+     {"type": "object", "properties": {
+         "value": {"type": "string"},
+         "key": {"type": "string", "default": "sublime_mcp"},
+     }, "required": ["value"]},
+     _p("/set_status")),
+    ("save_file",
+     "Save a file. Pass path to save a specific open file; omit path to save the active file.",
+     {"type": "object", "properties": {"path": {"type": "string", "default": ""}}},
+     _p("/save_file")),
+    ("close_file",
+     "Close a file by path, or close the active file if path is omitted.",
+     {"type": "object", "properties": {"path": {"type": "string", "default": ""}}},
+     _p("/close_file")),
+    ("toggle_comment",
+     "Toggle line comment (or block comment if block=true) on the current selection.",
+     {"type": "object", "properties": {"block": {"type": "boolean", "default": False}}},
+     _p("/toggle_comment")),
+    ("sort_lines",
+     "Sort the selected lines (or all lines if nothing is selected).",
+     {"type": "object", "properties": {"case_sensitive": {"type": "boolean", "default": False}}},
+     _p("/sort_lines")),
+    ("select_lines",
+     "Select lines begin through end (1-based, inclusive). end defaults to begin.",
+     {"type": "object", "properties": {
+         "begin": {"type": "integer"},
+         "end": {"type": "integer", "default": 0},
+     }, "required": ["begin"]},
+     _p("/select_lines")),
+    ("fold_lines",
+     "Fold (collapse) lines begin through end (1-based) in the active file.",
+     {"type": "object", "properties": {
+         "begin": {"type": "integer"},
+         "end": {"type": "integer"},
+     }, "required": ["begin", "end"]},
+     _p("/fold_lines")),
+    ("insert_snippet",
+     "Insert a snippet at the cursor using Sublime Text's snippet syntax (e.g. $1 for tab stops).",
+     {"type": "object", "properties": {"contents": {"type": "string"}}, "required": ["contents"]},
+     _p("/insert_snippet")),
+    ("find_in_file",
+     "Find all occurrences of pattern in the active file. Returns list of {line, col, text}.",
+     {"type": "object", "properties": {
+         "pattern": {"type": "string"},
+         "case_sensitive": {"type": "boolean", "default": False},
+         "regex": {"type": "boolean", "default": False},
+     }, "required": ["pattern"]},
+     _p("/find_in_file")),
+    ("find_in_files",
+     "Search for pattern across project folders (or the supplied folder list).\n"
+     "Skips .git, __pycache__, node_modules, .venv. Returns list of {path, line, match}.",
+     {"type": "object", "properties": {
+         "pattern": {"type": "string"},
+         "folders": {"type": "array", "items": {"type": "string"}},
+         "case_sensitive": {"type": "boolean", "default": False},
+         "regex": {"type": "boolean", "default": False},
+         "max_results": {"type": "integer", "default": 200},
+     }, "required": ["pattern"]},
+     _p("/find_in_files")),
+    ("set_syntax",
+     "Set the syntax of the active file by name (case-insensitive partial match is fine).",
+     {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
+     _p("/set_syntax")),
+    ("set_encoding",
+     "Set the character encoding of the active file (e.g. 'UTF-8', 'Western (Windows 1252)').",
+     {"type": "object", "properties": {"encoding": {"type": "string"}}, "required": ["encoding"]},
+     _p("/set_encoding")),
+    ("get_setting",
+     "Get a Sublime Text setting by key. scope='view' (default) or 'window'.",
+     {"type": "object", "properties": {
+         "key": {"type": "string"},
+         "scope": {"type": "string", "default": "view"},
+     }, "required": ["key"]},
+     _p("/get_setting")),
+    ("set_setting",
+     "Set a Sublime Text setting by key. scope='view' (default) or 'window'.",
+     {"type": "object", "properties": {
+         "key": {"type": "string"},
+         "value": {},
+         "scope": {"type": "string", "default": "view"},
+     }, "required": ["key", "value"]},
+     _p("/set_setting")),
+    ("focus_group",
+     "Move focus to a pane group by 0-based index.",
+     {"type": "object", "properties": {"group": {"type": "integer"}}, "required": ["group"]},
+     _p("/focus_group")),
+    ("set_layout",
+     "Set the window pane layout. layout must be a ST layout dict with cols, rows, cells keys.",
+     {"type": "object", "properties": {"layout": {"type": "object"}}, "required": ["layout"]},
+     _p("/set_layout")),
+    ("eval_python",
+     "Execute arbitrary Python in Sublime Text's main thread.\n"
+     "Locals: sublime, window, view, print. Returns captured stdout in 'output'.",
+     {"type": "object", "properties": {"code": {"type": "string"}}, "required": ["code"]},
+     _p("/eval_python")),
+    ("eval_python_latest",
+     "Execute Python code using the system Python interpreter outside Sublime Text's embedded sandbox.\n"
+     "Returns stdout, stderr, and returncode.",
+     {"type": "object", "properties": {"code": {"type": "string"}}, "required": ["code"]},
+     _p("/eval_python_latest")),
+    ("str_replace_based_edit_tool",
+     "ST-native file editor implementing the standard str_replace_based_edit_tool interface.\n"
+     "Edits appear live in Sublime Text with full undo (Ctrl+Z), gutter diff markers,\n"
+     "and 30-second highlight annotations showing what changed.\n\n"
+     "command='str_replace': replace old_str with new_str in path.\n"
+     "  old_str must match exactly once (whitespace-sensitive).\n"
+     "  Returns error if 0 or 2+ matches, listing ambiguous line numbers.\n\n"
+     "command='insert': insert insert_text after line insert_line (1-based).\n"
+     "  insert_line=0 inserts at the very start of the file.\n\n"
+     "command='create': create a new file at path with file_text content.\n"
+     "  Syntax is auto-detected from the file extension. Errors if path exists.\n\n"
+     "command='view': return file content with 1-based line numbers prepended.\n"
+     "  Optional view_range=[start, end] to read a slice (end=-1 for EOF).\n\n"
+     "All commands auto-open the file in ST if not already open.",
+     {"type": "object", "properties": {
+         "command": {"type": "string"},
+         "path": {"type": "string", "default": ""},
+         "old_str": {"type": "string"},
+         "new_str": {"type": "string"},
+         "insert_line": {"type": "integer"},
+         "insert_text": {"type": "string"},
+         "file_text": {"type": "string"},
+         "view_range": {"type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2},
+     }, "required": ["command"]},
+     _p("/edit_file")),
+]
+
+
+class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        import sys
+        if isinstance(sys.exc_info()[1], (ConnectionResetError, ConnectionAbortedError)):
+            return
+        super().handle_error(request, client_address)
+
+
+class _MCPHandler(BaseHTTPRequestHandler):
+    def log_message(self, fmt, *args):
+        pass
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
+    def do_GET(self):
+        if urlparse(self.path).path == "/sse":
+            self._handle_sse()
+        else:
+            self.send_error(404)
+
+    def do_POST(self):
+        if urlparse(self.path).path == "/messages":
+            self._handle_message()
+        else:
+            self.send_error(404)
+
+    def _handle_sse(self):
+        session_id = str(_uuid.uuid4())
+        q = _queue.Queue()
+        _mcp_sessions[session_id] = q
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+
+        try:
+            endpoint = "/messages?sessionId=" + session_id
+            self.wfile.write(("event: endpoint\ndata: " + endpoint + "\n\n").encode())
+            self.wfile.flush()
+            while True:
+                try:
+                    msg = q.get(timeout=30)
+                except _queue.Empty:
+                    self.wfile.write(b": ping\n\n")
+                    self.wfile.flush()
+                    continue
+                if msg is None:
+                    break
+                self.wfile.write(("data: " + json.dumps(msg) + "\n\n").encode())
+                self.wfile.flush()
+        except Exception:
+            pass
+        finally:
+            _mcp_sessions.pop(session_id, None)
+
+    def _handle_message(self):
+        params = parse_qs(urlparse(self.path).query)
+        session_id = params.get("sessionId", [None])[0]
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length)) if length else {}
+
+        self.send_response(202)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", "2")
+        self.end_headers()
+        self.wfile.write(b"{}")
+
+        threading.Thread(target=_mcp_dispatch, args=(session_id, body), daemon=True).start()
+
+
+def _mcp_send(session_id, msg):
+    q = _mcp_sessions.get(session_id)
+    if q:
+        q.put(msg)
+
+
+def _mcp_dispatch(session_id, msg):
+    method = msg.get("method", "")
+    msg_id = msg.get("id")
+    params = msg.get("params") or {}
+
+    try:
+        if method == "initialize":
+            result = {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {"tools": {}},
+                "serverInfo": {"name": "sublime-mcp", "version": "1.3.0"},
+            }
+        elif method in ("notifications/initialized", "notifications/cancelled"):
+            return
+        elif method == "ping":
+            result = {}
+        elif method == "tools/list":
+            tools = []
+            for name, desc, schema, _ in _MCP_TOOLS:
+                input_schema = dict(schema) if schema else {}
+                if "type" not in input_schema:
+                    input_schema["type"] = "object"
+                if "properties" not in input_schema:
+                    input_schema["properties"] = {}
+                tools.append({"name": name, "description": desc, "inputSchema": input_schema})
+            result = {"tools": tools}
+        elif method == "tools/call":
+            tool_name = params.get("name")
+            tool_args = params.get("arguments") or {}
+            entry = next((t for t in _MCP_TOOLS if t[0] == tool_name), None)
+            if entry is None:
+                raise ValueError("Unknown tool: " + str(tool_name))
+            data = entry[3](tool_args)
+            result = {"content": [{"type": "text", "text": json.dumps(data)}]}
+        else:
+            raise ValueError("Unknown method: " + method)
+
+        if msg_id is not None:
+            _mcp_send(session_id, {"jsonrpc": "2.0", "id": msg_id, "result": result})
+    except Exception as e:
+        if msg_id is not None:
+            _mcp_send(session_id, {"jsonrpc": "2.0", "id": msg_id,
+                                   "error": {"code": -32603, "message": str(e)}})
+
+
 # ── plugin lifecycle ──────────────────────────────────────────────────────────
 
 _server = None
+_mcp_server = None
 
 
 def plugin_loaded():
-    global _server
+    global _server, _mcp_server
     _install_console_capture()
     _server = HTTPServer(("127.0.0.1", _PORT), _Handler)
     t = threading.Thread(target=_server.serve_forever, daemon=True)
     t.start()
-    print(f"sublime-mcp: listening on 127.0.0.1:{_PORT}")
+    _mcp_server = _ThreadingHTTPServer(("127.0.0.1", _MCP_PORT), _MCPHandler)
+    t2 = threading.Thread(target=_mcp_server.serve_forever, daemon=True)
+    t2.start()
+    print(f"sublime-mcp: ST bridge on 127.0.0.1:{_PORT}, MCP SSE on 127.0.0.1:{_MCP_PORT}")
 
 
 def plugin_unloaded():
-    global _server
+    global _server, _mcp_server
     if _server:
         _server.shutdown()
         _server = None
+    if _mcp_server:
+        _mcp_server.shutdown()
+        _mcp_server = None
+    for q in list(_mcp_sessions.values()):
+        q.put(None)
+    _mcp_sessions.clear()
     print("sublime-mcp: stopped")
 
 
