@@ -1,43 +1,44 @@
-sublime-mcp
-===========
+MCP Commander
+=============
 
-Sublime Text MCP server — lets Claude Code (or any MCP client) read and
-control a running ST instance via a local HTTP bridge.
+Exposes Sublime Text to AI assistants (Claude Code, Cursor, etc.) via the
+Model Context Protocol.  The MCP server is built into this plugin — no
+separate process to install or manage.
 
-The ST plugin is now running. Complete setup in two steps:
-
-
-STEP 1 — Install the MCP server (run once in your terminal)
-------------------------------------------------------------
-
-  Python (pip):   pip install sublime-mcp
-  Node.js (npx):  npx sublime-mcp        (no install needed)
-
-Choose either. Both provide the same tools.
+The plugin is now running.  Complete setup in one step:
 
 
-STEP 2 — Register with Claude Code
+STEP 1 — Register with Claude Code
 ------------------------------------
 
 Add to ~/.claude/settings.json under "mcpServers":
 
-  Python:
-    "sublime-mcp": { "command": "sublime-mcp" }
+  Windows:
+    "sublime-mcp": { "type": "sse", "url": "http://127.0.0.1:9502/sse" }
 
-  Node.js:
-    "sublime-mcp": { "command": "npx", "args": ["sublime-mcp"] }
+  Mac / Linux:
+    "sublime-mcp": { "type": "sse", "url": "http://127.0.0.1:9503/sse" }
 
-Restart Claude Code. Tools appear with the mcp__sublime-mcp__ prefix.
+Restart Claude Code.  Tools appear with the mcp__sublime-mcp__ prefix.
 
 
-Plugin port
------------
+Server management
+-----------------
 
-  Windows:  127.0.0.1:9500
-  Mac/Linux: 127.0.0.1:9501
+The MCP server starts automatically when ST loads the plugin.
+To stop or restart it, open the Command Palette and run:
 
-Override with the SUBLIME_MCP_PORT environment variable.
-Check View > Show Console for:  sublime-mcp: listening on 127.0.0.1:NNNN
+  MCP Commander: Server Status
+
+
+Ports
+-----
+
+  MCP SSE (default):   Windows 9502  /  Mac/Linux 9503
+  HTTP bridge:         Windows 9500  /  Mac/Linux 9501
+
+Override with env vars SUBLIME_MCP_MCP_PORT or SUBLIME_MCP_PORT.
+Check View > Show Console for startup confirmation.
 
 
 Full documentation: https://github.com/dpc00/sublime-mcp
