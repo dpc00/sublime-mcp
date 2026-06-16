@@ -2054,6 +2054,76 @@ def _get_package_mcp_info(body):
 _POST["/package_mcp_info"] = _get_package_mcp_info
 
 
+def _search_packages(body):
+    query = body.get("query", "").strip().lower()
+    limit = min(int(body.get("limit", 20)), 100)
+
+    def fn():
+        try:
+            pm_mod = sys.modules["Package Control.package_control.package_manager"]
+        except KeyError:
+            return {"error": "Package Control not installed"}
+        try:
+            pm = pm_mod.PackageManager()
+            avail = pm.list_available_packages()
+        except Exception as e:
+            return {"error": str(e)}
+        results = []
+        for name, info in avail.items():
+            if not query or query in name.lower() or query in (info.get("description") or "").lower():
+                results.append({
+                    "name": name,
+                    "description": info.get("description", ""),
+                    "author": info.get("author", []),
+                    "homepage": info.get("homepage", ""),
+                    "labels": info.get("labels", []),
+                    "last_modified": info.get("last_modified", ""),
+                })
+        results.sort(key=lambda r: r["name"].lower())
+        return {"packages": results[:limit], "total_matches": len(results)}
+
+    return _on_main(fn)
+
+
+def _install_package(body):
+    package = body.get("package", "").strip()
+    if not package:
+        return {"error": "package required"}
+
+    def prepare():
+        try:
+            pm_mod = sys.modules["Package Control.package_control.package_manager"]
+        except KeyError:
+            return {"error": "Package Control not installed"}
+        try:
+            pm = pm_mod.PackageManager()
+            avail = pm.list_available_packages()
+            if package not in avail:
+                return {"error": f"Package '{package}' not found in Package Control"}
+            return {"ok": True, "pm": pm}
+        except Exception as e:
+            return {"error": str(e)}
+
+    result = _on_main(prepare)
+    if "error" in result:
+        return result
+
+    pm = result["pm"]
+
+    def do_install():
+        try:
+            pm.install_package(package, unattended=False)
+        except Exception as e:
+            print(f"sublime-mcp: install_package '{package}' error: {e}")
+
+    sublime.set_timeout_async(do_install, 0)
+    return {"ok": True, "message": f"Installing '{package}' — check ST console for progress"}
+
+
+_POST["/search_packages"] = _search_packages
+_POST["/install_package"] = _install_package
+
+
 # (name, description, inputSchema, handler)
 _MCP_TOOLS = [
     # ── no-parameter GET tools ────────────────────────────────────────────────
@@ -2387,6 +2457,21 @@ _MCP_TOOLS = [
      "Write the extension to output_file following extension_template; ST loads it automatically.",
      {"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]},
      _get_package_mcp_info),
+    ("search_packages",
+     "Search Package Control for installable Sublime Text packages. "
+     "Returns name, description, author, homepage, labels, and last_modified for each match. "
+     "Searches both package names and descriptions.",
+     {"type": "object", "properties": {
+         "query": {"type": "string", "description": "Search term (name or description). Empty returns all."},
+         "limit": {"type": "integer", "default": 20, "description": "Max results (1-100)."},
+     }},
+     _search_packages),
+    ("install_package",
+     "Install a Package Control package by exact name. "
+     "Use search_packages first to find the correct name. "
+     "Installation runs in the background — check the ST console for progress.",
+     {"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]},
+     _install_package),
 ]
 
 _mcp_tools_lock = threading.Lock()
