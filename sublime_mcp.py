@@ -1,58 +1,55 @@
-"""sublime_mcp.py — HTTP bridge that exposes the Sublime Text API to Claude.
+"""sublime_mcp.py — MCP Commander: Sublime Text plugin with built-in MCP server.
 
-Architecture
-------------
-An external MCP server (the Node.js/Python process that Claude talks to) cannot
-call Sublime's Python API directly because ST's API is only available inside
-ST's embedded Python interpreter.  This plugin solves that by starting a
-lightweight HTTP server on 127.0.0.1:9500 inside ST.  The MCP server sends
-HTTP requests; this plugin handles them on ST's main thread and returns JSON.
+Exposes the Sublime Text API to AI assistants (Claude Code, etc.) via the
+Model Context Protocol.  The plugin runs two local HTTP servers on load:
+
+  MCP SSE server  127.0.0.1:9502 (Windows) / 9503 (Mac/Linux)
+    Implements MCP 2024-11-05 SSE transport.  Point your MCP client here
+    directly — no external process required.
+
+    Claude Code config (~/.claude/settings.json):
+      "sublime-mcp": { "type": "sse", "url": "http://127.0.0.1:9502/sse" }
+
+  HTTP bridge     127.0.0.1:9500 (Windows) / 9501 (Mac/Linux)
+    Internal REST API used by the MCP SSE dispatcher above.
+
+Override ports via env vars: SUBLIME_MCP_MCP_PORT, SUBLIME_MCP_PORT.
+Use "MCP Commander: Server Status" in the Command Palette to stop or start.
 
 Thread model
 ------------
-The HTTP server runs on a daemon thread (one request at a time, no thread pool).
 ST's Python API is NOT thread-safe — every call must be on the main thread.
 _on_main(fn) is the bridge:
-  1. Wraps fn() in a closure that captures exceptions and signals a threading.Event.
+  1. Wraps fn() in a closure that captures exceptions and signals threading.Event.
   2. Schedules the closure on the main thread via sublime.set_timeout(..., 0).
   3. Blocks the HTTP thread on done.wait(5.0) until the main thread runs it.
-This gives the HTTP thread a synchronous result while keeping all ST API calls
-on the correct thread.
 
-Routing
--------
+Routing (HTTP bridge)
+---------------------
 GET  /endpoint  → handler(params)   where params = parse_qs(query_string)
-POST /endpoint  → handler(body)     where body = json.loads(request_body)
+POST /endpoint  → handler(body)     where body   = json.loads(request_body)
 
-The _GET and _POST dicts map URL paths to handler functions.  Every handler
-returns a plain dict that is serialised to JSON and sent back.
+MCP SSE transport
+-----------------
+GET  /sse       → opens an SSE stream; sends event:endpoint with POST URL
+POST /messages  → accepts JSON-RPC 2.0; responses arrive over the SSE stream
 
 Console capture
 ---------------
 _install_console_capture() monkey-patches sublime_api.log_message and
-sys.stdout.write so that all print() calls and ST console output are captured
-into _console_buf.  The /console_log endpoint exposes the tail of that buffer.
-This lets Claude read the ST console without the user having to open it.
+sys.stdout.write so all ST console output is captured into _console_buf.
+get_console_log / get_console_full expose this to MCP clients.
 
-Phantom inspection
-------------------
-_get_view_phantoms walks sys.modules looking for any module that has a
-_phantom_sets dict (the standard pattern used by plugins including this one
-and pybackup_ui.py).  It then extracts the HTML content of each phantom and
-strips tags to produce readable plain text.
-
-str_replace_based_edit
-----------------------
-_edit_file implements the same four-command interface as the Claude Code
-str_replace_based_edit_tool so the external MCP server can delegate file
-edits directly into open ST views with gutter highlighting:
+str_replace_based_edit_tool
+---------------------------
+_edit_file implements the same four-command interface as Claude Code's tool:
   view       → return numbered file content
-  str_replace→ find unique old_str, replace with new_str, highlight in green
-  insert     → insert text after a given line, highlight in blue
+  str_replace→ find unique old_str, replace with new_str, highlight green
+  insert     → insert text after a given line, highlight blue
   create     → create a new file with initial content
+Edits appear live in ST with full undo history and gutter diff markers.
 
-Install: copy this file to Packages/User/ (or symlink it there).
-Port: 9500 (Windows) / 9501 (Mac/Linux) — override with SUBLIME_MCP_PORT env var
+Install: via Package Control, or copy this file to Packages/User/ manually.
 """
 
 import contextlib
@@ -2331,7 +2328,7 @@ def _mcp_dispatch(session_id, msg):
             result = {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "sublime-mcp", "version": "1.3.0"},
+                "serverInfo": {"name": "sublime-mcp", "version": "1.3.1"},
             }
         elif method in ("notifications/initialized", "notifications/cancelled"):
             return
@@ -2372,19 +2369,27 @@ _server = None
 _mcp_server = None
 
 
-def plugin_loaded():
+def _start_servers():
     global _server, _mcp_server
     _install_console_capture()
-    _server = HTTPServer(("127.0.0.1", _PORT), _Handler)
-    t = threading.Thread(target=_server.serve_forever, daemon=True)
-    t.start()
-    _mcp_server = _ThreadingHTTPServer(("127.0.0.1", _MCP_PORT), _MCPHandler)
-    t2 = threading.Thread(target=_mcp_server.serve_forever, daemon=True)
-    t2.start()
-    print(f"sublime-mcp: ST bridge on 127.0.0.1:{_PORT}, MCP SSE on 127.0.0.1:{_MCP_PORT}")
+    if not _server:
+        try:
+            _server = HTTPServer(("127.0.0.1", _PORT), _Handler)
+            threading.Thread(target=_server.serve_forever, daemon=True).start()
+        except OSError as e:
+            print(f"sublime-mcp: could not bind HTTP bridge on port {_PORT}: {e}")
+            _server = None
+    if not _mcp_server:
+        try:
+            _mcp_server = _ThreadingHTTPServer(("127.0.0.1", _MCP_PORT), _MCPHandler)
+            threading.Thread(target=_mcp_server.serve_forever, daemon=True).start()
+        except OSError as e:
+            print(f"sublime-mcp: could not bind MCP SSE on port {_MCP_PORT}: {e}")
+            _mcp_server = None
+    print(f"sublime-mcp: MCP SSE on 127.0.0.1:{_MCP_PORT}, HTTP bridge on 127.0.0.1:{_PORT}")
 
 
-def plugin_unloaded():
+def _stop_servers():
     global _server, _mcp_server
     if _server:
         _server.shutdown()
@@ -2396,6 +2401,14 @@ def plugin_unloaded():
         q.put(None)
     _mcp_sessions.clear()
     print("sublime-mcp: stopped")
+
+
+def plugin_loaded():
+    _start_servers()
+
+
+def plugin_unloaded():
+    _stop_servers()
 
 
 # ── helper text commands ──────────────────────────────────────────────────────
@@ -2486,3 +2499,47 @@ class McpCreateFileCommand(sublime_plugin.TextCommand):
     def run(self, edit, file_text):
         self.view.insert(edit, 0, file_text)
         self.view.show_at_center(0)
+
+
+# ── Command Palette: server status / start / stop ────────────────────────────
+
+
+class McpServerStatusCommand(sublime_plugin.WindowCommand):
+    """Show MCP server status and toggle it on/off from the Command Palette."""
+
+    def run(self, action):
+        if action == "stop":
+            _stop_servers()
+            sublime.status_message("MCP Commander: server stopped")
+        elif action == "start":
+            _start_servers()
+            sublime.status_message(
+                f"MCP Commander: server started  —  SSE on :{_MCP_PORT}"
+            )
+
+    def input(self, args):
+        return _McpServerStatusInputHandler()
+
+
+class _McpServerStatusInputHandler(sublime_plugin.ListInputHandler):
+    def name(self):
+        return "action"
+
+    def placeholder(self):
+        return "MCP Commander"
+
+    def list_items(self):
+        if _mcp_server:
+            return [sublime.ListInputItem(
+                "Stop server",
+                "stop",
+                details=f"MCP SSE on :{_MCP_PORT}  ·  HTTP bridge on :{_PORT}",
+                annotation="● running",
+            )]
+        else:
+            return [sublime.ListInputItem(
+                "Start server",
+                "start",
+                details="Both servers are currently stopped",
+                annotation="○ stopped",
+            )]
