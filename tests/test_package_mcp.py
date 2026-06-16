@@ -96,3 +96,48 @@ def test_run_st_command_returns_ok():
         f"print(json.dumps(r))"
     ))
     assert result == {"ok": True}
+
+
+# ── get_package_mcp_info ──────────────────────────────────────────────────────
+
+
+def test_get_package_mcp_info_known_package():
+    """Returns expected keys for a package that is definitely installed unpacked."""
+    r = ok(post("/package_mcp_info", package="sublime-mcp"))
+    assert r["package"] == "sublime-mcp"
+    assert "path" in r
+    assert "output_file" in r
+    assert isinstance(r["commands"], list)
+    assert isinstance(r["settings_keys"], list)
+    assert isinstance(r["python_files"], list)
+    assert "extension_template" in r
+    assert r["output_file"].endswith("sublime_mcp_mcp_tools.py")
+
+
+def test_get_package_mcp_info_commands_have_required_keys():
+    """Each command entry has command, scopes, caption, args."""
+    r = ok(post("/package_mcp_info", package="sublime-mcp"))
+    for cmd in r["commands"]:
+        assert "command" in cmd
+        assert "scopes" in cmd
+        assert "caption" in cmd
+        assert "args" in cmd
+
+
+def test_get_package_mcp_info_python_files_exist():
+    """Returned python_files paths all end with .py."""
+    r = ok(post("/package_mcp_info", package="sublime-mcp"))
+    for path in r["python_files"]:
+        assert path.endswith(".py"), f"unexpected file: {path}"
+
+
+def test_get_package_mcp_info_unknown_package():
+    """Unknown package returns an error key."""
+    r = ok(post("/package_mcp_info", package="__nonexistent_package_xyz__"))
+    assert "error" in r
+
+
+def test_get_package_mcp_info_missing_package_arg():
+    """Missing package argument returns an error key."""
+    r = ok(post("/package_mcp_info"))
+    assert "error" in r
