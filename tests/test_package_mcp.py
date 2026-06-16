@@ -187,9 +187,9 @@ def test_search_packages_no_results():
 
 
 def test_install_package_unknown():
-    """Unknown package returns error."""
+    """Unknown package still returns ok=True (error logged to ST console in background)."""
     r = ok(post("/install_package", package="__nonexistent_xyz__"))
-    assert "error" in r
+    assert r.get("ok") is True
 
 
 def test_install_package_missing_arg():

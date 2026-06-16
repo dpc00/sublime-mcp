@@ -2058,31 +2058,39 @@ def _search_packages(body):
     query = body.get("query", "").strip().lower()
     limit = min(int(body.get("limit", 20)), 100)
 
-    def fn():
+    # Create PackageManager on the main thread (needs sublime.load_settings()),
+    # then do the potentially-slow list_available_packages() here in the HTTP thread.
+    def get_pm():
         try:
             pm_mod = sys.modules["Package Control.package_control.package_manager"]
+            return {"pm": pm_mod.PackageManager()}
         except KeyError:
             return {"error": "Package Control not installed"}
-        try:
-            pm = pm_mod.PackageManager()
-            avail = pm.list_available_packages()
         except Exception as e:
             return {"error": str(e)}
-        results = []
-        for name, info in avail.items():
-            if not query or query in name.lower() or query in (info.get("description") or "").lower():
-                results.append({
-                    "name": name,
-                    "description": info.get("description", ""),
-                    "author": info.get("author", []),
-                    "homepage": info.get("homepage", ""),
-                    "labels": info.get("labels", []),
-                    "last_modified": info.get("last_modified", ""),
-                })
-        results.sort(key=lambda r: r["name"].lower())
-        return {"packages": results[:limit], "total_matches": len(results)}
 
-    return _on_main(fn)
+    result = _on_main(get_pm)
+    if "error" in result:
+        return result
+
+    try:
+        avail = result["pm"].list_available_packages()
+    except Exception as e:
+        return {"error": str(e)}
+
+    results = []
+    for name, info in avail.items():
+        if not query or query in name.lower() or query in (info.get("description") or "").lower():
+            results.append({
+                "name": name,
+                "description": info.get("description", ""),
+                "author": info.get("author", []),
+                "homepage": info.get("homepage", ""),
+                "labels": info.get("labels", []),
+                "last_modified": info.get("last_modified", ""),
+            })
+    results.sort(key=lambda r: r["name"].lower())
+    return {"packages": results[:limit], "total_matches": len(results)}
 
 
 def _install_package(body):
@@ -2090,21 +2098,19 @@ def _install_package(body):
     if not package:
         return {"error": "package required"}
 
-    def prepare():
+    # Only create PackageManager on the main thread (needs sublime.load_settings()).
+    # list_available_packages() and install_package() may do network IO so they
+    # run in the background thread to avoid freezing ST's main thread.
+    def get_pm():
         try:
             pm_mod = sys.modules["Package Control.package_control.package_manager"]
+            return {"pm": pm_mod.PackageManager()}
         except KeyError:
             return {"error": "Package Control not installed"}
-        try:
-            pm = pm_mod.PackageManager()
-            avail = pm.list_available_packages()
-            if package not in avail:
-                return {"error": f"Package '{package}' not found in Package Control"}
-            return {"ok": True, "pm": pm}
         except Exception as e:
             return {"error": str(e)}
 
-    result = _on_main(prepare)
+    result = _on_main(get_pm)
     if "error" in result:
         return result
 
@@ -2112,6 +2118,10 @@ def _install_package(body):
 
     def do_install():
         try:
+            avail = pm.list_available_packages()
+            if package not in avail:
+                print(f"sublime-mcp: install_package: '{package}' not found in Package Control")
+                return
             pm.install_package(package, unattended=False)
         except Exception as e:
             print(f"sublime-mcp: install_package '{package}' error: {e}")
