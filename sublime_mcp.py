@@ -1087,10 +1087,12 @@ def _run_command(body):
 
     def fn():
         w = sublime.active_window()
-        if scope == "view":
+        if scope in ("text", "view"):
             v = w.active_view()
             if v:
                 v.run_command(cmd, args)
+        elif scope == "application":
+            sublime.run_command(cmd, args)
         else:
             w.run_command(cmd, args)
         return {"ok": True}
@@ -2278,7 +2280,7 @@ def run_st_command(command, args=None, scope="window"):
     """Run a Sublime Text command via the internal bridge.
 
     Convenience function for use in extension tool handlers.
-    scope: 'text', 'window', or 'application'.
+    scope: 'text'/'view' (TextCommand), 'window' (WindowCommand), 'application' (ApplicationCommand).
     Returns {"ok": True} on success or {"error": "..."} on failure.
     """
     return _run_command({"command": command, "args": args or {}, "scope": scope})
