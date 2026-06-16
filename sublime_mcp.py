@@ -81,7 +81,12 @@ def _on_main(fn):
     barrier: the HTTP thread blocks on done.wait() while the main thread
     executes fn() via sublime.set_timeout(..., 0).  Times out after 5 s so
     a deadlock doesn't hang the HTTP thread forever.
+
+    If already on the main thread (e.g. called from plugin_loaded or eval_python),
+    fn() is invoked directly to avoid deadlock.
     """
+    if threading.current_thread() is threading.main_thread():
+        return fn()
     result = [None]
     exc = [None]
     done = threading.Event()
@@ -2231,6 +2236,53 @@ _MCP_TOOLS = [
      _p("/edit_file")),
 ]
 
+_mcp_tools_lock = threading.Lock()
+_mcp_tools_builtin_names = frozenset(t[0] for t in _MCP_TOOLS)
+
+
+def register_mcp_tools(tools):
+    """Register additional MCP tools from an extension plugin.
+
+    Call from plugin_loaded(). tools is a list of
+    (name, description, input_schema, handler) tuples, the same format
+    as _MCP_TOOLS.  Built-in tool names are protected: a collision logs
+    a warning and keeps the built-in.
+    """
+    with _mcp_tools_lock:
+        existing = {t[0] for t in _MCP_TOOLS}
+        for entry in tools:
+            name = entry[0]
+            if name in _mcp_tools_builtin_names:
+                print(f"sublime-mcp: register_mcp_tools: '{name}' is a built-in tool — skipped")
+                continue
+            if name in existing:
+                print(f"sublime-mcp: register_mcp_tools: '{name}' already registered — skipped")
+                continue
+            _MCP_TOOLS.append(entry)
+            existing.add(name)
+
+
+def unregister_mcp_tools(tools):
+    """Remove tools previously registered with register_mcp_tools.
+
+    Call from plugin_unloaded(). Built-in tools are never removed.
+    """
+    names = {entry[0] for entry in tools} - _mcp_tools_builtin_names
+    with _mcp_tools_lock:
+        for i in range(len(_MCP_TOOLS) - 1, -1, -1):
+            if _MCP_TOOLS[i][0] in names:
+                _MCP_TOOLS.pop(i)
+
+
+def run_st_command(command, args=None, scope="window"):
+    """Run a Sublime Text command via the internal bridge.
+
+    Convenience function for use in extension tool handlers.
+    scope: 'text', 'window', or 'application'.
+    Returns {"ok": True} on success or {"error": "..."} on failure.
+    """
+    return _run_command({"command": command, "args": args or {}, "scope": scope})
+
 
 class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
@@ -2335,8 +2387,10 @@ def _mcp_dispatch(session_id, msg):
         elif method == "ping":
             result = {}
         elif method == "tools/list":
+            with _mcp_tools_lock:
+                snapshot = list(_MCP_TOOLS)
             tools = []
-            for name, desc, schema, _ in _MCP_TOOLS:
+            for name, desc, schema, _ in snapshot:
                 input_schema = dict(schema) if schema else {}
                 if "type" not in input_schema:
                     input_schema["type"] = "object"
@@ -2347,7 +2401,8 @@ def _mcp_dispatch(session_id, msg):
         elif method == "tools/call":
             tool_name = params.get("name")
             tool_args = params.get("arguments") or {}
-            entry = next((t for t in _MCP_TOOLS if t[0] == tool_name), None)
+            with _mcp_tools_lock:
+                entry = next((t for t in _MCP_TOOLS if t[0] == tool_name), None)
             if entry is None:
                 raise ValueError("Unknown tool: " + str(tool_name))
             data = entry[3](tool_args)
