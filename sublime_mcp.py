@@ -1944,10 +1944,8 @@ def _get_package_mcp_info(body):
     if not package:
         return {"error": "package required"}
 
-    def fn():
-        import zipfile as _zipfile
-
-        # Resolve package location: unpacked dir takes priority, then user zip, then bundled zip
+    # Phase 1: ST API calls on the main thread (fast, in-memory).
+    def collect_st_data():
         pkg_path = os.path.join(sublime.packages_path(), package)
         zip_path = None
 
@@ -1967,7 +1965,6 @@ def _get_package_mcp_info(body):
             if zip_path is None:
                 return {"error": f"Package '{package}' not found"}
 
-        # commands from loaded command classes (works for all packages, packed or not)
         commands = {}
         for scope_name, classes in (
             ("application", getattr(sublime_plugin, "application_command_classes", [])),
@@ -1984,7 +1981,6 @@ def _get_package_mcp_info(body):
                 if scope_name not in entry["scopes"]:
                     entry["scopes"].append(scope_name)
 
-        # enrich with .sublime-commands captions/args (load_resource works for packed and unpacked)
         for resource in sorted(sublime.find_resources("*.sublime-commands")):
             if _package_name_from_resource(resource) != package:
                 continue
@@ -2006,7 +2002,6 @@ def _get_package_mcp_info(body):
                 if item.get("args"):
                     entry["args"] = item["args"]
 
-        # settings keys from .sublime-settings files
         settings_keys = []
         seen_keys = set()
         for resource in sorted(sublime.find_resources("*.sublime-settings")):
@@ -2022,33 +2017,45 @@ def _get_package_mcp_info(body):
                         settings_keys.append(k)
                         seen_keys.add(k)
 
-        # .py file listing
-        python_files = []
-        if zip_path:
-            with _zipfile.ZipFile(zip_path, "r") as zf:
-                python_files = sorted(n for n in zf.namelist() if n.endswith(".py"))
-        else:
-            for root, dirs, files in os.walk(pkg_path):
-                dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d != "__pycache__")
-                for fname in sorted(files):
-                    if fname.endswith(".py"):
-                        python_files.append(os.path.join(root, fname))
-
         safe_name = package.lower().replace(" ", "_").replace("-", "_")
-        # output always goes to Packages/<name>/ — for packed packages this creates an override dir
         output_file = os.path.join(pkg_path, f"{safe_name}_mcp_tools.py")
-
         return {
-            "package": package,
-            "path": zip_path or pkg_path,
-            "output_file": output_file,
             "commands": list(commands.values()),
             "settings_keys": settings_keys,
-            "python_files": python_files,
-            "extension_template": _EXTENSION_TEMPLATE,
+            "pkg_path": pkg_path,
+            "zip_path": zip_path,
+            "output_file": output_file,
         }
 
-    return _on_main(fn)
+    st = _on_main(collect_st_data)
+    if "error" in st:
+        return st
+
+    # Phase 2: file IO off the main thread (here in the HTTP handler thread).
+    import zipfile as _zipfile
+    python_files = []
+    if st["zip_path"]:
+        try:
+            with _zipfile.ZipFile(st["zip_path"], "r") as zf:
+                python_files = sorted(n for n in zf.namelist() if n.endswith(".py"))
+        except Exception:
+            pass
+    else:
+        for root, dirs, files in os.walk(st["pkg_path"]):
+            dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d != "__pycache__")
+            for fname in sorted(files):
+                if fname.endswith(".py"):
+                    python_files.append(os.path.join(root, fname))
+
+    return {
+        "package": package,
+        "path": st["zip_path"] or st["pkg_path"],
+        "output_file": st["output_file"],
+        "commands": st["commands"],
+        "settings_keys": st["settings_keys"],
+        "python_files": python_files,
+        "extension_template": _EXTENSION_TEMPLATE,
+    }
 
 
 _POST["/package_mcp_info"] = _get_package_mcp_info
