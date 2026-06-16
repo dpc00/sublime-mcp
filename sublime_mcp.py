@@ -1863,6 +1863,36 @@ import uuid as _uuid
 _MCP_PORT = int(os.environ.get("SUBLIME_MCP_MCP_PORT", 9502 if sys.platform == "win32" else 9503))
 _mcp_sessions = {}  # session_id -> queue.Queue
 
+_EXTENSION_TEMPLATE = """\
+Place this file in Packages/<YourPackage>/<yourpackage>_mcp_tools.py.
+It is a standard Sublime Text plugin — ST loads and unloads it automatically.
+
+from sublime_mcp import register_mcp_tools, unregister_mcp_tools, run_st_command
+
+# Each entry: (name, description, input_schema, handler)
+# handler(body: dict) -> dict  (must be JSON-serialisable)
+# run_st_command(command, args=None, scope="window") runs any ST command.
+# scope values: "text"/"view" (TextCommand), "window" (WindowCommand), "application" (ApplicationCommand)
+
+TOOLS = [
+    ("example_command",
+     "One-line description of what this does.",
+     {},
+     lambda body: run_st_command("example_command", scope="window")),
+
+    ("example_with_args",
+     "Description of a command that takes arguments.",
+     {"type": "object", "properties": {"arg1": {"type": "string"}}, "required": ["arg1"]},
+     lambda body: run_st_command("example_command", args={"arg1": body["arg1"]}, scope="window")),
+]
+
+def plugin_loaded():
+    register_mcp_tools(TOOLS)
+
+def plugin_unloaded():
+    unregister_mcp_tools(TOOLS)
+"""
+
 
 def _to_get_params(args):
     """Convert MCP args dict to parse_qs list-of-strings format for GET handlers."""
@@ -1907,6 +1937,98 @@ def _p(endpoint):
     def handler(args):
         return _POST[endpoint](args)
     return handler
+
+
+def _get_package_mcp_info(body):
+    package = body.get("package", "").strip()
+    if not package:
+        return {"error": "package required"}
+
+    def fn():
+        pkg_path = os.path.join(sublime.packages_path(), package)
+        if not os.path.isdir(pkg_path):
+            return {"error": f"Package '{package}' not found in Packages/"}
+
+        # commands from loaded command classes
+        commands = {}
+        for scope_name, classes in (
+            ("application", getattr(sublime_plugin, "application_command_classes", [])),
+            ("window", getattr(sublime_plugin, "window_command_classes", [])),
+            ("text", getattr(sublime_plugin, "text_command_classes", [])),
+        ):
+            for cls in classes:
+                module = getattr(cls, "__module__", "")
+                pkg = module.split(".", 1)[0] if module else ""
+                if pkg.lower() != package.lower():
+                    continue
+                cmd = _command_name_from_class(cls)
+                entry = commands.setdefault(cmd, {"command": cmd, "scopes": [], "caption": "", "args": {}})
+                if scope_name not in entry["scopes"]:
+                    entry["scopes"].append(scope_name)
+
+        # enrich with .sublime-commands captions/args
+        for resource in sorted(sublime.find_resources("*.sublime-commands")):
+            if _package_name_from_resource(resource) != package:
+                continue
+            try:
+                data = sublime.decode_value(sublime.load_resource(resource))
+            except Exception:
+                continue
+            if not isinstance(data, list):
+                continue
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+                cmd = item.get("command", "")
+                if not cmd:
+                    continue
+                entry = commands.setdefault(cmd, {"command": cmd, "scopes": [], "caption": "", "args": {}})
+                if item.get("caption"):
+                    entry["caption"] = item["caption"]
+                if item.get("args"):
+                    entry["args"] = item["args"]
+
+        # settings keys from .sublime-settings files
+        settings_keys = []
+        seen_keys = set()
+        for resource in sorted(sublime.find_resources("*.sublime-settings")):
+            if _package_name_from_resource(resource) != package:
+                continue
+            try:
+                data = sublime.decode_value(sublime.load_resource(resource))
+            except Exception:
+                continue
+            if isinstance(data, dict):
+                for k in data:
+                    if k not in seen_keys:
+                        settings_keys.append(k)
+                        seen_keys.add(k)
+
+        # .py file listing
+        python_files = []
+        for root, dirs, files in os.walk(pkg_path):
+            dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d != "__pycache__")
+            for fname in sorted(files):
+                if fname.endswith(".py"):
+                    python_files.append(os.path.join(root, fname))
+
+        safe_name = package.lower().replace(" ", "_").replace("-", "_")
+        output_file = os.path.join(pkg_path, f"{safe_name}_mcp_tools.py")
+
+        return {
+            "package": package,
+            "path": pkg_path,
+            "output_file": output_file,
+            "commands": list(commands.values()),
+            "settings_keys": settings_keys,
+            "python_files": python_files,
+            "extension_template": _EXTENSION_TEMPLATE,
+        }
+
+    return _on_main(fn)
+
+
+_POST["/package_mcp_info"] = _get_package_mcp_info
 
 
 # (name, description, inputSchema, handler)
@@ -2236,6 +2358,12 @@ _MCP_TOOLS = [
          "view_range": {"type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2},
      }, "required": ["command"]},
      _p("/edit_file")),
+    ("get_package_mcp_info",
+     "Return everything needed to write an MCP extension for an installed Package Control package.\n"
+     "Returns: path, output_file, commands (with captions and args), settings_keys, python_files, extension_template.\n"
+     "Write the extension to output_file following extension_template; ST loads it automatically.",
+     {"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]},
+     _get_package_mcp_info),
 ]
 
 _mcp_tools_lock = threading.Lock()
