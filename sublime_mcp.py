@@ -1945,11 +1945,29 @@ def _get_package_mcp_info(body):
         return {"error": "package required"}
 
     def fn():
-        pkg_path = os.path.join(sublime.packages_path(), package)
-        if not os.path.isdir(pkg_path):
-            return {"error": f"Package '{package}' not found in Packages/"}
+        import zipfile as _zipfile
 
-        # commands from loaded command classes
+        # Resolve package location: unpacked dir takes priority, then user zip, then bundled zip
+        pkg_path = os.path.join(sublime.packages_path(), package)
+        zip_path = None
+
+        if not os.path.isdir(pkg_path):
+            user_zip = os.path.join(
+                sublime.installed_packages_path(), package + ".sublime-package"
+            )
+            if os.path.isfile(user_zip):
+                zip_path = user_zip
+            else:
+                bundled_zip = os.path.join(
+                    os.path.dirname(sublime.executable_path()),
+                    "Packages", package + ".sublime-package"
+                )
+                if os.path.isfile(bundled_zip):
+                    zip_path = bundled_zip
+            if zip_path is None:
+                return {"error": f"Package '{package}' not found"}
+
+        # commands from loaded command classes (works for all packages, packed or not)
         commands = {}
         for scope_name, classes in (
             ("application", getattr(sublime_plugin, "application_command_classes", [])),
@@ -1966,7 +1984,7 @@ def _get_package_mcp_info(body):
                 if scope_name not in entry["scopes"]:
                     entry["scopes"].append(scope_name)
 
-        # enrich with .sublime-commands captions/args
+        # enrich with .sublime-commands captions/args (load_resource works for packed and unpacked)
         for resource in sorted(sublime.find_resources("*.sublime-commands")):
             if _package_name_from_resource(resource) != package:
                 continue
@@ -2006,18 +2024,23 @@ def _get_package_mcp_info(body):
 
         # .py file listing
         python_files = []
-        for root, dirs, files in os.walk(pkg_path):
-            dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d != "__pycache__")
-            for fname in sorted(files):
-                if fname.endswith(".py"):
-                    python_files.append(os.path.join(root, fname))
+        if zip_path:
+            with _zipfile.ZipFile(zip_path, "r") as zf:
+                python_files = sorted(n for n in zf.namelist() if n.endswith(".py"))
+        else:
+            for root, dirs, files in os.walk(pkg_path):
+                dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d != "__pycache__")
+                for fname in sorted(files):
+                    if fname.endswith(".py"):
+                        python_files.append(os.path.join(root, fname))
 
         safe_name = package.lower().replace(" ", "_").replace("-", "_")
+        # output always goes to Packages/<name>/ — for packed packages this creates an override dir
         output_file = os.path.join(pkg_path, f"{safe_name}_mcp_tools.py")
 
         return {
             "package": package,
-            "path": pkg_path,
+            "path": zip_path or pkg_path,
             "output_file": output_file,
             "commands": list(commands.values()),
             "settings_keys": settings_keys,
