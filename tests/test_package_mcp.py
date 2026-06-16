@@ -153,3 +153,46 @@ def test_get_package_mcp_info_missing_package_arg():
     """Missing package argument returns an error key."""
     r = ok(post("/package_mcp_info"))
     assert "error" in r
+
+
+# ── search_packages / install_package ────────────────────────────────────────
+
+
+def test_search_packages_with_query():
+    """Returns matching packages with required keys."""
+    r = ok(post("/search_packages", query="json", limit=5))
+    assert "packages" in r
+    assert "total_matches" in r
+    assert isinstance(r["packages"], list)
+    assert len(r["packages"]) <= 5
+    for pkg in r["packages"]:
+        assert "name" in pkg
+        assert "description" in pkg
+        assert "author" in pkg
+        assert "homepage" in pkg
+        assert "labels" in pkg
+
+
+def test_search_packages_empty_query_returns_all():
+    """Empty query returns all packages (up to limit)."""
+    r = ok(post("/search_packages", query="", limit=100))
+    assert r["total_matches"] > 1000
+
+
+def test_search_packages_no_results():
+    """Query that matches nothing returns empty list."""
+    r = ok(post("/search_packages", query="__zzz_no_such_package_xyz__"))
+    assert r["packages"] == []
+    assert r["total_matches"] == 0
+
+
+def test_install_package_unknown():
+    """Unknown package returns error."""
+    r = ok(post("/install_package", package="__nonexistent_xyz__"))
+    assert "error" in r
+
+
+def test_install_package_missing_arg():
+    """Missing package arg returns error."""
+    r = ok(post("/install_package"))
+    assert "error" in r
