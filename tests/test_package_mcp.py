@@ -131,6 +131,18 @@ def test_get_package_mcp_info_python_files_exist():
         assert path.endswith(".py"), f"unexpected file: {path}"
 
 
+def test_get_package_mcp_info_packed_package():
+    """Works for a zipped .sublime-package (Default is bundled and always packed)."""
+    r = ok(post("/package_mcp_info", package="Default"))
+    assert "error" not in r, f"unexpected error: {r.get('error')}"
+    assert r["package"] == "Default"
+    assert r["path"].endswith(".sublime-package")
+    assert isinstance(r["commands"], list) and len(r["commands"]) > 0
+    assert isinstance(r["python_files"], list) and len(r["python_files"]) > 0
+    for path in r["python_files"]:
+        assert path.endswith(".py")
+
+
 def test_get_package_mcp_info_unknown_package():
     """Unknown package returns an error key."""
     r = ok(post("/package_mcp_info", package="__nonexistent_package_xyz__"))
