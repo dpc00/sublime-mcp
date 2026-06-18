@@ -1441,6 +1441,90 @@ def _sort_lines(body):
     return _on_main(fn)
 
 
+# ── Claude MCP Control Panel ──────────────────────────────────────────────────
+_CP_VIEW_NAME = "Claude Control Panel"
+_CP_SERVERS = ("filesystem", "postgres", "github", "sublime-mcp")
+
+
+def _cp_find_panel():
+    """Return the Control Panel view across all windows, or None."""
+    for w in sublime.windows():
+        for v in w.views():
+            if v.name() == _CP_VIEW_NAME:
+                return v
+    return None
+
+
+def _cp_render(panel):
+    """(Re)draw the dashboard phantom from the view's persisted mcp_state."""
+    st = panel.settings().get("mcp_state") or {}
+    rows = ""
+    for name in _CP_SERVERS:
+        on = st.get(name, False)
+        dot = "#a6e22e" if on else "#75715e"
+        label = "Enabled" if on else "Disabled"
+        action = "Disable" if on else "Enable"
+        cls = "btn-danger" if on else "btn"
+        rows += ('<div class="row"><span style="color:%s;">&#9679;</span> '
+                 '<b>%s</b> &mdash; %s '
+                 '<a class="%s" href="toggle:%s">[%s]</a></div>'
+                 % (dot, name, label, cls, name, action))
+    html = ('<body style="background-color:#1e1e1e; padding:14px;">'
+            '<style>'
+            'h3{margin:0 0 10px 0;color:#66d9ef;}'
+            '.row{margin-bottom:7px;font-size:13px;color:#f8f8f2;}'
+            '.btn{color:#a6e22e;text-decoration:none;font-weight:bold;}'
+            '.btn-danger{color:#f92672;text-decoration:none;font-weight:bold;}'
+            '.hint{color:#75715e;font-size:11px;margin-top:12px;}'
+            '</style>'
+            '<h3>&#129302; Claude MCP Control Panel</h3>'
+            + rows +
+            '<div class="hint">Rendered live by Claude via sublime-mcp '
+            '&middot; click a link to toggle</div>'
+            '</body>')
+    panel.erase_phantoms("claude_cp")
+    panel.add_phantom("claude_cp", sublime.Region(0, 0), html,
+                      sublime.LAYOUT_BLOCK, on_navigate=_cp_nav)
+
+
+def _cp_nav(href):
+    """on_navigate handler: flip a server's state and re-render."""
+    if not href.startswith("toggle:"):
+        return
+    panel = _cp_find_panel()
+    if panel is None:
+        return
+    name = href.split(":", 1)[1]
+    st = panel.settings().get("mcp_state") or {}
+    st[name] = not st.get(name, False)
+    panel.settings().set("mcp_state", st)
+    sublime.active_window().status_message(
+        "MCP toggled: %s -> %s" % (name, "ON" if st[name] else "OFF"))
+    _cp_render(panel)
+
+
+def _open_control_panel(body):
+    """Open or focus the Claude MCP Control Panel and render its dashboard."""
+    def fn():
+        w = sublime.active_window()
+        panel = _cp_find_panel()
+        if panel is None:
+            panel = w.new_file()
+            panel.set_name(_CP_VIEW_NAME)
+            panel.set_scratch(True)
+            panel.settings().set("gutter", False)
+            panel.settings().set("line_numbers", False)
+            panel.settings().set("draw_white_space", "none")
+        if not panel.settings().get("mcp_state"):
+            panel.settings().set(
+                "mcp_state", {s: (s != "postgres") for s in _CP_SERVERS})
+        w.focus_view(panel)
+        _cp_render(panel)
+        return {"ok": True, "view": _CP_VIEW_NAME,
+                "servers": list(panel.settings().get("mcp_state").keys())}
+    return _on_main(fn)
+
+
 def _eval_python(body):
     code = body.get("code", "")
     if not code:
@@ -1901,6 +1985,7 @@ _POST = {
     "/set_layout": _set_layout,
     "/send_to_view": _send_to_view,
     "/edit_file": _edit_file,
+    "/open_control_panel": _open_control_panel,
 }
 
 
@@ -2538,6 +2623,12 @@ _MCP_TOOLS = [
      "Returns stdout, stderr, and returncode.",
      {"type": "object", "properties": {"code": {"type": "string"}}, "required": ["code"]},
      _p("/eval_python_latest")),
+    ("open_control_panel",
+     "Open (or focus) the Claude MCP Control Panel: an interactive minihtml dashboard "
+     "in a dedicated Sublime view, listing MCP servers with clickable Enable/Disable "
+     "toggle links. State persists on the view and the status line reflects changes.",
+     {"type": "object", "properties": {}},
+     _p("/open_control_panel")),
     ("str_replace_based_edit_tool",
      "ST-native file editor implementing the standard str_replace_based_edit_tool interface.\n"
      "Edits appear live in Sublime Text with full undo (Ctrl+Z), gutter diff markers,\n"
