@@ -9,6 +9,9 @@
 MCP server that exposes Sublime Text commands and state to Claude and other AI agents.
 5638 Sublime Text packages exist — potential to auto-generate MCPs from them.
 
+## Critical Assumption
+Plugin edits in this repo are NOT live in Sublime Text until deployed to the installed Sublime Text Packages directory. Never assume test results are valid until the file has been copied there. If something isn't working, check deployment before investigating the code.
+
 ## Key Files
 - sublime_mcp.py (111KB) — Main MCP server implementation
 - mcp_server.py — MCP server entry point
