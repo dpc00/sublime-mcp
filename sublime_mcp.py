@@ -550,6 +550,108 @@ def _get_console_full(params):
     return {"text": text, "length": len(text)}
 
 
+def _get_console_win(params):
+    """Windows-only fallback: click the console output area via ctypes, then Ctrl+A / Ctrl+C."""
+    import sys
+    if sys.platform != "win32":
+        return {"error": "get_console_win is Windows-only"}
+    import ctypes
+    import ctypes.wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    user32.GetClipboardData.restype = ctypes.c_void_p
+    kernel32.GlobalLock.restype = ctypes.c_void_p
+    kernel32.GlobalLock.argtypes = [ctypes.c_void_p]
+    kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
+
+    _hwnd = [None]
+    def _enum(h, _):
+        buf = ctypes.create_unicode_buffer(256)
+        user32.GetWindowTextW(h, buf, 256)
+        if "Sublime Text" in buf.value:
+            _hwnd[0] = h
+        return True
+    user32.EnumWindows(ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_size_t, ctypes.c_size_t)(_enum), 0)
+    hwnd = _hwnd[0]
+    if not hwnd:
+        return {"error": "ST window not found"}
+
+    rect = ctypes.wintypes.RECT()
+    user32.GetWindowRect(hwnd, ctypes.byref(rect))
+    cx = (rect.left + rect.right) // 2
+    cy = rect.bottom - 80  # console output area, above the input field
+
+    result = {"text": None, "error": None}
+    done = threading.Event()
+
+    def _INP():
+        class MI(ctypes.Structure):
+            _fields_ = [("dx", ctypes.c_long), ("dy", ctypes.c_long), ("mouseData", ctypes.c_ulong),
+                        ("dwFlags", ctypes.c_ulong), ("time", ctypes.c_ulong), ("dwExtraInfo", ctypes.c_uint64)]
+        class KI(ctypes.Structure):
+            _fields_ = [("wVk", ctypes.c_ushort), ("wScan", ctypes.c_ushort), ("dwFlags", ctypes.c_ulong),
+                        ("time", ctypes.c_ulong), ("dwExtraInfo", ctypes.c_uint64)]
+        class _U(ctypes.Union):
+            _fields_ = [("mi", MI), ("ki", KI)]
+        class INP(ctypes.Structure):
+            _fields_ = [("type", ctypes.c_ulong), ("_u", _U)]
+        return INP
+
+    def do_show():
+        sublime.active_window().run_command("show_panel", {"panel": "console"})
+        sublime.set_timeout(do_click, 300)
+
+    def do_click():
+        INP = _INP()
+        user32.SetForegroundWindow(hwnd)
+        user32.SetCursorPos(cx, cy)
+        dn = INP(type=0); dn._u.mi.dwFlags = 0x0002
+        up = INP(type=0); up._u.mi.dwFlags = 0x0004
+        user32.SendInput(1, ctypes.byref(dn), ctypes.sizeof(INP))
+        user32.SendInput(1, ctypes.byref(up), ctypes.sizeof(INP))
+        sublime.set_timeout(do_ctrl_a, 300)
+
+    def do_ctrl_a():
+        INP = _INP()
+        def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        kd(0x11); kd(0x41); ku(0x41); ku(0x11)
+        sublime.set_timeout(do_ctrl_c, 250)
+
+    def do_ctrl_c():
+        INP = _INP()
+        def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        kd(0x11); kd(0x43); ku(0x43); ku(0x11)
+        sublime.set_timeout(read_clip, 400)
+
+    def read_clip():
+        CF_UNICODETEXT = 13
+        if user32.OpenClipboard(0):
+            h = user32.GetClipboardData(CF_UNICODETEXT)
+            if h:
+                ptr = kernel32.GlobalLock(h)
+                if ptr:
+                    result["text"] = ctypes.wstring_at(ptr)
+                    kernel32.GlobalUnlock(h)
+                else:
+                    result["error"] = "GlobalLock failed"
+            else:
+                result["error"] = "no text on clipboard"
+            user32.CloseClipboard()
+        else:
+            result["error"] = "OpenClipboard failed"
+        done.set()
+
+    sublime.set_timeout(do_show, 0)
+    if not done.wait(timeout=5.0):
+        return {"error": "timeout"}
+    if result["text"] is not None:
+        return {"text": result["text"], "length": len(result["text"])}
+    return {"error": result.get("error", "unknown")}
+
+
 def _get_symbols(params):
     def fn():
         v = _active_view()
@@ -1861,6 +1963,7 @@ _GET = {
     "/output_panel": _get_output_panel,
     "/console_log": _get_console_log,
     "/console_full": _get_console_full,
+    "/console_win": _get_console_win,
     "/symbols": _get_symbols,
     "/lookup_symbol": _lookup_symbol,
     "/project_data": _get_project_data,
@@ -2378,6 +2481,11 @@ _MCP_TOOLS = [
      "Includes startup messages, plugin load events, and all errors since ST started.",
      {},
      _g("/console_full")),
+    ("get_console_win",
+     "Windows-only fallback: captures ST console by clicking the output area via ctypes then Ctrl+A/Ctrl+C.\n"
+     "Use when get_console_full fails. Returns error on non-Windows.",
+     {},
+     _g("/console_win")),
     # ── parameterized POST tools ──────────────────────────────────────────────
     ("add_folder",
      "Add a folder to the current project.",
