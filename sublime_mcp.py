@@ -236,7 +236,7 @@ def _install_console_capture():
     orig_write = sys.stdout.write
 
     def _capture_write(s):
-        _console_buf.append(f"[stdout]{s}")
+        _console_buf.append("[stdout]{}".format(s))
         return orig_write(s)
 
     sys.stdout.write = _capture_write
@@ -309,7 +309,7 @@ def _get_cursor_context(params):
         end_pt = v.full_line(end_line).end()
         text = v.substr(sublime.Region(start_pt, end_pt))
         lines = text.split("\n")
-        numbered = "\n".join(f"{start_row + i + 1:4}: {l}" for i, l in enumerate(lines))
+        numbered = "\n".join("{:4}: {}".format(start_row + i + 1, l) for i, l in enumerate(lines))
         return {
             "path": v.file_name(),
             "cursor_line": row + 1,
@@ -378,7 +378,7 @@ def _get_sheet_content(params):
         w = sublime.active_window()
         sheets = w.sheets()
         if index >= len(sheets):
-            return {"error": f"index {index} out of range (have {len(sheets)} sheets)"}
+            return {"error": "index {} out of range (have {} sheets)".format(index, len(sheets))}
         s = sheets[index]
         kind = type(s).__name__
         path = None
@@ -396,7 +396,7 @@ def _get_sheet_content(params):
             }
         v = s.view()
         if not v:
-            return {"error": f"sheet {index} has no text view"}
+            return {"error": "sheet {} has no text view".format(index)}
         return {
             "index": index,
             "type": kind,
@@ -423,7 +423,7 @@ def _get_file_content(params):
     def fn():
         v = sublime.active_window().find_open_file(path)
         if not v:
-            return {"error": f"not open: {path}"}
+            return {"error": "not open: {}".format(path)}
         return {"path": path, "content": v.substr(sublime.Region(0, v.size()))}
 
     return _on_main(fn)
@@ -435,12 +435,12 @@ def _resolve_view(w, name, index):
         match = next((v for v in views if name.lower() in v.name().lower()), None)
         if not match:
             names = [v.name() for v in views]
-            return None, {"error": f"no view matching {name!r}", "open_views": names}
+            return None, {"error": "no view matching {!r}".format(name), "open_views": names}
         return match, None
     if index >= 0:
         if index >= len(views):
             return None, {
-                "error": f"index {index} out of range (have {len(views)} views)"
+                "error": "index {} out of range (have {} views)".format(index, len(views))
             }
         return views[index], None
     return w.active_view(), None
@@ -508,7 +508,7 @@ def _get_output_panel(params):
             if not panel_name:
                 return {"error": "no active output panel"}
         if not v:
-            return {"error": f"panel not found: {panel_name}"}
+            return {"error": "panel not found: {}".format(panel_name)}
         return {"name": panel_name, "content": v.substr(sublime.Region(0, v.size()))}
 
     return _on_main(fn)
@@ -985,7 +985,7 @@ def _get_view_size(params):
             match = next((v for v in views if name.lower() in v.name().lower()), None)
             if not match:
                 return {
-                    "error": f"no view matching {name!r}",
+                    "error": "no view matching {!r}".format(name),
                     "open_views": [v.name() for v in views],
                 }
             v = match
@@ -1010,7 +1010,7 @@ def _get_view_chars(params):
             match = next((v for v in views if name.lower() in v.name().lower()), None)
             if not match:
                 return {
-                    "error": f"no view matching {name!r}",
+                    "error": "no view matching {!r}".format(name),
                     "open_views": [v.name() for v in views],
                 }
             v = match
@@ -1052,7 +1052,7 @@ def _get_view_phantoms(params):
         w = sublime.active_window()
         v, open_views = _find_view_by_name(w, name)
         if not v:
-            return {"error": f"no view matching {name!r}", "open_views": open_views}
+            return {"error": "no view matching {!r}".format(name), "open_views": open_views}
         phantoms = []
         for mod in list(sys.modules.values()):
             ps_map = getattr(mod, "_phantom_sets", None)
@@ -1116,7 +1116,7 @@ def _open_file(body):
     def fn():
         w = sublime.active_window()
         flags = sublime.ENCODED_POSITION if (line or col) else sublime.NewFileFlags.NONE
-        fname = f"{path}:{line}:{col}" if (line or col) else path
+        fname = "{}:{}:{}".format(path, line, col) if (line or col) else path
         w.open_file(fname, flags)
         return {"ok": True}
 
@@ -1146,7 +1146,7 @@ def _show_panel(body):
     name = body.get("name", "exec")
 
     def fn():
-        sublime.active_window().run_command("show_panel", {"panel": f"output.{name}"})
+        sublime.active_window().run_command("show_panel", {"panel": "output.{}".format(name)})
         return {"ok": True}
 
     return _on_main(fn)
@@ -1179,7 +1179,7 @@ def _replace_lines(body):
         if path:
             v = w.find_open_file(path)
             if not v:
-                return {"error": f"not open: {path}"}
+                return {"error": "not open: {}".format(path)}
         elif index >= 0:
             v, err = _resolve_view(w, "", index)
             if err:
@@ -1254,7 +1254,7 @@ def _save_file(body):
         if path:
             v = w.find_open_file(path)
             if not v:
-                return {"error": f"not open: {path}"}
+                return {"error": "not open: {}".format(path)}
         else:
             v = _active_view()
         if not v:
@@ -1281,7 +1281,7 @@ def _close_file(body):
         if path:
             v = w.find_open_file(path)
             if not v:
-                return {"error": f"not open: {path}"}
+                return {"error": "not open: {}".format(path)}
         else:
             v = w.active_view()
         if not v:
@@ -1325,7 +1325,7 @@ def _find_in_files(body):
     try:
         rx = re.compile(pattern if use_re else re.escape(pattern), flags)
     except re.error as e:
-        return {"error": f"bad pattern: {e}"}
+        return {"error": "bad pattern: {}".format(e)}
     results = []
     files_scanned = 0
     files_skipped_size = 0
@@ -1335,8 +1335,7 @@ def _find_in_files(body):
             for fname in filenames:
                 if files_scanned >= max_files:
                     return {
-                        "error": f"file limit reached: {max_files} files scanned across {folders}. "
-                        f"Narrow folders or increase max_files.",
+                        "error": "file limit reached: {} files scanned across {}. Narrow folders or increase max_files.".format(max_files, folders),
                         "results": results,
                         "files_scanned": files_scanned,
                         "files_skipped_size": files_skipped_size,
@@ -1408,7 +1407,7 @@ def _set_syntax(body):
         if not match:
             match = next((s for s in syns if name.lower() in s.name.lower()), None)
         if not match:
-            return {"error": f"syntax not found: {name}"}
+            return {"error": "syntax not found: {}".format(name)}
         v.assign_syntax(match.path)
         return {"ok": True, "syntax": match.name}
 
@@ -1747,7 +1746,7 @@ def _focus_group(body):
     def fn():
         w = sublime.active_window()
         if group >= w.num_groups():
-            return {"error": f"group {group} out of range (have {w.num_groups()})"}
+            return {"error": "group {} out of range (have {})".format(group, w.num_groups())}
         w.focus_group(group)
         return {"ok": True}
 
@@ -1789,7 +1788,7 @@ def _ensure_view(path):
         if v:
             return v, None
         if not os.path.isfile(path):
-            return None, {"error": f"file not found: {path}"}
+            return None, {"error": "file not found: {}".format(path)}
         return w.open_file(path), None
 
     v, err = _on_main(_open)
@@ -1802,7 +1801,7 @@ def _ensure_view(path):
             return v, None
         time.sleep(0.1)
 
-    return None, {"error": f"timeout waiting for file to load: {path}"}
+    return None, {"error": "timeout waiting for file to load: {}".format(path)}
 
 
 def _edit_file(body):
@@ -1817,7 +1816,7 @@ def _edit_file(body):
         def create_fn():
             w = sublime.active_window()
             if os.path.exists(path):
-                return {"error": f"file already exists: {path}"}
+                return {"error": "file already exists: {}".format(path)}
             v = w.new_file()
             v.retarget(path)
             syn = sublime.find_syntax_for_file(path)
@@ -1850,7 +1849,7 @@ def _edit_file(body):
                     return {"error": "invalid view_range"}
                 slice_lines = lines[start - 1 : end]
                 numbered = "\n".join(
-                    f"{start + i}: {l}" for i, l in enumerate(slice_lines)
+                    "{}: {}".format(start + i, l) for i, l in enumerate(slice_lines)
                 )
                 return {
                     "content": numbered,
@@ -1859,7 +1858,7 @@ def _edit_file(body):
                     "end_line": end,
                 }
             else:
-                numbered = "\n".join(f"{i + 1}: {l}" for i, l in enumerate(lines))
+                numbered = "\n".join("{}: {}".format(i + 1, l) for i, l in enumerate(lines))
                 return {"content": numbered, "total_lines": total}
 
         return _on_main(view_fn)
@@ -1882,8 +1881,7 @@ def _edit_file(body):
             if len(regions) > 1:
                 lns = [v.rowcol(r.begin())[0] + 1 for r in regions]
                 return {
-                    "error": f"Found {len(regions)} matches at lines {lns}. "
-                    f"Add more surrounding context to old_str to make it unique."
+                    "error": "Found {} matches at lines {}. Add more surrounding context to old_str to make it unique.".format(len(regions), lns)
                 }
             region = regions[0]
             row, _ = v.rowcol(region.begin())
@@ -1941,7 +1939,7 @@ def _edit_file(body):
         return _on_main(insert_fn)
 
     return {
-        "error": f"unknown command: {command!r}. Use: str_replace, insert, create, view"
+        "error": "unknown command: {!r}. Use: str_replace, insert, create, view".format(command)
     }
 
 
@@ -2174,7 +2172,7 @@ def _get_package_mcp_info(body):
                 if os.path.isfile(bundled_zip):
                     zip_path = bundled_zip
             if zip_path is None:
-                return {"error": f"Package '{package}' not found"}
+                return {"error": "Package '{}' not found".format(package)}
 
         commands = {}
         for scope_name, classes in (
@@ -2229,7 +2227,7 @@ def _get_package_mcp_info(body):
                         seen_keys.add(k)
 
         safe_name = package.lower().replace(" ", "_").replace("-", "_")
-        output_file = os.path.join(pkg_path, f"{safe_name}_mcp_tools.py")
+        output_file = os.path.join(pkg_path, "{}_mcp_tools.py".format(safe_name))
         return {
             "commands": list(commands.values()),
             "settings_keys": settings_keys,
@@ -2338,14 +2336,14 @@ def _install_package(body):
         try:
             avail = pm.list_available_packages()
             if package not in avail:
-                print(f"sublime-mcp: install_package: '{package}' not found in Package Control")
+                print("sublime-mcp: install_package: '{}' not found in Package Control".format(package))
                 return
             pm.install_package(package, unattended=False)
         except Exception as e:
-            print(f"sublime-mcp: install_package '{package}' error: {e}")
+            print("sublime-mcp: install_package '{}' error: {}".format(package, e))
 
     sublime.set_timeout_async(do_install, 0)
-    return {"ok": True, "message": f"Installing '{package}' — check ST console for progress"}
+    return {"ok": True, "message": "Installing '{}' — check ST console for progress".format(package)}
 
 
 _POST["/search_packages"] = _search_packages
@@ -2730,10 +2728,10 @@ def register_mcp_tools(tools):
         for entry in tools:
             name = entry[0]
             if name in _mcp_tools_builtin_names:
-                print(f"sublime-mcp: register_mcp_tools: '{name}' is a built-in tool — skipped")
+                print("sublime-mcp: register_mcp_tools: '{}' is a built-in tool — skipped".format(name))
                 continue
             if name in existing:
-                print(f"sublime-mcp: register_mcp_tools: '{name}' already registered — skipped")
+                print("sublime-mcp: register_mcp_tools: '{}' already registered — skipped".format(name))
                 continue
             _MCP_TOOLS.append(entry)
             existing.add(name)
@@ -2909,16 +2907,16 @@ def _start_servers():
             _server = HTTPServer(("127.0.0.1", _PORT), _Handler)
             threading.Thread(target=_server.serve_forever, daemon=True).start()
         except OSError as e:
-            print(f"sublime-mcp: could not bind HTTP bridge on port {_PORT}: {e}")
+            print("sublime-mcp: could not bind HTTP bridge on port {}: {}".format(_PORT, e))
             _server = None
     if not _mcp_server:
         try:
             _mcp_server = _ThreadingHTTPServer(("127.0.0.1", _MCP_PORT), _MCPHandler)
             threading.Thread(target=_mcp_server.serve_forever, daemon=True).start()
         except OSError as e:
-            print(f"sublime-mcp: could not bind MCP SSE on port {_MCP_PORT}: {e}")
+            print("sublime-mcp: could not bind MCP SSE on port {}: {}".format(_MCP_PORT, e))
             _mcp_server = None
-    print(f"sublime-mcp: MCP SSE on 127.0.0.1:{_MCP_PORT}, HTTP bridge on 127.0.0.1:{_PORT}")
+    print("sublime-mcp: MCP SSE on 127.0.0.1:{}, HTTP bridge on 127.0.0.1:{}".format(_MCP_PORT, _PORT))
 
 
 def _stop_servers():
@@ -2985,8 +2983,8 @@ class McpStrReplaceCommand(sublime_plugin.TextCommand):
             "circle",
             sublime.DRAW_NO_FILL | sublime.DRAW_SOLID_UNDERLINE,
             annotations=[
-                f'<div style="font-size:0.9em; padding:1px 4px;">'
-                f"&#x270F; Claude &mdash; line {row + 1}</div>"
+                ('<div style="font-size:0.9em; padding:1px 4px;">'
+                 "&#x270F; Claude &mdash; line {}</div>").format(row + 1)
             ],
             annotation_color="#4CAF50",
         )
@@ -3014,8 +3012,8 @@ class McpInsertTextCommand(sublime_plugin.TextCommand):
             "dot",
             sublime.DRAW_NO_FILL | sublime.DRAW_SOLID_UNDERLINE,
             annotations=[
-                f'<div style="font-size:0.9em; padding:1px 4px;">'
-                f"&#x2795; Claude inserted &mdash; line {row + 1}</div>"
+                ('<div style="font-size:0.9em; padding:1px 4px;">'
+                 "&#x2795; Claude inserted &mdash; line {}</div>").format(row + 1)
             ],
             annotation_color="#2196F3",
         )
@@ -3046,7 +3044,7 @@ class McpServerStatusCommand(sublime_plugin.WindowCommand):
         elif action == "start":
             _start_servers()
             sublime.status_message(
-                f"MCP Commander: server started  —  SSE on :{_MCP_PORT}"
+                "MCP Commander: server started  —  SSE on :{}".format(_MCP_PORT)
             )
 
     def input(self, args):
@@ -3065,7 +3063,7 @@ class _McpServerStatusInputHandler(sublime_plugin.ListInputHandler):
             return [sublime.ListInputItem(
                 "Stop server",
                 "stop",
-                details=f"MCP SSE on :{_MCP_PORT}  ·  HTTP bridge on :{_PORT}",
+                details="MCP SSE on :{}  ·  HTTP bridge on :{}".format(_MCP_PORT, _PORT),
                 annotation="● running",
             )]
         else:
