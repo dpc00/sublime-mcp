@@ -33,7 +33,7 @@ def _async_browse(window, title, filter_val, fetch_fn, format_fn):
             data = fetch_fn({"filter": filter_val} if filter_val else {})
             content = format_fn(data, filter_val)
         except Exception as e:
-            content = f"Error fetching data: {e}"
+            content = "Error fetching data: {}".format(e)
         _open_scratch(window, title, content)
 
     sublime.set_timeout_async(_run, 0)
@@ -45,20 +45,20 @@ def _async_browse(window, title, filter_val, fetch_fn, format_fn):
 def _fmt_commands(data, filt):
     cmds = data.get("commands", [])
     lines = [
-        f"MCP: Browse Commands{' — filter: ' + filt if filt else ''}",
+        "MCP: Browse Commands{}".format(' — filter: ' + filt if filt else ''),
         "─" * 60,
         "",
     ]
     for c in cmds:
-        lines.append(f"  {c['command']}")
+        lines.append("  {}".format(c['command']))
         scopes = c.get("scopes", [])
         if scopes:
-            lines.append(f"    scope   : {', '.join(scopes)}")
+            lines.append("    scope   : {}".format(', '.join(scopes)))
         pkgs = c.get("packages", [])
         if pkgs:
-            lines.append(f"    package : {', '.join(pkgs)}")
+            lines.append("    package : {}".format(', '.join(pkgs)))
         lines.append("")
-    lines.append(f"{len(cmds)} command(s) listed.")
+    lines.append("{} command(s) listed.".format(len(cmds)))
     return "\n".join(lines)
 
 
@@ -91,7 +91,7 @@ class McpBrowseCommandsCommand(sublime_plugin.WindowCommand):
 def _fmt_menu_items(data, filt):
     entries = data.get("entries", [])
     lines = [
-        f"MCP: Browse Menu Items{' — filter: ' + filt if filt else ''}",
+        "MCP: Browse Menu Items{}".format(' — filter: ' + filt if filt else ''),
         "─" * 60,
         "",
     ]
@@ -100,15 +100,15 @@ def _fmt_menu_items(data, filt):
         cmd = e.get("command", "")
         args = e.get("args", {})
         caption = e.get("caption", "")
-        lines.append(f"  {path}")
+        lines.append("  {}".format(path))
         if caption:
-            lines.append(f"    caption : {caption}")
+            lines.append("    caption : {}".format(caption))
         if cmd:
-            lines.append(f"    command : {cmd}")
+            lines.append("    command : {}".format(cmd))
         if args:
-            lines.append(f"    args    : {args}")
+            lines.append("    args    : {}".format(args))
         lines.append("")
-    lines.append(f"{len(entries)} item(s) listed.")
+    lines.append("{} item(s) listed.".format(len(entries)))
     return "\n".join(lines)
 
 
@@ -143,19 +143,19 @@ class McpBrowseMenuItemsCommand(sublime_plugin.WindowCommand):
 def _fmt_palette(data, filt):
     entries = data.get("entries", [])
     lines = [
-        f"MCP: Browse Command Palette{' — filter: ' + filt if filt else ''}",
+        "MCP: Browse Command Palette{}".format(' — filter: ' + filt if filt else ''),
         "─" * 60,
         "",
     ]
     for e in entries:
-        lines.append(f"  {e.get('caption', '(no caption)')}")
-        lines.append(f"    command : {e.get('command', '')}")
+        lines.append("  {}".format(e.get('caption', '(no caption)')))
+        lines.append("    command : {}".format(e.get('command', '')))
         if e.get("args"):
-            lines.append(f"    args    : {e['args']}")
+            lines.append("    args    : {}".format(e['args']))
         if e.get("package"):
-            lines.append(f"    package : {e['package']}")
+            lines.append("    package : {}".format(e['package']))
         lines.append("")
-    lines.append(f"{len(entries)} entry/entries listed.")
+    lines.append("{} entry/entries listed.".format(len(entries)))
     return "\n".join(lines)
 
 
@@ -200,15 +200,15 @@ def _fmt_syntaxes(data, filt):
     if filt:
         syns = [s for s in syns if filt.lower() in s.get("name", "").lower()]
     lines = [
-        f"MCP: Browse Syntaxes{' — filter: ' + filt if filt else ''}",
+        "MCP: Browse Syntaxes{}".format(' — filter: ' + filt if filt else ''),
         "─" * 60,
         "",
     ]
     for s in syns:
-        lines.append(f"  {s['name']}")
-        lines.append(f"    path: {s['path']}")
+        lines.append("  {}".format(s['name']))
+        lines.append("    path: {}".format(s['path']))
         lines.append("")
-    lines.append(f"{len(syns)} syntax/syntaxes listed.")
+    lines.append("{} syntax/syntaxes listed.".format(len(syns)))
     return "\n".join(lines)
 
 
@@ -233,7 +233,7 @@ class McpBrowseSyntaxesCommand(sublime_plugin.WindowCommand):
                 data = _get_syntaxes({})
                 content = _fmt_syntaxes(data, filt)
             except Exception as e:
-                content = f"Error: {e}"
+                content = "Error: {}".format(e)
             _open_scratch(self.window, "MCP: Syntaxes", content)
 
         sublime.set_timeout_async(_run, 0)
@@ -246,13 +246,13 @@ def _fmt_variables(data, filt):
     if filt:
         data = {k: v for k, v in data.items() if filt.lower() in k.lower()}
     lines = [
-        f"MCP: Browse Variables{' — filter: ' + filt if filt else ''}",
+        "MCP: Browse Variables{}".format(' — filter: ' + filt if filt else ''),
         "─" * 60,
         "",
     ]
     for k, v in sorted(data.items()):
-        lines.append(f"  {k} = {v}")
-    lines += ["", f"{len(data)} variable(s) listed."]
+        lines.append("  {} = {}".format(k, v))
+    lines += ["", "{} variable(s) listed.".format(len(data))]
     return "\n".join(lines)
 
 
@@ -277,7 +277,7 @@ class McpBrowseVariablesCommand(sublime_plugin.WindowCommand):
                 data = _get_variables({})
                 content = _fmt_variables(data, filt)
             except Exception as e:
-                content = f"Error: {e}"
+                content = "Error: {}".format(e)
             _open_scratch(self.window, "MCP: Variables", content)
 
         sublime.set_timeout_async(_run, 0)
