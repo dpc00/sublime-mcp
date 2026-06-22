@@ -14,6 +14,7 @@ from typing import Optional
 
 import httpx
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ImageContent
 
 # Platform detection: Windows ST uses 9500, WSL/Linux ST uses 9501
 DEFAULT_PORT = 9500 if sys.platform == "win32" else 9501
@@ -188,11 +189,19 @@ def get_cursor_context(lines: int = 10) -> dict:
 
 
 @mcp.tool()
-def get_sheet_content(index: int) -> dict:
+def get_sheet_content(index: int):
     """Return the content of any tab by its sheet index (from get_sheets).
     Works for text tabs including untitled buffers and Terminus tabs.
-    For image tabs returns the file path only."""
-    return _get("/sheet_content", index=index)
+    For image tabs returns the image directly as a renderable image."""
+    result = _get("/sheet_content", index=index)
+    b64 = result.get("content_base64")
+    if b64:
+        path = result.get("path", "")
+        mime = "image/png" if path.lower().endswith(".png") else \
+               "image/jpeg" if path.lower().endswith((".jpg", ".jpeg")) else \
+               "image/gif" if path.lower().endswith(".gif") else "image/png"
+        return [ImageContent(type="image", data=b64, mimeType=mime)]
+    return result
 
 
 @mcp.tool()
