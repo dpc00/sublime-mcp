@@ -387,13 +387,17 @@ def _get_sheet_content(params):
         except Exception:
             pass
         if kind == "ImageSheet":
-            return {
-                "index": index,
-                "type": kind,
-                "path": path,
-                "content": None,
-                "note": "image — use path to read the file directly",
-            }
+            import base64
+            if path:
+                try:
+                    with open(path, "rb") as f:
+                        b64 = base64.b64encode(f.read()).decode("ascii")
+                    ext = path.lower().rsplit(".", 1)[-1] if "." in path else ""
+                    mime = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif"}.get(ext, "image/png")
+                    return [{"type": "image", "data": b64, "mimeType": mime}]
+                except Exception:
+                    pass
+            return {"index": index, "type": kind, "path": path}
         v = s.view()
         if not v:
             return {"error": "sheet {} has no text view".format(index)}
@@ -2394,7 +2398,7 @@ _MCP_TOOLS = [
     ("get_sheet_content",
      "Return the content of any tab by its sheet index (from get_sheets).\n"
      "Works for text tabs including untitled buffers and Terminus tabs.\n"
-     "For image tabs returns the file path only.",
+     "For image tabs returns the file path and content_base64 (base64-encoded image data).",
      {"type": "object", "properties": {"index": {"type": "integer"}}, "required": ["index"]},
      _g("/sheet_content")),
     ("get_file_content",
@@ -2881,7 +2885,10 @@ def _mcp_dispatch(session_id, msg):
             if entry is None:
                 raise ValueError("Unknown tool: " + str(tool_name))
             data = entry[3](tool_args)
-            result = {"content": [{"type": "text", "text": json.dumps(data)}]}
+            if isinstance(data, list):
+                result = {"content": data}
+            else:
+                result = {"content": [{"type": "text", "text": json.dumps(data)}]}
         else:
             raise ValueError("Unknown method: " + method)
 
