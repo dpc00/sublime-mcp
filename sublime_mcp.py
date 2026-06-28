@@ -1207,6 +1207,17 @@ def _replace_lines(body):
     return _on_main(fn)
 
 
+def _get_help(body):
+    """Return the AGENT_GUIDE.md content to educate AI agents on tool usage."""
+    import os
+    guide_path = os.path.join(os.path.dirname(__file__), "AGENT_GUIDE.md")
+    try:
+        with open(guide_path, encoding="utf-8") as f:
+            return {"ok": True, "content": f.read()}
+    except FileNotFoundError:
+        return {"error": "AGENT_GUIDE.md not found at {}".format(guide_path)}
+
+
 def _run_command(body):
     cmd = body.get("command")
     args = body.get("args") or {}
@@ -2019,6 +2030,7 @@ _POST = {
     "/send_to_view": _send_to_view,
     "/edit_file": _edit_file,
     "/open_control_panel": _open_control_panel,
+    "/get_help": _get_help,
 }
 
 
@@ -2713,6 +2725,11 @@ _MCP_TOOLS = [
      "Installation runs in the background — check the ST console for progress.",
      {"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]},
      _install_package),
+    ("get_help",
+     "Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use sublime-mcp tools correctly. "
+     "Call this first if you are unsure how to save files, close tabs, or use eval_python.",
+     {"type": "object", "properties": {}},
+     _p("/get_help")),
 ]
 
 _mcp_tools_lock = threading.Lock()
