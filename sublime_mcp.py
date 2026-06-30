@@ -484,17 +484,11 @@ def _send_to_view(body):
             return err
         if not v:
             return {"error": "no view found"}
-        import sys
-
-        Terminal = sys.modules.get("Terminus.terminus.terminal", None)
-        Terminal = Terminal.Terminal if Terminal else None
-        if Terminal and Terminal.from_id(v.id()):
-            v.run_command("terminus_paste_text", {"text": text, "bracketed": False})
-        else:
-            w.focus_view(v)
-            w.run_command("terminus_send_string", {"string": text})
-        tag = v.settings().get("terminus_view.tag")
-        return {"ok": True, "name": v.name(), "tag": tag}
+        if v.is_read_only():
+            return {"error": "view is read-only", "name": v.name()}
+        w.focus_view(v)
+        v.run_command("insert", {"characters": text})
+        return {"ok": True, "name": v.name()}
 
     return _on_main(fn)
 
@@ -2511,8 +2505,7 @@ _MCP_TOOLS = [
      _mcp_remove_folder),
     ("send_to_view",
      "Send a string to any open tab by name (partial match, case-insensitive).\n"
-     "For Terminus tabs this types the text into the terminal as if the user typed it.\n"
-     "Include a trailing newline (\\n) to execute a command.\n"
+     "Inserts the text at the cursor of the resolved view using the standard insert command; returns an error if the view is read-only.\n"
      "Use index (0-based, from get_open_files) to target a tab by position instead of name.\n"
      "Omit both name and index to target the active view.",
      {"type": "object", "properties": {
