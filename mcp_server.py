@@ -284,8 +284,7 @@ def remove_folder(path: str) -> dict:
 @mcp.tool()
 def send_to_view(text: str, name: str = "", index: int = -1) -> dict:
     """Send a string to any open tab by name (partial match, case-insensitive).
-    For Terminus tabs this types the text into the terminal as if the user typed it.
-    Include a trailing newline (\\n) to execute a command.
+    Inserts the text at the cursor of the resolved view using the standard insert command; returns an error if the view is read-only.
     Use index (0-based, from get_open_files) to target a tab by position instead of name.
     Omit both name and index to target the active view."""
     return _post("/send_to_view", text=text, name=name, index=index)
