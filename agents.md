@@ -1,7 +1,7 @@
 # sublime-mcp — Agent Context
 
-**Root law:** If you need the org map, go to C:\Users\donal\router.md
-**If this isn't the right place for your task, go back to:** C:\Users\donal\agents.md
+**Root law:** If you need the org map, go to ../router.md
+**If this isn't the right place for your task, go back to:** ../agents.md
 
 ---
 
