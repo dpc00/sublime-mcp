@@ -569,6 +569,44 @@ def eval_python_latest(code: str) -> dict:
     return _post("/eval_python_latest", code=code)
 
 
+
+@mcp.tool()
+def get_console_win() -> dict:
+    """Windows-only fallback: captures ST console by clicking the output area via ctypes then Ctrl+A/Ctrl+C.
+    Use when get_console_full fails."""
+    return _get("/console_win")
+
+
+@mcp.tool()
+def get_help() -> dict:
+    """Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use sublime-mcp tools correctly."""
+    return _get("/get_help")
+
+
+@mcp.tool()
+def open_control_panel() -> dict:
+    """Open (or focus) the Claude MCP Control Panel: an interactive minihtml dashboard in a dedicated Sublime view."""
+    return _post("/open_control_panel")
+
+
+@mcp.tool()
+def get_package_mcp_info(package: str) -> dict:
+    """Return everything needed to write an MCP extension for an installed Package Control package."""
+    return _post("/package_mcp_info", package=package)
+
+
+@mcp.tool()
+def search_packages(query: str = "", limit: int = 20) -> dict:
+    """Search Package Control for installable Sublime Text packages."""
+    return _get("/search_packages", query=query, limit=limit)
+
+
+@mcp.tool()
+def install_package(package: str) -> dict:
+    """Install a Package Control package by exact name."""
+    return _post("/install_package", package=package)
+
+
 def main():
     mcp.run()
 

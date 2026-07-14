@@ -34,7 +34,7 @@ function ok(data) {
   return { content: [{ type: 'text', text: JSON.stringify(data) }] };
 }
 
-const server = new McpServer({ name: 'sublime-mcp', version: '1.2.4' });
+const server = new McpServer({ name: 'sublime-mcp', version: '1.3.3' });
 
 // ── no-parameter passthrough tools ────────────────────────────────────────────
 
@@ -386,6 +386,36 @@ server.registerTool('eval_python_latest', {
   description: "Execute Python code using the system Python interpreter outside Sublime Text's embedded sandbox.\nUseful for newer stdlib features or third-party packages not available in ST's embedded Python.\nReturns stdout, stderr, and returncode.",
   inputSchema: { code: z.string() },
 }, async ({ code }) => ok(await post('/eval_python_latest', { code })));
+
+server.registerTool('get_console_win', {
+  description: 'Windows-only fallback: captures ST console by clicking the output area via ctypes then Ctrl+A/Ctrl+C.\nUse when get_console_full fails.',
+  inputSchema: {},
+}, async () => ok(await get('/console_win')));
+
+server.registerTool('get_help', {
+  description: 'Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use sublime-mcp tools correctly.',
+  inputSchema: {},
+}, async () => ok(await get('/get_help')));
+
+server.registerTool('open_control_panel', {
+  description: 'Open (or focus) the Claude MCP Control Panel: an interactive minihtml dashboard in a dedicated Sublime view.',
+  inputSchema: {},
+}, async () => ok(await post('/open_control_panel')));
+
+server.registerTool('get_package_mcp_info', {
+  description: 'Return everything needed to write an MCP extension for an installed Package Control package.',
+  inputSchema: { package: z.string() },
+}, async ({ package }) => ok(await post('/package_mcp_info', { package })));
+
+server.registerTool('search_packages', {
+  description: 'Search Package Control for installable Sublime Text packages.',
+  inputSchema: { query: z.string().default(''), limit: z.number().int().default(20) },
+}, async ({ query, limit }) => ok(await get('/search_packages', { query, limit })));
+
+server.registerTool('install_package', {
+  description: 'Install a Package Control package by exact name.',
+  inputSchema: { package: z.string() },
+}, async ({ package }) => ok(await post('/install_package', { package })));
 
 // ── startup ───────────────────────────────────────────────────────────────────
 
