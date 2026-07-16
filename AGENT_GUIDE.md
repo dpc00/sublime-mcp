@@ -114,12 +114,16 @@ print("done")
 open_file(path="C:\\path\\to\\file.py", line=42, col=1)
 ```
 
-### Run a Sublime command
+### Never Run a shell command / DOS command via Sublime's built-in 'exec'
+- User loses control of the process and can't always 'cancel build'
+
+### Never Run a Sublime command like this:
 ```
 run_command(command="close_file", scope="window")
 ```
 Scopes: "window" (default), "view", "application".
 Check available commands with `get_commands`.
+- Avoid run_command like the plague.
 
 ### Get all tabs info
 ```
@@ -134,21 +138,18 @@ get_sheet_content(index=2)
 
 ## Tool Reliability Notes
 
-- `str_replace_based_edit_tool` reports success but does NOT persist to disk
-- `close_file` by path works only for non-dirty files
-- `eval_python` works reliably — use `print()` for output
+- `str_replace_based_edit_tool` reports success but does NOT persist to disk, always remember to save the file before proceeding
 - `save_file` by path works reliably when the file is open in ST
 - `get_sheets` / `get_sheet_content` work reliably for reading tab state
-- `run_command` works but you must know the correct command name and scope
+- `run_command` works but you must know the correct command name and scope, avoid it like the plague, it is dangerous due to so many commands requiring focus.  User has to commuicate with agent so focus is always necessary on the AI console
 - `find_in_files` works for searching project files
 - `get_commands` lists available commands but without descriptions or arg schemas
 
 ## Gaps to Address in sublime-mcp
 
-1. **str_replace should auto-save** (or offer a save option)
-2. **close_file should handle dirty files** (set_scratch + close, or return error with guidance)
+1. **str_replace should be followed by save**
+2. **close_file should handle dirty files**
 3. **get_commands should return descriptions and arg schemas** (not just IDs)
-4. **No close_sheet by index/ID** — must use eval_python workaround
 5. **eval_python output can be empty if code uses return instead of print**
 6. **No tool to check if buffer matches disk** (is_dirty is available but not "is stale")
 
@@ -178,11 +179,3 @@ Do NOT copy entire file content via `insert`. Instead:
 2. Save with `save_file`
 3. Verify with `is_dirty` check (should be False after save)
 
-### File editing workflow with diff preview
-1. Open the real file in ST
-2. Create a new untitled tab with a copy of the file content (use `replace_lines` not `insert`)
-3. Make edits in the preview tab
-4. Use DiffTabs (`diff_tabs_palette`) or side-by-side layout to review
-5. After approval, make the same targeted edits on the real file with `str_replace_based_edit_tool`
-6. Save with `save_file`
-7. Close the preview tab
