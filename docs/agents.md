@@ -13,7 +13,7 @@ MCP server that exposes Sublime Text commands and state to Claude and other AI a
 Plugin edits in this repo are NOT live in Sublime Text until deployed to the installed Sublime Text Packages directory. Never assume test results are valid until the file has been copied there. If something isn't working, check deployment before investigating the code.
 
 ## Key Files
-- sublime_mcp.py (111KB) — Main MCP server implementation
+- sublime_mcp.py (161KB, 4089 lines) — Main MCP server implementation; exposes 218 typed MCP tools (`_MCP_TOOLS` list) covering ST's built-in text/window/application commands plus read-only state getters
 - mcp_server.py — MCP server entry point
 - MCP Commander.sublime-commands — Command palette entries (may be incomplete)
 - index.js — JavaScript component

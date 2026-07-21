@@ -3,6 +3,36 @@
 This document teaches AI agents how to use sublime-mcp tools correctly.
 Read this before editing files, closing tabs, or running ST commands.
 
+## Toolset (as of 2026-07-21, Phase B complete)
+218 typed MCP tools are exposed via `_MCP_TOOLS`, covering ST's built-in
+text/window/application commands plus read-only state getters. Batches:
+- Batch 1 (44 tools): view/tab/pane + edit/selection/scroll/macro
+- Batch 2 (37 tools): file/project operations
+- Batch 3 (22 tools): marks, jumps, folds, transform, browser, scope, arithmetic, tag indent
+- ~115 pre-existing tools (get_*, save, open, find, str_replace_based_edit_tool, etc.)
+
+Prefer the named typed tool for any ST action over `run_command` (see below).
+
+## Verifying Newly Added Tools — Do Not Live-Invoke UI Commands
+When adding new routes to `_POST` / `_MCP_TOOLS`, "live verification" means
+POSTing to the route — which actually *invokes* the command on the user's
+running ST. For most tools this is harmless (set_mark, sort_lines, etc.
+just mutate the buffer). But for UI-interactive commands it fires real
+dialogs/overlays on the user's screen:
+
+- `prompt_goto_line` → opens Goto Line box
+- `quick_panel` (show_overlay) → opens Goto Anything / Command Palette
+- `select_color_scheme`, `select_theme` → opens picker dialog
+- `open_in_browser`, `html_print` → may trigger a Windows "select an
+  application" dialog or open a browser
+- `customize_*`, `convert_*`, `edit_syntax_settings` → open new tabs
+
+**Policy:** For UI-interactive commands, registry-only verification is
+sufficient — confirm the route exists in `_POST` and the entry exists in
+`_MCP_TOOLS`. Do NOT POST to live-invoke. Only live-invoke silent
+buffer-mutation commands, and even then prefer a no-op target (empty
+buffer / scratch tab) so the user's work isn't disturbed.
+
 ## Critical Rules
 
 ### Editing Files
