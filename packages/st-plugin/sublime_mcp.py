@@ -1302,82 +1302,242 @@ def _close_file(body):
 
 
 def _find_in_files(body):
-    """Search files in project folders for a pattern and return match locations.
+    """Open ST's native Find in Files panel (Ctrl+Shift+H equivalent) and run a search.
 
-    Runs entirely on the HTTP thread — no ST API needed for raw file I/O, so
-    we don't need _on_main().  Skips common build/cache dirs (.git, node_modules,
-    etc.) and binary-large files (> max_file_bytes, default 1 MB).  Returns
-    early with truncated=True if max_results or max_files limits are hit.
+    Routes through ST's real C++ find engine — NOT a Python re-implementation.
+    The three-box Find / Replace / Where panel is shown so the user can see
+    exactly what is being searched. Honors the full ST "Where" syntax:
+
+      - Plain globs:        "*.py, *.sublime-settings"
+      - Exclusion globs:    "-*.md, -*.min.js"
+      - Folder paths:        "C:\\Users\\donal\\projects\\SText\\ai"
+      - ${project}           all project folders
+      - ${folder:Name}      a project folder whose name contains 'Name'
+      - ${open_files}       only currently-open files
+      - <project filters>   the project's include/exclude settings
+      - Combinations:       "C:\\path\\to\\dir, *.py, -test_*.py"
 
     Body params:
-      pattern          search string or regex
-      folders          list of absolute paths (defaults to project folders)
-      case_sensitive   bool (default False)
-      regex            bool — treat pattern as regex (default False = literal)
-      max_results      int (default 200)
-      max_files        int (default 500)
-      max_file_bytes   int (default 1048576)
+      pattern          str  — search string (or regex if regex=True)
+      replace          str  — optional. If given, the Replace box is populated
+                             (does not auto-execute; use replace_in_files for that)
+      where            str  — "Where" filter, see syntax above. Empty = all
+                             project folders.
+      case_sensitive   bool — default False
+      regex            bool — treat pattern as regex, default False (literal)
+      whole_word       bool — default False
+      preserve_case    bool — default False (only meaningful for replace)
+      in_selection     bool — ignored for find_in_files (panel-level only)
+      show_panel       bool — default True. If False, search runs but the panel
+                             is not shown (background mode).
     """
     pattern = body.get("pattern", "")
-    folders = body.get("folders") or []
-    case = body.get("case_sensitive", False)
-    use_re = body.get("regex", False)
-    max_hits = int(body.get("max_results", 200))
-    max_files = int(body.get("max_files", 500))
-    max_file_bytes = int(body.get("max_file_bytes", 1048576))  # 1 MB
     if not pattern:
         return {"error": "pattern required"}
-    if not folders:
-        folders = _on_main(lambda: sublime.active_window().folders())
-    SKIP = {".git", "__pycache__", "node_modules", ".venv", ".mypy_cache"}
-    flags = 0 if case else re.IGNORECASE
-    try:
-        rx = re.compile(pattern if use_re else re.escape(pattern), flags)
-    except re.error as e:
-        return {"error": "bad pattern: {}".format(e)}
-    results = []
-    files_scanned = 0
-    files_skipped_size = 0
-    for folder in folders:
-        for dirpath, dirnames, filenames in os.walk(folder):
-            dirnames[:] = [d for d in dirnames if d not in SKIP]
-            for fname in filenames:
-                if files_scanned >= max_files:
-                    return {
-                        "error": "file limit reached: {} files scanned across {}. Narrow folders or increase max_files.".format(max_files, folders),
-                        "results": results,
-                        "files_scanned": files_scanned,
-                        "files_skipped_size": files_skipped_size,
-                        "truncated": True,
-                    }
-                fpath = os.path.join(dirpath, fname)
-                try:
-                    if os.path.getsize(fpath) > max_file_bytes:
-                        files_skipped_size += 1
-                        continue
-                    text = open(fpath, encoding="utf-8", errors="replace").read()
-                except OSError:
-                    continue
-                files_scanned += 1
-                for m in rx.finditer(text):
-                    line_no = text[: m.start()].count("\n") + 1
-                    results.append({"path": fpath, "line": line_no, "match": m.group()})
-                    if len(results) >= max_hits:
-                        return {
-                            "results": results,
-                            "files_scanned": files_scanned,
-                            "files_skipped_size": files_skipped_size,
-                            "truncated": True,
-                        }
-    return {
-        "results": results,
-        "files_scanned": files_scanned,
-        "files_skipped_size": files_skipped_size,
-        "truncated": False,
+    args = {
+        "panel": "find_in_files",
+        "pattern": pattern,
+        "where": body.get("where", ""),
+        "case_sensitive": bool(body.get("case_sensitive", False)),
+        "regex": bool(body.get("regex", False)),
+        "whole_word": bool(body.get("whole_word", False)),
     }
+    if body.get("replace", ""):
+        args["replace"] = body["replace"]
+        args["preserve_case"] = bool(body.get("preserve_case", False))
+    show = bool(body.get("show_panel", True))
+    def fn():
+        w = sublime.active_window()
+        if not show:
+            w.find_in_files_panel() if hasattr(w, "find_in_files_panel") else None
+        w.run_command("show_panel", args)
+        return {"ok": True, "panel_open": show, "pattern": pattern,
+                "where": args["where"], "case_sensitive": args["case_sensitive"],
+                "regex": args["regex"], "whole_word": args["whole_word"]}
+    return _on_main(fn)
+
+
+def _replace_in_files(body):
+    """Run the Replace half of Find in Files (Ctrl+Shift+H → Replace All).
+
+    Executes ST's native replace_in_files command and shows the diff preview
+    panel so the user can review every replacement before it is committed.
+    Same `where` syntax as _find_in_files.
+
+    Body params: pattern, replace (required), where, case_sensitive, regex,
+                 whole_word, preserve_case, show_panel (default True).
+    """
+    pattern = body.get("pattern", "")
+    replace = body.get("replace", "")
+    if not pattern:
+        return {"error": "pattern required"}
+    if replace == "":
+        # Allow replace to be empty string (deletion), but require the key
+        if "replace" not in body:
+            return {"error": "replace required (use empty string for deletion)"}
+    args = {
+        "panel": "find_in_files",
+        "pattern": pattern,
+        "replace": replace,
+        "where": body.get("where", ""),
+        "case_sensitive": bool(body.get("case_sensitive", False)),
+        "regex": bool(body.get("regex", False)),
+        "whole_word": bool(body.get("whole_word", False)),
+        "preserve_case": bool(body.get("preserve_case", False)),
+    }
+    show = bool(body.get("show_panel", True))
+    def fn():
+        w = sublime.active_window()
+        w.run_command("show_panel", args)
+        w.run_command("replace_in_files")
+        return {"ok": True, "panel_open": show, "pattern": pattern,
+                "replace": replace, "where": args["where"]}
+    return _on_main(fn)
+
+
+def _find_and_replace(body):
+    """Open the single-file Find & Replace panel (Ctrl+H equivalent) on the
+    active view and run the requested operation.
+
+    Body params:
+      pattern          str  — search string (or regex if regex=True)
+      replace          str  — replacement string. $1, $2 backrefs supported in
+                             regex mode.
+      case_sensitive   bool — default False
+      regex            bool — default False (literal)
+      whole_word       bool — default False
+      preserve_case    bool — default False
+      in_selection     bool — restrict to current selection, default False
+      wrap             bool — wrap at end of file, default True
+      show_panel       bool — default True. If False, run replace_all silently.
+      replace_all      bool — default False. If True, perform Replace All on
+                             the active view without opening the panel.
+    """
+    pattern = body.get("pattern", "")
+    if not pattern:
+        return {"error": "pattern required"}
+    args = {
+        "panel": "replace",
+        "pattern": pattern,
+        "replace": body.get("replace", ""),
+        "case_sensitive": bool(body.get("case_sensitive", False)),
+        "regex": bool(body.get("regex", False)),
+        "whole_word": bool(body.get("whole_word", False)),
+        "preserve_case": bool(body.get("preserve_case", False)),
+    }
+    if body.get("in_selection"):
+        args["in_selection"] = True
+    if "wrap" in body:
+        args["wrap"] = bool(body["wrap"])
+    replace_all = bool(body.get("replace_all", False))
+    show = bool(body.get("show_panel", True))
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        w = v.window() or sublime.active_window()
+        if replace_all:
+            v.run_command("replace_all", {
+                "pattern": pattern,
+                "replace": body.get("replace", ""),
+                "case_sensitive": args["case_sensitive"],
+                "regex": args["regex"],
+                "whole_word": args["whole_word"],
+                "preserve_case": args["preserve_case"],
+            })
+            return {"ok": True, "replace_all": True, "pattern": pattern}
+        if show:
+            w.run_command("show_panel", args)
+            return {"ok": True, "panel_open": True, "pattern": pattern}
+        # Silent single-replace
+        v.run_command("replace", {
+            "pattern": pattern,
+            "replace": body.get("replace", ""),
+            "case_sensitive": args["case_sensitive"],
+            "regex": args["regex"],
+            "whole_word": args["whole_word"],
+        })
+        return {"ok": True, "panel_open": False, "pattern": pattern}
+    return _on_main(fn)
+
+
+def _next_result(body):
+    """Jump to the next find-in-files / build result. Visible in the view."""
+    def fn():
+        sublime.active_window().run_command("next_result")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _prev_result(body):
+    """Jump to the previous find-in-files / build result. Visible in the view."""
+    def fn():
+        sublime.active_window().run_command("prev_result")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _toggle_bookmark(body):
+    """Toggle a bookmark on the current line."""
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("toggle_bookmark")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _next_bookmark(body):
+    """Move cursor to next bookmark in the active view."""
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("next_bookmark")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _prev_bookmark(body):
+    """Move cursor to previous bookmark in the active view."""
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("prev_bookmark")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _clear_bookmarks(body):
+    """Clear all bookmarks in the active view."""
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("clear_bookmarks")
+        return {"ok": True}
+    return _on_main(fn)
+
+
+def _select_all_bookmarks(body):
+    """Select every line containing a bookmark in the active view."""
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        v.run_command("select_all_bookmarks")
+        return {"ok": True}
+    return _on_main(fn)
 
 
 def _find_in_file(body):
+    """Find all occurrences of pattern in the active file. Returns list of
+    {line, col, text}. Does not open a panel — for the interactive Find panel
+    use find_and_replace with replace_all=False and show_panel=True.
+
+    Body params: pattern (required), case_sensitive, regex."""
     pattern = body.get("pattern", "")
     case = body.get("case_sensitive", False)
     use_re = body.get("regex", False)
@@ -1688,6 +1848,59 @@ def _duplicate_line(body):
         return {"ok": True}
 
     return _on_main(fn)
+
+
+# ── Phase B: typed wrappers for ST commands ─────────────────────────────────
+#
+# `_vc(cmd)` / `_wc(cmd)` / `_ac(cmd)` return POST handlers that run the named
+# ST TextCommand / WindowCommand / ApplicationCommand on the main thread.
+# The handler accepts a `body` dict and forwards every key as command args
+# (after stripping a few meta keys). Use these for simple command wrappers so
+# the tool schema in _MCP_TOOLS stays the source of truth for documentation.
+
+def _vc(cmd):
+    def handler(body):
+        args = {k: v for k, v in body.items() if v is not None}
+
+        def fn():
+            v = _active_view()
+            if not v:
+                return {"error": "no active view"}
+            v.run_command(cmd, args)
+            return {"ok": True}
+
+        return _on_main(fn)
+
+    return handler
+
+
+def _wc(cmd):
+    def handler(body):
+        args = {k: v for k, v in body.items() if v is not None}
+
+        def fn():
+            w = sublime.active_window()
+            if not w:
+                return {"error": "no active window"}
+            w.run_command(cmd, args)
+            return {"ok": True}
+
+        return _on_main(fn)
+
+    return handler
+
+
+def _ac(cmd):
+    def handler(body):
+        args = {k: v for k, v in body.items() if v is not None}
+
+        def fn():
+            sublime.run_command(cmd, args)
+            return {"ok": True}
+
+        return _on_main(fn)
+
+    return handler
 
 
 def _insert_snippet(body):
@@ -2003,6 +2216,15 @@ _POST = {
     "/close_file": _close_file,
     "/find_in_files": _find_in_files,
     "/find_in_file": _find_in_file,
+    "/replace_in_files": _replace_in_files,
+    "/find_and_replace": _find_and_replace,
+    "/next_result": _next_result,
+    "/prev_result": _prev_result,
+    "/toggle_bookmark": _toggle_bookmark,
+    "/next_bookmark": _next_bookmark,
+    "/prev_bookmark": _prev_bookmark,
+    "/clear_bookmarks": _clear_bookmarks,
+    "/select_all_bookmarks": _select_all_bookmarks,
     "/set_syntax": _set_syntax,
     "/toggle_comment": _toggle_comment,
     "/toggle_sidebar": _toggle_sidebar,
@@ -2016,7 +2238,151 @@ _POST = {
     "/undo": _undo,
     "/redo": _redo,
     "/duplicate_line": _duplicate_line,
+    # ── Phase B batch 1: selection / edit / view ops ────────────────────────
+    "/new_file": _wc("new_file"),
+    "/new_view": _wc("new_file"),
+    "/close_all": _wc("close_all"),
+    "/close_others": _wc("close_others"),
+    "/close_other_tabs": _wc("close_others"),
+    "/close_unmodified": _wc("close_unmodified"),
+    "/close_pane": _wc("close_pane"),
+    "/close_transient": _wc("close_transient"),
+    "/reopen_closed_file": _wc("reopen_closed_file"),
+    "/clone_file": _wc("clone_file"),
+    "/next_view": _wc("next_view"),
+    "/prev_view": _wc("prev_view"),
+    "/next_view_in_stack": _wc("next_view_in_stack"),
+    "/prev_view_in_stack": _wc("prev_view_in_stack"),
+    "/next_pane": _wc("next_pane"),
+    "/prev_pane": _wc("prev_pane"),
+    "/focus_neighboring_group": _wc("focus_neighboring_group"),
+    "/move_to_neighboring_group": _wc("move_to_neighboring_group"),
+    "/move_view": _wc("move_view"),
+    "/set_layout_1": _wc("set_layout"),
+    "/toggle_full_screen": _wc("toggle_full_screen"),
+    "/toggle_menu": _wc("toggle_menu"),
+    "/toggle_side_bar": _wc("toggle_side_bar"),
+    "/toggle_minimap": _wc("toggle_minimap"),
+    "/toggle_status_bar": _wc("toggle_status_bar"),
+    "/toggle_tabs": _wc("toggle_tabs"),
+    "/toggle_distraction_free": _wc("toggle_distraction_free"),
+    # edit ops (text scope)
+    "/insert": _vc("insert"),
+    "/paste": _vc("paste"),
+    "/paste_from_history": _vc("paste_from_history"),
+    "/paste_and_indent": _vc("paste_and_indent"),
+    "/cut": _vc("cut"),
+    "/copy": _vc("copy"),
+    "/select_all": _vc("select_all"),
+    "/expand_selection": _vc("expand_selection"),
+    "/expand_selection_to_paragraph": _vc("expand_selection_to_paragraph"),
+    "/expand_selection_to_indentation": _vc("expand_selection_to_indentation"),
+    "/expand_selection_to_scope": _vc("expand_selection_to_scope"),
+    "/expand_selection_to_brackets": _vc("expand_selection_to_brackets"),
+    "/shrink_selection": _vc("shrink_selection"),
+    "/split_selection_into_lines": _vc("split_selection_into_lines"),
+    "/single_selection": _vc("single_selection"),
+    "/clear_fields": _vc("clear_fields"),
+    "/join_lines": _vc("join_lines"),
+    "/split_line": _vc("split_line"),
+    "/swap_line_up": _vc("swap_line_up"),
+    "/swap_line_down": _vc("swap_line_down"),
+    "/move_line_up": _vc("move_line_up"),
+    "/move_line_down": _vc("move_line_down"),
+    "/indent": _vc("indent"),
+    "/unindent": _vc("unindent"),
+    "/reindent": _vc("reindent"),
+    "/auto_indent": _vc("auto_indent"),
+    "/wrap_lines": _vc("wrap_lines"),
+    "/transpose": _vc("transpose"),
+    "/upper_case": _vc("upper_case"),
+    "/lower_case": _vc("lower_case"),
+    "/title_case": _vc("title_case"),
+    "/swap_case": _vc("swap_case"),
+    "/toggle_case": _vc("swap_case"),
+    "/invert_selection": _vc("invert_selection"),
+    "/sort_selection": _vc("sort_selection"),
+    "/permute_lines": _vc("permute_lines"),
+    "/permute_selection": _vc("permute_selection"),
+    "/trim_trailing_white_space": _vc("trim_trailing_white_space"),
+    "/trim_whitespace": _vc("trim_trailing_white_space"),
+    "/trim_whitespaces": _vc("trim_trailing_white_space"),
+    "/ensure_newline_at_eof": _vc("ensure_newline_at_eof"),
+    "/add_missing_newline": _vc("ensure_newline_at_eof"),
+    "/expand_tabs": _vc("expand_tabs"),
+    "/unexpand_tabs": _vc("unexpand_tabs"),
+    "/detect_indentation": _vc("detect_indentation"),
+    "/set_indent_tabs": _vc("set_indent_tabs"),
+    "/set_indent_spaces": _vc("set_indent_spaces"),
+    "/yank": _vc("yank"),
+    "/transpose_chars": _vc("transpose"),
+    "/scroll_to_bof": _vc("scroll_to_bof"),
+    "/scroll_to_eof": _vc("scroll_to_eof"),
+    "/show_at_center": _vc("show_at_center"),
+    "/toggle_record_macro": _ac("toggle_record_macro"),
+    "/run_macro": _vc("run_macro"),
+    "/play_macro": _vc("run_macro"),
     "/insert_snippet": _insert_snippet,
+    # ── Phase B batch 2: file/project operations ─────────────────────────
+    "/new_file_at": _wc("new_file_at"),
+    "/new_folder": _wc("new_folder"),
+    "/open_folder": _wc("open_folder"),
+    "/open_containing_folder": _wc("open_containing_folder"),
+    "/rename_file": _wc("rename_file"),
+    "/copy_path": _wc("copy_path"),
+    "/switch_file": _wc("switch_file"),
+    "/open_file_settings": _wc("open_file_settings"),
+    "/edit_settings": _wc("edit_settings"),
+    "/new_build_system": _wc("new_build_system"),
+    "/new_plugin": _wc("new_plugin"),
+    "/new_snippet": _wc("new_snippet"),
+    "/new_syntax": _wc("new_syntax"),
+    "/new_pane": _wc("new_pane"),
+    "/set_max_columns": _wc("set_max_columns"),
+    "/view_resource": _wc("view_resource"),
+    "/exec": _wc("exec"),
+    "/find_in_folder": _wc("find_in_folder"),
+    "/goto_definition": _wc("goto_definition"),
+    "/goto_reference": _wc("goto_reference"),
+    "/auto_complete_goto_definition": _vc("auto_complete_goto_definition"),
+    "/open_symbol_definition": _wc("open_symbol_definition"),
+    "/prompt_goto_line": _wc("prompt_goto_line"),
+    "/quick_panel": _wc("show_overlay"),
+    "/select_color_scheme": _wc("select_color_scheme"),
+    "/select_theme": _wc("select_theme"),
+    "/customize_color_scheme": _wc("customize_color_scheme"),
+    "/customize_theme": _wc("customize_theme"),
+    "/convert_color_scheme": _wc("convert_color_scheme"),
+    "/convert_syntax": _wc("convert_syntax"),
+    "/edit_syntax_settings": _wc("edit_syntax_settings"),
+    "/run_syntax_tests": _wc("run_syntax_tests"),
+    "/profile_plugins": _ac("profile_plugins"),
+    "/profile_syntax_definition": _ac("profile_syntax_definition"),
+    "/syntax_definition_compatibility": _ac("syntax_definition_compatibility"),
+    "/install_package_control": _ac("install_package_control"),
+    "/echo": _ac("echo"),
+    # Phase B batch 3: remaining text commands (marks, jumps, folds, transform, browser, scope)
+    "/set_mark": _vc("set_mark"),
+    "/select_to_mark": _vc("select_to_mark"),
+    "/swap_with_mark": _vc("swap_with_mark"),
+    "/delete_to_mark": _vc("delete_to_mark"),
+    "/add_to_kill_ring": _vc("add_to_kill_ring"),
+    "/jump_back": _vc("jump_back"),
+    "/jump_forward": _vc("jump_forward"),
+    "/fold_unfold": _vc("fold_unfold"),
+    "/rot13": _vc("rot13"),
+    "/wrap_block": _vc("wrap_block"),
+    "/tab": _vc("tab"),
+    "/open_context_url": _vc("open_context_url"),
+    "/open_in_browser": _vc("open_in_browser"),
+    "/show_scope_name": _vc("show_scope_name"),
+    "/html_print": _vc("html_print"),
+    "/arithmetic": _vc("arithmetic"),
+    "/auto_indent_tag": _vc("auto_indent_tag"),
+    "/convert_ident_case": _vc("convert_ident_case"),
+    "/old_expand_selection_to_paragraph": _vc("old_expand_selection_to_paragraph"),
+    "/old_wrap_lines": _vc("old_wrap_lines"),
+    "/transformer": _vc("transformer"),
     "/get_setting": _get_setting,
     "/set_setting": _set_setting,
     "/focus_group": _focus_group,
@@ -2607,24 +2973,97 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {"contents": {"type": "string"}}, "required": ["contents"]},
      _p("/insert_snippet")),
     ("find_in_file",
-     "Find all occurrences of pattern in the active file. Returns list of {line, col, text}.",
+     "Find all occurrences of pattern in the active file. Returns list of {line, col, text}. "
+     "Does NOT open a panel — for the interactive Find/Replace panel use find_and_replace. "
+     "Use case_sensitive=True for case-sensitive match, regex=True to treat pattern as a "
+     "regular expression (Python re syntax).",
      {"type": "object", "properties": {
-         "pattern": {"type": "string"},
+         "pattern": {"type": "string", "description": "Search string or regex pattern"},
          "case_sensitive": {"type": "boolean", "default": False},
          "regex": {"type": "boolean", "default": False},
      }, "required": ["pattern"]},
      _p("/find_in_file")),
     ("find_in_files",
-     "Search for pattern across project folders (or the supplied folder list).\n"
-     "Skips .git, __pycache__, node_modules, .venv. Returns list of {path, line, match}.",
+     "Open ST's native Find in Files panel (Ctrl+Shift+H equivalent) and run a search. "
+     "Routes through ST's real C++ find engine, NOT a Python reimplementation. The three-box "
+     "Find / Replace / Where panel is shown so the user sees exactly what is being searched. "
+     "The `where` parameter accepts the full ST Where syntax: globs (*.py, -*.md), folder "
+     "paths, ${project}, ${folder:Name}, ${open_files}, <project filters>, or combinations "
+     "separated by commas. Pass show_panel=False for a silent background search.",
      {"type": "object", "properties": {
-         "pattern": {"type": "string"},
-         "folders": {"type": "array", "items": {"type": "string"}},
+         "pattern": {"type": "string", "description": "Search string or regex"},
+         "replace": {"type": "string", "description": "Optional Replace box text. Does not auto-execute; use replace_in_files for that."},
+         "where": {"type": "string", "description": "Where filter: globs, folder paths, ${project}, ${folder:Name}, ${open_files}, <project filters>"},
          "case_sensitive": {"type": "boolean", "default": False},
          "regex": {"type": "boolean", "default": False},
-         "max_results": {"type": "integer", "default": 200},
+         "whole_word": {"type": "boolean", "default": False},
+         "preserve_case": {"type": "boolean", "default": False},
+         "show_panel": {"type": "boolean", "default": True},
      }, "required": ["pattern"]},
      _p("/find_in_files")),
+    ("replace_in_files",
+     "Run the Replace half of Find in Files (Ctrl+Shift+H → Replace All) and show the diff "
+     "preview panel so the user can review every replacement before it is committed. Same "
+     "`where` syntax as find_in_files. Replace string may be empty for deletion. Regex "
+     "capture-group backrefs ($1, $2) supported when regex=True.",
+     {"type": "object", "properties": {
+         "pattern": {"type": "string"},
+         "replace": {"type": "string", "description": "Replacement string (use empty string for deletion)"},
+         "where": {"type": "string"},
+         "case_sensitive": {"type": "boolean", "default": False},
+         "regex": {"type": "boolean", "default": False},
+         "whole_word": {"type": "boolean", "default": False},
+         "preserve_case": {"type": "boolean", "default": False},
+         "show_panel": {"type": "boolean", "default": True},
+     }, "required": ["pattern", "replace"]},
+     _p("/replace_in_files")),
+    ("find_and_replace",
+     "Open the single-file Find & Replace panel (Ctrl+H equivalent) on the active view, "
+     "or perform a silent replace_all on it. For multi-file replace use replace_in_files. "
+     "Supports regex with $1/$2 backrefs in replace, preserve_case, whole_word, in_selection, "
+     "and wrap. By default opens the panel (show_panel=True); pass replace_all=True and "
+     "show_panel=False to do a silent Replace All without the panel.",
+     {"type": "object", "properties": {
+         "pattern": {"type": "string"},
+         "replace": {"type": "string"},
+         "case_sensitive": {"type": "boolean", "default": False},
+         "regex": {"type": "boolean", "default": False},
+         "whole_word": {"type": "boolean", "default": False},
+         "preserve_case": {"type": "boolean", "default": False},
+         "in_selection": {"type": "boolean", "default": False},
+         "wrap": {"type": "boolean", "default": True},
+         "show_panel": {"type": "boolean", "default": True},
+         "replace_all": {"type": "boolean", "default": False},
+     }, "required": ["pattern", "replace"]},
+     _p("/find_and_replace")),
+    ("next_result",
+     "Jump to the next find-in-files or build result. Visible in the view (cursor moves).",
+     {"type": "object", "properties": {}},
+     _p("/next_result")),
+    ("prev_result",
+     "Jump to the previous find-in-files or build result. Visible in the view (cursor moves).",
+     {"type": "object", "properties": {}},
+     _p("/prev_result")),
+    ("toggle_bookmark",
+     "Toggle a bookmark on the current line of the active view.",
+     {"type": "object", "properties": {}},
+     _p("/toggle_bookmark")),
+    ("next_bookmark",
+     "Move the cursor to the next bookmark in the active view.",
+     {"type": "object", "properties": {}},
+     _p("/next_bookmark")),
+    ("prev_bookmark",
+     "Move the cursor to the previous bookmark in the active view.",
+     {"type": "object", "properties": {}},
+     _p("/prev_bookmark")),
+    ("clear_bookmarks",
+     "Clear all bookmarks in the active view.",
+     {"type": "object", "properties": {}},
+     _p("/clear_bookmarks")),
+    ("select_all_bookmarks",
+     "Select every line containing a bookmark in the active view.",
+     {"type": "object", "properties": {}},
+     _p("/select_all_bookmarks")),
     ("set_syntax",
      "Set the syntax of the active file by name (case-insensitive partial match is fine).",
      {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
@@ -2723,6 +3162,564 @@ _MCP_TOOLS = [
      "Call this first if you are unsure how to save files, close tabs, or use eval_python.",
      {"type": "object", "properties": {}},
      _p("/get_help")),
+    # ── Phase B batch 1: view / tab / pane management ─────────────────────────
+    ("new_file",
+     "Create a new untitled file in the current window (File → New File).",
+     {"type": "object", "properties": {}},
+     _p("/new_file")),
+    ("new_view",
+     "Create a new untitled view/tab in the current window. Alias of new_file.",
+     {"type": "object", "properties": {}},
+     _p("/new_view")),
+    ("close_all",
+     "Close all open files/views in the current window.",
+     {"type": "object", "properties": {}},
+     _p("/close_all")),
+    ("close_others",
+     "Close all views in the current group except the active one (Close Other Tabs).",
+     {"type": "object", "properties": {}},
+     _p("/close_others")),
+    ("close_other_tabs",
+     "Alias of close_others — close all views in the current group except the active one.",
+     {"type": "object", "properties": {}},
+     _p("/close_other_tabs")),
+    ("close_unmodified",
+     "Close all unmodified (clean) views in the current window.",
+     {"type": "object", "properties": {}},
+     _p("/close_unmodified")),
+    ("close_pane",
+     "Close the current pane/group and all views inside it.",
+     {"type": "object", "properties": {}},
+     _p("/close_pane")),
+    ("close_transient",
+     "Close all transient views (preview tabs) in the current window.",
+     {"type": "object", "properties": {}},
+     _p("/close_transient")),
+    ("reopen_closed_file",
+     "Reopen the most recently closed file (File → Reopen Closed File).",
+     {"type": "object", "properties": {}},
+     _p("/reopen_closed_file")),
+    ("clone_file",
+     "Create a clone of the active view (opens the same file in a new tab, sharing the buffer).",
+     {"type": "object", "properties": {}},
+     _p("/clone_file")),
+    ("next_view",
+     "Switch to the next view/tab in the current group.",
+     {"type": "object", "properties": {}},
+     _p("/next_view")),
+    ("prev_view",
+     "Switch to the previous view/tab in the current group.",
+     {"type": "object", "properties": {}},
+     _p("/prev_view")),
+    ("next_view_in_stack",
+     "Switch to the next view in the view history stack (Ctrl+Tab equivalent).",
+     {"type": "object", "properties": {}},
+     _p("/next_view_in_stack")),
+    ("prev_view_in_stack",
+     "Switch to the previous view in the view history stack (Ctrl+Shift+Tab equivalent).",
+     {"type": "object", "properties": {}},
+     _p("/prev_view_in_stack")),
+    ("next_pane",
+     "Move focus to the next pane/group in the window.",
+     {"type": "object", "properties": {}},
+     _p("/next_pane")),
+    ("prev_pane",
+     "Move focus to the previous pane/group in the window.",
+     {"type": "object", "properties": {}},
+     _p("/prev_pane")),
+    ("focus_neighboring_group",
+     "Move focus to the neighboring pane group (cycle through panes).",
+     {"type": "object", "properties": {}},
+     _p("/focus_neighboring_group")),
+    ("move_to_neighboring_group",
+     "Move the active view to the neighboring pane group.",
+     {"type": "object", "properties": {}},
+     _p("/move_to_neighboring_group")),
+    ("move_view",
+     "Move the active view to a different group. Optional args: group (target group index), direction ('left'/'right'/'up'/'down').",
+     {"type": "object", "properties": {
+         "group": {"type": "integer", "default": -1},
+         "direction": {"type": "string", "default": ""},
+     }},
+     _p("/move_view")),
+    ("toggle_full_screen",
+     "Toggle Sublime Text full-screen mode.",
+     {"type": "object", "properties": {}},
+     _p("/toggle_full_screen")),
+    ("toggle_menu",
+     "Show or hide the top menu bar.",
+     {"type": "object", "properties": {}},
+     _p("/toggle_menu")),
+    ("toggle_side_bar",
+     "Show or hide the left side bar (folder tree). Distinct from toggle_sidebar which is the MCP control-panel toggle.",
+     {"type": "object", "properties": {}},
+     _p("/toggle_side_bar")),
+    ("toggle_minimap",
+     "Show or hide the minimap (the zoomed-out code overview on the right gutter).",
+     {"type": "object", "properties": {}},
+     _p("/toggle_minimap")),
+    ("toggle_status_bar",
+     "Show or hide the bottom status bar.",
+     {"type": "object", "properties": {}},
+     _p("/toggle_status_bar")),
+    ("toggle_tabs",
+     "Show or hide the tab bar at the top of the view area.",
+     {"type": "object", "properties": {}},
+     _p("/toggle_tabs")),
+    ("toggle_distraction_free",
+     "Toggle distraction-free mode (hides side bar, minimap, status bar, tabs, etc.).",
+     {"type": "object", "properties": {}},
+     _p("/toggle_distraction_free")),
+    # ── Phase B batch 1: edit ops (text scope) ────────────────────────────────
+    ("insert",
+     "Insert text at the cursor(s). Replacement for typing: characters are inserted into each selection.",
+     {"type": "object", "properties": {
+         "characters": {"type": "string", "description": "Text to insert at each cursor."},
+     }, "required": ["characters"]},
+     _p("/insert")),
+    ("paste",
+     "Paste the clipboard contents at the cursor(s), replacing any selection.",
+     {"type": "object", "properties": {}},
+     _p("/paste")),
+    ("paste_from_history",
+     "Open the paste-from-history panel so the user can pick a previously cut/copied snippet to paste.",
+     {"type": "object", "properties": {}},
+     _p("/paste_from_history")),
+    ("paste_and_indent",
+     "Paste and re-indent the pasted lines to match surrounding indentation.",
+     {"type": "object", "properties": {}},
+     _p("/paste_and_indent")),
+    ("cut",
+     "Cut the current selection(s) to the clipboard.",
+     {"type": "object", "properties": {}},
+     _p("/cut")),
+    ("copy",
+     "Copy the current selection(s) to the clipboard.",
+     {"type": "object", "properties": {}},
+     _p("/copy")),
+    ("select_all",
+     "Select the entire contents of the active view (Ctrl+A equivalent).",
+     {"type": "object", "properties": {}},
+     _p("/select_all")),
+    ("expand_selection",
+     "Expand the current selection to the next semantic boundary (Ctrl+Shift+A). Repeated calls expand further: word → brackets → line → paragraph → scope.",
+     {"type": "object", "properties": {}},
+     _p("/expand_selection")),
+    ("expand_selection_to_paragraph",
+     "Expand the current selection to the surrounding paragraph.",
+     {"type": "object", "properties": {}},
+     _p("/expand_selection_to_paragraph")),
+    ("expand_selection_to_indentation",
+     "Expand the current selection to the surrounding indentation block.",
+     {"type": "object", "properties": {}},
+     _p("/expand_selection_to_indentation")),
+    ("expand_selection_to_scope",
+     "Expand the current selection to the enclosing syntax scope.",
+     {"type": "object", "properties": {}},
+     _p("/expand_selection_to_scope")),
+    ("expand_selection_to_brackets",
+     "Expand the current selection to the enclosing brackets/parens/braces.",
+     {"type": "object", "properties": {}},
+     _p("/expand_selection_to_brackets")),
+    ("shrink_selection",
+     "Shrink a multi-cursor selection back to a single cursor (reverse of expand_selection).",
+     {"type": "object", "properties": {}},
+     _p("/shrink_selection")),
+    ("split_selection_into_lines",
+     "Split the current selection into one cursor per line (Ctrl+Shift+L).",
+     {"type": "object", "properties": {}},
+     _p("/split_selection_into_lines")),
+    ("single_selection",
+     "Collapse multiple selections/cursors down to a single selection (Escape equivalent).",
+     {"type": "object", "properties": {}},
+     _p("/single_selection")),
+    ("clear_fields",
+     "Clear the current snippet field highlights (used after inserting a snippet with $1/$2 tab stops).",
+     {"type": "object", "properties": {}},
+     _p("/clear_fields")),
+    ("join_lines",
+     "Join the selected lines into a single line (Ctrl+J).",
+     {"type": "object", "properties": {}},
+     _p("/join_lines")),
+    ("split_line",
+     "Split the line at the cursor position (Ctrl+Enter equivalent in some keymaps).",
+     {"type": "object", "properties": {}},
+     _p("/split_line")),
+    ("swap_line_up",
+     "Swap the current line(s) with the line above.",
+     {"type": "object", "properties": {}},
+     _p("/swap_line_up")),
+    ("swap_line_down",
+     "Swap the current line(s) with the line below.",
+     {"type": "object", "properties": {}},
+     _p("/swap_line_down")),
+    ("move_line_up",
+     "Move the current line(s) up by one line.",
+     {"type": "object", "properties": {}},
+     _p("/move_line_up")),
+    ("move_line_down",
+     "Move the current line(s) down by one line.",
+     {"type": "object", "properties": {}},
+     _p("/move_line_down")),
+    ("indent",
+     "Indent the current selection(s) by one indentation level (Tab when there is a selection).",
+     {"type": "object", "properties": {}},
+     _p("/indent")),
+    ("unindent",
+     "Unindent the current selection(s) by one indentation level (Shift+Tab when there is a selection).",
+     {"type": "object", "properties": {}},
+     _p("/unindent")),
+    ("reindent",
+     "Re-indent the current selection(s) so each line's indentation matches its nesting depth.",
+     {"type": "object", "properties": {}},
+     _p("/reindent")),
+    ("auto_indent",
+     "Apply auto-indentation to the current selection(s) using the active syntax's indentation rules.",
+     {"type": "object", "properties": {}},
+     _p("/auto_indent")),
+    ("wrap_lines",
+     "Re-wrap the current selection(s) at the configured wrap width. Alt+Q equivalent.",
+     {"type": "object", "properties": {
+         "width": {"type": "integer", "default": 0, "description": "Optional wrap width in columns. 0 = use the view's wrap_width setting."},
+     }},
+     _p("/wrap_lines")),
+    ("transpose",
+     "Transpose characters at the cursor (swap the two characters on either side of the cursor). Ctrl+T equivalent.",
+     {"type": "object", "properties": {}},
+     _p("/transpose")),
+    ("transpose_chars",
+     "Alias of transpose — swap the two characters adjacent to the cursor.",
+     {"type": "object", "properties": {}},
+     _p("/transpose_chars")),
+    ("upper_case",
+     "Convert the current selection(s) to UPPER CASE.",
+     {"type": "object", "properties": {}},
+     _p("/upper_case")),
+    ("lower_case",
+     "Convert the current selection(s) to lower case.",
+     {"type": "object", "properties": {}},
+     _p("/lower_case")),
+    ("title_case",
+     "Convert the current selection(s) to Title Case.",
+     {"type": "object", "properties": {}},
+     _p("/title_case")),
+    ("swap_case",
+     "Swap the case of each character in the current selection(s) (upper↔lower).",
+     {"type": "object", "properties": {}},
+     _p("/swap_case")),
+    ("toggle_case",
+     "Alias of swap_case — toggle the case of each character in the selection.",
+     {"type": "object", "properties": {}},
+     _p("/toggle_case")),
+    ("invert_selection",
+     "Invert the selection: what was selected becomes unselected and vice versa (within the current line range).",
+     {"type": "object", "properties": {}},
+     _p("/invert_selection")),
+    ("sort_selection",
+     "Sort the selected lines alphabetically (locale-aware).",
+     {"type": "object", "properties": {}},
+     _p("/sort_selection")),
+    ("permute_lines",
+     "Permute (shuffle) the lines in the current selection into a random order.",
+     {"type": "object", "properties": {}},
+     _p("/permute_lines")),
+    ("permute_selection",
+     "Permute (shuffle) the selections themselves into a random order.",
+     {"type": "object", "properties": {}},
+     _p("/permute_selection")),
+    ("trim_trailing_white_space",
+     "Remove trailing whitespace from every line in the current selection (or the whole file if no selection).",
+     {"type": "object", "properties": {}},
+     _p("/trim_trailing_white_space")),
+    ("trim_whitespace",
+     "Alias of trim_trailing_white_space — remove trailing whitespace from the selection/file.",
+     {"type": "object", "properties": {}},
+     _p("/trim_whitespace")),
+    ("trim_whitespaces",
+     "Alias of trim_trailing_white_space — remove trailing whitespace from the selection/file.",
+     {"type": "object", "properties": {}},
+     _p("/trim_whitespaces")),
+    ("ensure_newline_at_eof",
+     "Ensure the file ends with a single trailing newline (add one if missing).",
+     {"type": "object", "properties": {}},
+     _p("/ensure_newline_at_eof")),
+    ("add_missing_newline",
+     "Alias of ensure_newline_at_eof — add a trailing newline at EOF if absent.",
+     {"type": "object", "properties": {}},
+     _p("/add_missing_newline")),
+    ("expand_tabs",
+     "Convert leading tabs in the current selection (or whole file) to spaces, using the view's tab_size.",
+     {"type": "object", "properties": {}},
+     _p("/expand_tabs")),
+    ("unexpand_tabs",
+     "Convert leading spaces in the current selection (or whole file) to tabs, using the view's tab_size.",
+     {"type": "object", "properties": {}},
+     _p("/unexpand_tabs")),
+    ("detect_indentation",
+     "Auto-detect the file's indentation style (tabs vs spaces, width) and set the view's indent settings accordingly.",
+     {"type": "object", "properties": {}},
+     _p("/detect_indentation")),
+    ("set_indent_tabs",
+     "Set the active view to use tabs for indentation.",
+     {"type": "object", "properties": {}},
+     _p("/set_indent_tabs")),
+    ("set_indent_spaces",
+     "Set the active view to use spaces for indentation.",
+     {"type": "object", "properties": {}},
+     _p("/set_indent_spaces")),
+    ("yank",
+     "Yank (paste) the most recently killed/deleted text at the cursor. Emacs-style kill-ring paste.",
+     {"type": "object", "properties": {}},
+     _p("/yank")),
+    ("scroll_to_bof",
+     "Scroll the active view so the beginning of the file is visible (does not move the cursor).",
+     {"type": "object", "properties": {}},
+     _p("/scroll_to_bof")),
+    ("scroll_to_eof",
+     "Scroll the active view so the end of the file is visible (does not move the cursor).",
+     {"type": "object", "properties": {}},
+     _p("/scroll_to_eof")),
+    ("show_at_center",
+     "Scroll the active view so the current cursor line is centered in the window.",
+     {"type": "object", "properties": {}},
+     _p("/show_at_center")),
+    ("toggle_record_macro",
+     "Start or stop recording a macro (keystrokes are captured until this is called again).",
+     {"type": "object", "properties": {}},
+     _p("/toggle_record_macro")),
+    ("run_macro",
+     "Play back the most recently recorded macro at the cursor.",
+     {"type": "object", "properties": {}},
+     _p("/run_macro")),
+    ("play_macro",
+     "Alias of run_macro — play back the most recently recorded macro.",
+     {"type": "object", "properties": {}},
+     _p("/play_macro")),
+
+    # ── Phase B batch 2: file/project operations ─────────────────────────
+    ("new_file_at",
+     "Create a new file at the given path (WindowCommand). Pass 'path' in args.",
+     {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
+     _p("/new_file_at")),
+    ("new_folder",
+     "Create a new folder in the current project (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/new_folder")),
+    ("open_folder",
+     "Open a folder in a new window (WindowCommand). Pass 'path' in args.",
+     {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
+     _p("/open_folder")),
+    ("open_containing_folder",
+     "Open the OS file manager at the directory containing the active file (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/open_containing_folder")),
+    ("rename_file",
+     "Rename the active file (WindowCommand). Pass 'path' for the new name.",
+     {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
+     _p("/rename_file")),
+    ("copy_path",
+     "Copy the active file's path to the clipboard (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/copy_path")),
+    ("switch_file",
+     "Switch between files with the same base name and different extensions (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/switch_file")),
+    ("open_file_settings",
+     "Open the syntax-specific settings file for the active view (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/open_file_settings")),
+    ("edit_settings",
+     "Open the given settings resource for editing (WindowCommand). Pass 'resource' (e.g. 'Preferences').",
+     {"type": "object", "properties": {"resource": {"type": "string"}}, "required": ["resource"]},
+     _p("/edit_settings")),
+    ("new_build_system",
+     "Create a new build system file (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/new_build_system")),
+    ("new_plugin",
+     "Create a new plugin file in Packages/User (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/new_plugin")),
+    ("new_snippet",
+     "Create a new snippet file in Packages/User (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/new_snippet")),
+    ("new_syntax",
+     "Create a new syntax definition file in Packages/User (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/new_syntax")),
+    ("new_pane",
+     "Create a new pane in the active window (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/new_pane")),
+    ("set_max_columns",
+     "Set the maximum number of columns for the current layout (WindowCommand). Pass 'cols' integer.",
+     {"type": "object", "properties": {"cols": {"type": "integer"}}, "required": ["cols"]},
+     _p("/set_max_columns")),
+    ("view_resource",
+     "Open a read-only view of a bundled or packaged resource (WindowCommand). Pass 'resource'.",
+     {"type": "object", "properties": {"resource": {"type": "string"}}, "required": ["resource"]},
+     _p("/view_resource")),
+    ("exec",
+     "Run a build system target via the exec command (WindowCommand). Pass 'cmd' (list) and optional 'working_dir', 'shell_cmd', 'env', etc.",
+     {"type": "object", "properties": {
+         "cmd": {"type": "array", "items": {"type": "string"}},
+         "working_dir": {"type": "string"},
+         "shell_cmd": {"type": "string"},
+         "env": {"type": "object"}
+     }},
+     _p("/exec")),
+    ("find_in_folder",
+     "Open Find in Files scoped to a folder (WindowCommand). Pass 'pattern' (regex) and optional 'where'.",
+     {"type": "object", "properties": {
+         "pattern": {"type": "string"},
+         "where": {"type": "string"}
+     }, "required": ["pattern"]},
+     _p("/find_in_folder")),
+    ("goto_definition",
+     "Goto definition for the symbol under the cursor (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/goto_definition")),
+    ("goto_reference",
+     "Goto reference for the symbol under the cursor (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/goto_reference")),
+    ("auto_complete_goto_definition",
+     "Auto-complete and goto the definition of the symbol under the cursor (TextCommand).",
+     {"type": "object", "properties": {}},
+     _p("/auto_complete_goto_definition")),
+    ("open_symbol_definition",
+     "Open the definition of a named symbol (WindowCommand). Pass 'symbol'.",
+     {"type": "object", "properties": {"symbol": {"type": "string"}}, "required": ["symbol"]},
+     _p("/open_symbol_definition")),
+    ("prompt_goto_line",
+     "Open the Goto Line prompt (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/prompt_goto_line")),
+    ("quick_panel",
+     "Open the Goto Anything overlay (WindowCommand show_overlay). Optional 'show_files' (bool) and 'text'.",
+     {"type": "object", "properties": {
+         "show_files": {"type": "boolean"},
+         "text": {"type": "string"}
+     }},
+     _p("/quick_panel")),
+    ("select_color_scheme",
+     "Open the color scheme picker (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/select_color_scheme")),
+    ("select_theme",
+     "Open the theme picker (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/select_theme")),
+    ("customize_color_scheme",
+     "Open the active color scheme for customization (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/customize_color_scheme")),
+    ("customize_theme",
+     "Open the active theme for customization (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/customize_theme")),
+    ("convert_color_scheme",
+     "Convert a .sublime-color-scheme file to JSON for editing (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/convert_color_scheme")),
+    ("convert_syntax",
+     "Convert a .tmLanguage syntax file to .sublime-syntax (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/convert_syntax")),
+    ("edit_syntax_settings",
+     "Open the syntax-specific settings file (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/edit_syntax_settings")),
+    ("run_syntax_tests",
+     "Run syntax tests on the active syntax file (WindowCommand).",
+     {"type": "object", "properties": {}},
+     _p("/run_syntax_tests")),
+    ("profile_plugins",
+     "Profile plugin load times (ApplicationCommand).",
+     {"type": "object", "properties": {}},
+     _p("/profile_plugins")),
+    ("profile_syntax_definition",
+     "Profile a syntax definition for performance issues (ApplicationCommand).",
+     {"type": "object", "properties": {}},
+     _p("/profile_syntax_definition")),
+    ("syntax_definition_compatibility",
+     "Check syntax definition compatibility (ApplicationCommand).",
+     {"type": "object", "properties": {}},
+     _p("/syntax_definition_compatibility")),
+    ("install_package_control",
+     "Install Package Control (ApplicationCommand).",
+     {"type": "object", "properties": {}},
+     _p("/install_package_control")),
+    ("echo",
+     "Print a debug message to the ST console (ApplicationCommand). Pass 'msg'.",
+     {"type": "object", "properties": {"msg": {"type": "string"}}, "required": ["msg"]},
+     _p("/echo")),
+    # Phase B batch 3: remaining text commands (marks, jumps, folds, transform, browser, scope)
+    ("set_mark",
+     "Set a mark at the current cursor position (TextCommand). Used with select_to_mark/swap_with_mark/delete_to_mark.",
+     {"type": "object", "properties": {}}, _p("/set_mark")),
+    ("select_to_mark",
+     "Select the text between the cursor and the previously set mark (TextCommand).",
+     {"type": "object", "properties": {}}, _p("/select_to_mark")),
+    ("swap_with_mark",
+     "Swap the cursor position with the previously set mark (TextCommand).",
+     {"type": "object", "properties": {}}, _p("/swap_with_mark")),
+    ("delete_to_mark",
+     "Delete the text between the cursor and the previously set mark (TextCommand).",
+     {"type": "object", "properties": {}}, _p("/delete_to_mark")),
+    ("add_to_kill_ring",
+     "Add the current selection to the kill ring (TextCommand, used by yank).",
+     {"type": "object", "properties": {}}, _p("/add_to_kill_ring")),
+    ("jump_back",
+     "Jump back in the navigation history (TextCommand). Equivalent to Alt+- (jump back through edit/cursor history).",
+     {"type": "object", "properties": {}}, _p("/jump_back")),
+    ("jump_forward",
+     "Jump forward in the navigation history (TextCommand). Equivalent to Alt+Shift+- (jump forward through edit/cursor history).",
+     {"type": "object", "properties": {}}, _p("/jump_forward")),
+    ("fold_unfold",
+     "Toggle the fold state of the region at the cursor (TextCommand). Collapses or expands the enclosing code block.",
+     {"type": "object", "properties": {}}, _p("/fold_unfold")),
+    ("rot13",
+     "Apply the ROT13 cipher to the current selection (TextCommand). Useful for obscuring spoiler text or round-tripping text.",
+     {"type": "object", "properties": {}}, _p("/rot13")),
+    ("wrap_block",
+     "Wrap lines in the selection as a block comment using the active syntax's block comment markers (TextCommand).",
+     {"type": "object", "properties": {}}, _p("/wrap_block")),
+    ("tab",
+     "Indent the current selection by one indentation level (TextCommand). Equivalent to Tab when there is a selection.",
+     {"type": "object", "properties": {}}, _p("/tab")),
+    ("open_context_url",
+     "Open the URL under the cursor in the default browser (TextCommand).",
+     {"type": "object", "properties": {}}, _p("/open_context_url")),
+    ("open_in_browser",
+     "Open the current file in the default browser (TextCommand).",
+     {"type": "object", "properties": {}}, _p("/open_in_browser")),
+    ("show_scope_name",
+     "Print the syntax scope at the cursor to the ST console (TextCommand). Useful for debugging syntax-highlighting or writing snippet scopes.",
+     {"type": "object", "properties": {}}, _p("/show_scope_name")),
+    ("html_print",
+     "Open the current file as HTML for printing (TextCommand). Equivalent to File > Print.",
+     {"type": "object", "properties": {}}, _p("/html_print")),
+    ("arithmetic",
+     "Evaluate the selected expression as arithmetic and replace it with the result (TextCommand). Select '2+2' to get '4'.",
+     {"type": "object", "properties": {}}, _p("/arithmetic")),
+    ("auto_indent_tag",
+     "Re-indent the enclosing HTML/XML tag structure (TextCommand). Useful for fixing nested tag indentation.",
+     {"type": "object", "properties": {}}, _p("/auto_indent_tag")),
+    ("convert_ident_case",
+     "Convert the identifier under the cursor to a different case style (TextCommand). Args: 'case' (lower/title/upper), 'separator' (e.g. '_' for snake_case, '-' for kebab-case), 'first_case' (lower/upper for first letter in title case).",
+     {"type": "object", "properties": {"case": {"type": "string", "description": "Target case: 'lower', 'title', or 'upper'."}, "separator": {"type": "string", "description": "Word separator inserted between words, e.g. '_' for snake_case, '-' for kebab-case. Empty for camelCase."}, "first_case": {"type": "string", "description": "When case='title', the case of the first letter: 'lower' (lowerCamelCase) or 'upper' (UpperCamelCase)."}}}, _p("/convert_ident_case")),
+    ("old_expand_selection_to_paragraph",
+     "Expand the selection to the surrounding paragraph (legacy TextCommand, kept for compatibility).",
+     {"type": "object", "properties": {}}, _p("/old_expand_selection_to_paragraph")),
+    ("old_wrap_lines",
+     "Wrap the selection at the configured wrap width using the legacy paragraph algorithm (TextCommand, kept for compatibility).",
+     {"type": "object", "properties": {"width": {"type": "integer", "description": "Optional wrap width in columns. 0 = use the view's wrap_width setting."}}}, _p("/old_wrap_lines")),
+    ("transformer",
+     "Apply a transformer (case conversion, encoding, etc.) to the current selection (TextCommand). A general-purpose text-transform base command.",
+     {"type": "object", "properties": {}}, _p("/transformer")),
 ]
 
 _mcp_tools_lock = threading.Lock()
