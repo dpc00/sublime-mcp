@@ -15,6 +15,7 @@ from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 
 _MCP_PORT = int(os.environ.get("DEBUGGER_MCP_PORT", 9505))
+_HTTP_PORT = int(os.environ.get("DEBUGGER_HTTP_PORT", 9515))
 
 
 # ── MCP server boilerplate ────────────────────────────────────────────────────
@@ -180,13 +181,109 @@ def _mcp_dispatch(session_id, msg):
                                    "error": {"code": -32603, "message": str(e)}})
 
 
+# ── HTTP bridge (REST API) ─────────────────────────────────────────────────
+
+import json
+
+# REST endpoint handlers
+_GET = {}
+_POST = {}
+
+
+def _get_mcp_tools(params):
+    """Return list of all MCP tools for dynamic discovery by node-proxy."""
+    with _mcp_tools_lock:
+        snapshot = list(_MCP_TOOLS)
+    tools = []
+    for name, desc, schema, _ in snapshot:
+        input_schema = dict(schema) if schema else {}
+        if "type" not in input_schema:
+            input_schema["type"] = "object"
+        if "properties" not in input_schema:
+            input_schema["properties"] = {}
+        tools.append({"name": name, "description": desc, "inputSchema": input_schema})
+    return {"tools": tools}
+
+
+_GET = {
+    "/mcp_tools": _get_mcp_tools,
+}
+
+
+def _g(endpoint):
+    """Wrap a GET handler for use as an MCP tool handler."""
+    def handler(args):
+        return _GET[endpoint](_to_get_params(args))
+    return handler
+
+
+def _p(endpoint):
+    """Wrap a POST handler for use as an MCP tool handler."""
+    def handler(args):
+        return _POST[endpoint](args)
+    return handler
+
+
+def _to_get_params(args):
+    """Convert MCP args dict to parse_qs list-of-strings format for GET handlers."""
+    return {k: [str(v)] for k, v in args.items() if v is not None}
+
+
+class _Handler(BaseHTTPRequestHandler):
+    def log_message(self, fmt, *args):
+        pass
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+        handler = _GET.get(parsed.path)
+        if handler:
+            try:
+                result = handler(params)
+                self._json(result, 200)
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+        else:
+            self._json({"error": "not found"}, 404)
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length)) if length else {}
+        handler = _POST.get(parsed.path)
+        if handler:
+            try:
+                result = handler(body)
+                self._json(result, 200)
+            except Exception as e:
+                self._json({"error": str(e)}, 500)
+        else:
+            self._json({"error": "not found"}, 404)
+
+    def _json(self, data, status=200):
+        body = json.dumps(data).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
 # ── plugin lifecycle ──────────────────────────────────────────────────────────
 
 _server = None
+_http_server = None
 
 
-def _start_server():
-    global _server
+def _start_servers():
+    global _server, _http_server
     if not _server:
         try:
             _server = _ThreadingHTTPServer(("127.0.0.1", _MCP_PORT), _MCPHandler)
@@ -194,14 +291,24 @@ def _start_server():
         except OSError as e:
             print("[debugger-mcp] could not bind MCP SSE on port {}: {}".format(_MCP_PORT, e))
             _server = None
-    print("[debugger-mcp] MCP SSE on 127.0.0.1:{}".format(_MCP_PORT))
+    if not _http_server:
+        try:
+            _http_server = HTTPServer(("127.0.0.1", _HTTP_PORT), _Handler)
+            threading.Thread(target=_http_server.serve_forever, daemon=True).start()
+        except OSError as e:
+            print("[debugger-mcp] could not bind HTTP bridge on port {}: {}".format(_HTTP_PORT, e))
+            _http_server = None
+    print("[debugger-mcp] MCP SSE on 127.0.0.1:{}, HTTP bridge on 127.0.0.1:{}".format(_MCP_PORT, _HTTP_PORT))
 
 
-def _stop_server():
-    global _server
+def _stop_servers():
+    global _server, _http_server
     if _server:
         _server.shutdown()
         _server = None
+    if _http_server:
+        _http_server.shutdown()
+        _http_server = None
     for q in list(_mcp_sessions.values()):
         q.put(None)
     _mcp_sessions.clear()
@@ -210,13 +317,13 @@ def _stop_server():
 
 def plugin_loaded():
     register_mcp_tools(TOOLS)
-    _start_server()
+    _start_servers()
     print("[debugger-mcp] {} tools loaded".format(len(TOOLS)))
 
 
 def plugin_unloaded():
     unregister_mcp_tools(TOOLS)
-    _stop_server()
+    _stop_servers()
 
 
 # ── Debugger tool implementations (from debugger_mcp_tools.py) ────────────────
@@ -1981,3 +2088,9 @@ TOOLS = [
      },
      lambda body: _get_console_output(body)),
 ]
+
+
+# ── Populate HTTP POST endpoints from TOOLS ──────────────────────────────────
+
+for name, desc, schema, handler in TOOLS:
+    _POST["/" + name] = handler
