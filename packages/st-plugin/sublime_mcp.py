@@ -2167,6 +2167,22 @@ def _edit_file(body):
 
 # ── routing ───────────────────────────────────────────────────────────────────
 
+
+def _get_mcp_tools(params):
+    """Return list of all MCP tools for dynamic discovery by node-proxy."""
+    with _mcp_tools_lock:
+        snapshot = list(_MCP_TOOLS)
+    tools = []
+    for name, desc, schema, _ in snapshot:
+        input_schema = dict(schema) if schema else {}
+        if "type" not in input_schema:
+            input_schema["type"] = "object"
+        if "properties" not in input_schema:
+            input_schema["properties"] = {}
+        tools.append({"name": name, "description": desc, "inputSchema": input_schema})
+    return {"tools": tools}
+
+
 _GET = {
     "/active_file": _get_active_file,
     "/selection": _get_selection,
@@ -2523,21 +2539,6 @@ def _p(endpoint):
     def handler(args):
         return _POST[endpoint](args)
     return handler
-
-
-def _get_mcp_tools(params):
-    """Return list of all MCP tools for dynamic discovery by node-proxy."""
-    with _mcp_tools_lock:
-        snapshot = list(_MCP_TOOLS)
-    tools = []
-    for name, desc, schema, _ in snapshot:
-        input_schema = dict(schema) if schema else {}
-        if "type" not in input_schema:
-            input_schema["type"] = "object"
-        if "properties" not in input_schema:
-            input_schema["properties"] = {}
-        tools.append({"name": name, "description": desc, "inputSchema": input_schema})
-    return {"tools": tools}
 
 
 def _get_package_mcp_info(body):
