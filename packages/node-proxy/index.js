@@ -423,7 +423,7 @@ server.registerTool('open_control_panel', {
 server.registerTool('get_package_mcp_info', {
   description: 'Return everything needed to write an MCP extension for an installed Package Control package.',
   inputSchema: { package: z.string() },
-}, async ({ package }) => ok(await post('/package_mcp_info', { package })));
+}, async ({ package: pkg }) => ok(await post('/package_mcp_info', { package: pkg })));
 
 server.registerTool('search_packages', {
   description: 'Search Package Control for installable Sublime Text packages.',
@@ -433,7 +433,7 @@ server.registerTool('search_packages', {
 server.registerTool('install_package', {
   description: 'Install a Package Control package by exact name.',
   inputSchema: { package: z.string() },
-}, async ({ package }) => ok(await post('/install_package', { package })));
+}, async ({ package: pkg }) => ok(await post('/install_package', { package: pkg })));
 
 // ── startup ───────────────────────────────────────────────────────────────────
 
