@@ -36,6 +36,21 @@ function ok(data) {
 
 const server = new McpServer({ name: 'sublime-mcp', version: '1.3.3' });
 
+// ── Dynamic tool discovery from backend ──────────────────────────────────────
+
+try {
+  const toolsList = await get('/mcp_tools');
+  if (toolsList?.tools) {
+    for (const tool of toolsList.tools) {
+      server.registerTool(tool.name, { description: tool.description, inputSchema: tool.inputSchema },
+        async (args) => ok(await post('/' + tool.name, args)));
+    }
+    process.stderr.write(`mcp-commander: loaded ${toolsList.tools.length} dynamic tools from backend\n`);
+  }
+} catch (e) {
+  process.stderr.write(`mcp-commander: dynamic tool discovery failed: ${e.message}\n`);
+}
+
 // ── no-parameter passthrough tools ────────────────────────────────────────────
 
 const PASSTHROUGH = [
