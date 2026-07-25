@@ -35,6 +35,7 @@ function ok(data) {
 }
 
 const server = new McpServer({ name: 'sublime-mcp', version: '1.3.3' });
+server.setToolRequestHandlers();
 
 // ── Dynamic tool discovery from backend ──────────────────────────────────────
 
