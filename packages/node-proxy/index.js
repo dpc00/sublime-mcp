@@ -40,17 +40,28 @@ server.setToolRequestHandlers();
 // ── Dynamic tool discovery from backend ──────────────────────────────────────
 
 (async () => {
-  try {
-    const toolsList = await get('/mcp_tools');
-    if (toolsList?.tools) {
-      for (const tool of toolsList.tools) {
-        server.registerTool(tool.name, { description: tool.description, inputSchema: tool.inputSchema },
-          async (args) => ok(await post('/' + tool.name, args)));
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 2000;
+  
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const toolsList = await get('/mcp_tools');
+      if (toolsList?.tools) {
+        for (const tool of toolsList.tools) {
+          server.registerTool(tool.name, { description: tool.description, inputSchema: tool.inputSchema },
+            async (args) => ok(await post('/' + tool.name, args)));
+        }
+        process.stderr.write(`mcp-commander: loaded ${toolsList.tools.length} dynamic tools from backend (attempt ${attempt})\n`);
+        break;
       }
-      process.stderr.write(`mcp-commander: loaded ${toolsList.tools.length} dynamic tools from backend\n`);
+    } catch (e) {
+      if (attempt === MAX_RETRIES) {
+        process.stderr.write(`mcp-commander: dynamic tool discovery failed after ${MAX_RETRIES} attempts: ${e.message}\n`);
+      } else {
+        process.stderr.write(`mcp-commander: dynamic tool discovery attempt ${attempt} failed, retrying...\n`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      }
     }
-  } catch (e) {
-    process.stderr.write(`mcp-commander: dynamic tool discovery failed: ${e.message}\n`);
   }
 })();
 
