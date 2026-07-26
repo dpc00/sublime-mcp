@@ -39,21 +39,21 @@ server.setToolRequestHandlers();
 
 // ── Dynamic tool discovery from backend ──────────────────────────────────────
 
-(async () => {
+async function loadDynamicTools() {
   const MAX_RETRIES = 3;
   const RETRY_DELAY_MS = 2000;
-  
+
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const toolsList = await get('/mcp_tools');
-      if (toolsList?.tools) {
-        for (const tool of toolsList.tools) {
-          server.registerTool(tool.name, { description: tool.description, inputSchema: tool.inputSchema },
-            async (args) => ok(await post('/' + tool.name, args)));
-        }
-        process.stderr.write(`mcp-commander: loaded ${toolsList.tools.length} dynamic tools from backend (attempt ${attempt})\n`);
-        break;
+      if (!toolsList?.tools) throw new Error('backend returned no tool list');
+
+      for (const tool of toolsList.tools) {
+        server.registerTool(tool.name, { description: tool.description, inputSchema: z.object({}).passthrough() },
+          async (args) => ok(await post('/' + tool.name, args)));
       }
+      process.stderr.write(`mcp-commander: loaded ${toolsList.tools.length} dynamic tools from backend (attempt ${attempt})\n`);
+      return true;
     } catch (e) {
       if (attempt === MAX_RETRIES) {
         process.stderr.write(`mcp-commander: dynamic tool discovery failed after ${MAX_RETRIES} attempts: ${e.message}\n`);
@@ -63,10 +63,13 @@ server.setToolRequestHandlers();
       }
     }
   }
-})();
+
+  return false;
+}
 
 // ── no-parameter passthrough tools ────────────────────────────────────────────
 
+function registerFallbackTools() {
 const PASSTHROUGH = [
   ['get_active_file', 'GET', '/active_file', "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name."],
   ['get_selection', 'GET', '/selection', 'Return the current selection(s): text and begin/end line+col for each.'],
@@ -447,6 +450,13 @@ server.registerTool('install_package', {
 }, async ({ package: pkg }) => ok(await post('/install_package', { package: pkg })));
 
 // ── startup ───────────────────────────────────────────────────────────────────
+
+}
+
+if (!await loadDynamicTools()) {
+  process.stderr.write('mcp-commander: using fixed fallback tools\n');
+  registerFallbackTools();
+}
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
