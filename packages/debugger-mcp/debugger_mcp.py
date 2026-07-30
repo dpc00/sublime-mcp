@@ -286,14 +286,14 @@ def _start_servers():
     global _server, _http_server
     if not _server:
         try:
-            _server = _ThreadingHTTPServer(("127.0.0.1", _MCP_PORT), _MCPHandler)
+            _server = _ThreadingHTTPServer(("0.0.0.0", _MCP_PORT), _MCPHandler)
             threading.Thread(target=_server.serve_forever, daemon=True).start()
         except OSError as e:
             print("[debugger-mcp] could not bind MCP SSE on port {}: {}".format(_MCP_PORT, e))
             _server = None
     if not _http_server:
         try:
-            _http_server = HTTPServer(("127.0.0.1", _HTTP_PORT), _Handler)
+            _http_server = HTTPServer(("0.0.0.0", _HTTP_PORT), _Handler)
             threading.Thread(target=_http_server.serve_forever, daemon=True).start()
         except OSError as e:
             print("[debugger-mcp] could not bind HTTP bridge on port {}: {}".format(_HTTP_PORT, e))
