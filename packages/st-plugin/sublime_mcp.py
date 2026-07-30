@@ -3935,14 +3935,14 @@ def _start_servers():
     _install_console_capture()
     if not _server:
         try:
-            _server = HTTPServer(("127.0.0.1", _PORT), _Handler)
+            _server = HTTPServer(("0.0.0.0", _PORT), _Handler)
             threading.Thread(target=_server.serve_forever, daemon=True).start()
         except OSError as e:
             print("sublime-mcp: could not bind HTTP bridge on port {}: {}".format(_PORT, e))
             _server = None
     if not _mcp_server:
         try:
-            _mcp_server = _ThreadingHTTPServer(("127.0.0.1", _MCP_PORT), _MCPHandler)
+            _mcp_server = _ThreadingHTTPServer(("0.0.0.0", _MCP_PORT), _MCPHandler)
             threading.Thread(target=_mcp_server.serve_forever, daemon=True).start()
         except OSError as e:
             print("sublime-mcp: could not bind MCP SSE on port {}: {}".format(_MCP_PORT, e))
