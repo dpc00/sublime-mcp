@@ -298,7 +298,7 @@ def _start_servers():
         except OSError as e:
             print("[debugger-mcp] could not bind HTTP bridge on port {}: {}".format(_HTTP_PORT, e))
             _http_server = None
-    print("[debugger-mcp] MCP SSE on 127.0.0.1:{}, HTTP bridge on 127.0.0.1:{}".format(_MCP_PORT, _HTTP_PORT))
+    print("[debugger-mcp] MCP SSE on 0.0.0.0:{}, HTTP bridge on 0.0.0.0:{}".format(_MCP_PORT, _HTTP_PORT))
 
 
 def _stop_servers():

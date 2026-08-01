@@ -3947,7 +3947,7 @@ def _start_servers():
         except OSError as e:
             print("sublime-mcp: could not bind MCP SSE on port {}: {}".format(_MCP_PORT, e))
             _mcp_server = None
-    print("sublime-mcp: MCP SSE on 127.0.0.1:{}, HTTP bridge on 127.0.0.1:{}".format(_MCP_PORT, _PORT))
+    print("sublime-mcp: MCP SSE on 0.0.0.0:{}, HTTP bridge on 0.0.0.0:{}".format(_MCP_PORT, _PORT))
 
 
 def _stop_servers():
