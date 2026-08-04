@@ -340,6 +340,16 @@ def get_debugger():
             return dbg
     return db_mod.Debugger.get(sublime.active_window(), create=False)
 
+def _get_help(body):
+    """Return the AGENT_GUIDE.md content to educate AI agents on tool usage."""
+    guide_path = os.path.join(os.path.dirname(__file__), "AGENT_GUIDE.md")
+    try:
+        with open(guide_path, encoding="utf-8") as f:
+            return {"ok": True, "content": f.read()}
+    except FileNotFoundError:
+        return {"error": "AGENT_GUIDE.md not found at {}".format(guide_path)}
+
+
 def mcp_debugger_get_state(body):
     dbg = get_debugger()
     if not dbg:
@@ -1456,6 +1466,11 @@ for _key, _desc in _DEBUGGER_ST_COMMANDS:
 
 TOOLS = [
     *_DEBUGGER_ST_TOOLS,
+
+    ("debugger_get_help",
+     "Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use debugger-mcp tools correctly.",
+     {},
+     _get_help),
 
     ("debugger_get_state",
      "Query the active debugger status (open, running, paused) and active session thread/frame information across all windows.",
