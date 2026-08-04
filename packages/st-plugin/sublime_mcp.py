@@ -2580,6 +2580,9 @@ def _batch(args):
     return _on_main(fn)
 
 
+_POST["/batch"] = _batch
+
+
 def _get_package_mcp_info(body):
     package = body.get("package", "").strip()
     if not package:
