@@ -2541,6 +2541,45 @@ def _p(endpoint):
     return handler
 
 
+def _batch(args):
+    """Run multiple MCP tool calls in a single main-thread dispatch.
+
+    Each nested call still gets its own _on_main() invocation, but since
+    _on_main() short-circuits when already running on the main thread, only
+    the OUTER _on_main() here actually schedules a sublime.set_timeout() /
+    waits on ST's event loop. N calls that would normally cost N HTTP round
+    trips (N TCP connections, N thread spawns, N scheduler ticks) cost 1.
+    """
+    calls = args.get("calls")
+    if not isinstance(calls, list) or not calls:
+        return {"error": "calls must be a non-empty list of {tool, args}"}
+
+    def fn():
+        with _mcp_tools_lock:
+            tools_by_name = {t[0]: t[3] for t in _MCP_TOOLS}
+        results = []
+        for call in calls:
+            if not isinstance(call, dict):
+                results.append({"error": "each call must be an object with tool/args"})
+                continue
+            tool_name = call.get("tool")
+            tool_args = call.get("args") or {}
+            if tool_name == "batch":
+                results.append({"error": "batch cannot call itself"})
+                continue
+            handler = tools_by_name.get(tool_name)
+            if handler is None:
+                results.append({"error": "unknown tool: {!r}".format(tool_name)})
+                continue
+            try:
+                results.append(handler(tool_args))
+            except Exception as e:
+                results.append({"error": str(e)})
+        return {"results": results}
+
+    return _on_main(fn)
+
+
 def _get_package_mcp_info(body):
     package = body.get("package", "").strip()
     if not package:
@@ -2745,6 +2784,29 @@ _POST["/install_package"] = _install_package
 
 # (name, description, inputSchema, handler)
 _MCP_TOOLS = [
+    # ── batch execution ───────────────────────────────────────────────────────
+    ("batch",
+     "Run multiple sublime-mcp tool calls in a single request, sharing one main-thread\n"
+     "dispatch instead of paying a separate round trip per call. Use this whenever you\n"
+     "need more than one piece of editor state at once (e.g. get_active_file + get_selection\n"
+     "+ get_cursor_context), or want to chain several edits/reads together.\n"
+     "calls: list of {tool: <tool name>, args: <object, optional>}. Cannot call 'batch' itself.\n"
+     "Returns {results: [...]} — one entry per call, in order; failed calls return {error: ...}\n"
+     "instead of aborting the whole batch.",
+     {"type": "object", "properties": {
+         "calls": {
+             "type": "array",
+             "items": {
+                 "type": "object",
+                 "properties": {
+                     "tool": {"type": "string"},
+                     "args": {"type": "object"},
+                 },
+                 "required": ["tool"],
+             },
+         },
+     }, "required": ["calls"]},
+     _batch),
     # ── no-parameter GET tools ────────────────────────────────────────────────
     ("get_active_file",
      "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name.",
@@ -3798,6 +3860,11 @@ class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
 
 class _MCPHandler(BaseHTTPRequestHandler):
+    # HTTP/1.1 keeps the TCP connection open across requests. Without this,
+    # BaseHTTPRequestHandler defaults to HTTP/1.0 and every POST /messages
+    # (i.e. every single tool call) pays a fresh TCP handshake + teardown.
+    protocol_version = "HTTP/1.1"
+
     def log_message(self, fmt, *args):
         pass
 

@@ -13,6 +13,31 @@ text/window/application commands plus read-only state getters. Batches:
 
 Prefer the named typed tool for any ST action over `run_command` (see below).
 
+## Batching Calls (reduces round trips)
+Every sublime-mcp tool call goes: HTTP POST /messages -> new thread -> ST's
+main-thread scheduler (sublime.set_timeout) -> back out over SSE. Each call
+pays a full trip through ST's main-thread scheduler, which is the one truly
+fixed cost in this pipeline. If you need more than one piece of state (e.g.
+active file + selection + cursor context), or want to run several edits
+back to back, use `batch` instead of separate calls:
+
+```
+batch(calls=[
+  {"tool": "get_active_file"},
+  {"tool": "get_selection"},
+  {"tool": "get_cursor_context", "args": {"lines": 20}},
+])
+```
+
+Returns `{"results": [...]}` in the same order as `calls`. A failed call
+returns `{"error": ...}` in its slot without aborting the rest of the batch.
+`batch` cannot call itself. Use this whenever a task needs 2+ tool calls
+that don't each depend on the previous call's result.
+
+**Note:** this file is the canonical source. The copy served by `get_help`
+lives at `packages/st-plugin/AGENT_GUIDE.md` (that's the one that ships
+with the plugin) — keep both in sync when editing.
+
 ## Verifying Newly Added Tools — Do Not Live-Invoke UI Commands
 When adding new routes to `_POST` / `_MCP_TOOLS`, "live verification" means
 POSTing to the route — which actually *invokes* the command on the user's
