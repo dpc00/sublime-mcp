@@ -415,6 +415,16 @@ def execute_lsp_request(method, params, file_path=None, config_name=None, timeou
 
 # ── Hand-written LSP request wrappers (from lsp_mcp_tools.py) ──────────────────
 
+def _get_help(body):
+    """Return the AGENT_GUIDE.md content to educate AI agents on tool usage."""
+    guide_path = os.path.join(os.path.dirname(__file__), "AGENT_GUIDE.md")
+    try:
+        with open(guide_path, encoding="utf-8") as f:
+            return {"ok": True, "content": f.read()}
+    except FileNotFoundError:
+        return {"error": "AGENT_GUIDE.md not found at {}".format(guide_path)}
+
+
 def mcp_lsp_get_sessions(body):
     reg = sys.modules.get("LSP.plugin.core.registry")
     if not reg:
@@ -1462,6 +1472,11 @@ def _lsp_did_close(body):
 
 TOOLS = [
     *_LSP_ST_TOOLS,
+
+    ("lsp_get_help",
+     "Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use lsp-mcp tools correctly.",
+     {},
+     _get_help),
 
     # ── Hand-written LSP request wrappers ──────────────────────────────────────
 
