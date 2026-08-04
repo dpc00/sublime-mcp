@@ -541,6 +541,18 @@ def edit_file(
 
 
 @mcp.tool()
+def batch(calls: list) -> dict:
+    """Run multiple sublime-mcp tool calls in a single request, sharing one main-thread
+    dispatch instead of paying a separate round trip per call. Use this whenever you
+    need more than one piece of editor state at once (e.g. get_active_file + get_selection
+    + get_cursor_context), or want to chain several edits/reads together.
+    calls: list of {tool: <tool name>, args: <object, optional>}. Cannot call 'batch' itself.
+    Returns {results: [...]} — one entry per call, in order; failed calls return {error: ...}
+    instead of aborting the whole batch."""
+    return _post("/batch", calls=calls)
+
+
+@mcp.tool()
 def eval_python(code: str) -> dict:
     """Execute arbitrary Python in Sublime Text's main thread.
     Locals: sublime, window, view, print.  Returns captured stdout in 'output'."""
