@@ -74,8 +74,11 @@ class _MCPHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def do_POST(self):
-        if urlparse(self.path).path == "/messages":
+        path = urlparse(self.path).path
+        if path == "/messages":
             self._handle_message()
+        elif path == "/mcp":
+            self._handle_streamable_http()
         else:
             self.send_error(404)
 
@@ -123,7 +126,37 @@ class _MCPHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"{}")
 
-        threading.Thread(target=_mcp_dispatch, args=(session_id, body), daemon=True).start()
+        def _dispatch_and_push():
+            resp = _mcp_dispatch(body)
+            if resp is not None:
+                _mcp_send(session_id, resp)
+
+        threading.Thread(target=_dispatch_and_push, daemon=True).start()
+
+    def _handle_streamable_http(self):
+        # Streamable HTTP (spec 2025-03-26): single POST, no session id, no
+        # second connection. One JSON-RPC request in, one response out on the
+        # same connection. Reuses the same dispatch logic as the legacy SSE
+        # path (/sse + /messages) so both transports share one implementation.
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length)) if length else {}
+
+        resp = _mcp_dispatch(body)
+
+        if resp is None:
+            self.send_response(202)
+            self.send_header("Content-Length", "0")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            return
+
+        payload = json.dumps(resp).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(payload)
 
 
 # ── HTTP bridge (REST API) ─────────────────────────────────────────────────
@@ -225,7 +258,9 @@ def _mcp_send(session_id, msg):
         q.put(msg)
 
 
-def _mcp_dispatch(session_id, msg):
+def _mcp_dispatch(msg):
+    """Run one JSON-RPC request, return the response dict (or None for
+    notifications that have no "id" and thus no response)."""
     method = msg.get("method", "")
     msg_id = msg.get("id")
     params = msg.get("params") or {}
@@ -269,11 +304,11 @@ def _mcp_dispatch(session_id, msg):
             raise ValueError("Unknown method: " + method)
 
         if msg_id is not None:
-            _mcp_send(session_id, {"jsonrpc": "2.0", "id": msg_id, "result": result})
+            return {"jsonrpc": "2.0", "id": msg_id, "result": result}
     except Exception as e:
         if msg_id is not None:
-            _mcp_send(session_id, {"jsonrpc": "2.0", "id": msg_id,
-                                   "error": {"code": -32603, "message": str(e)}})
+            return {"jsonrpc": "2.0", "id": msg_id,
+                    "error": {"code": -32603, "message": str(e)}}
 
 
 # ── plugin lifecycle ──────────────────────────────────────────────────────────

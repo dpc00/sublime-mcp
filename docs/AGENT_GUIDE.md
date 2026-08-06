@@ -71,7 +71,7 @@ If you skip step 2, the file will be dirty in ST but unchanged on disk.
 This causes desync — ST shows your edits but `git diff` shows nothing.
 
 ### Disk vs Buffer
-- `edit` tool (OpenClaw): writes directly to disk, ST buffer may be stale
+- `edit` tool: writes directly to disk, ST buffer may be stale
 - `str_replace_based_edit_tool` (sublime-mcp): writes to ST buffer, disk may be stale
 - If you use `edit` on a file open in ST, call `revert_file` after so ST reloads from disk
 - If you use `str_replace_based_edit_tool`, call `save_file` after so disk matches buffer
