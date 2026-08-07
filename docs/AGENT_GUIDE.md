@@ -3,9 +3,10 @@
 This document teaches AI agents how to use sublime-mcp tools correctly.
 Read this before editing files, closing tabs, or running ST commands.
 
-## Toolset (as of 2026-07-21, Phase B complete)
-218 typed MCP tools are exposed via `_MCP_TOOLS`, covering ST's built-in
-text/window/application commands plus read-only state getters. Batches:
+## Toolset (as of 2026-08-07)
+220 typed MCP tools are exposed via `_MCP_TOOLS`, covering ST's built-in
+text/window/application commands plus read-only state getters, plus `batch`
+and `get_help` (see below). Batches:
 - Batch 1 (44 tools): view/tab/pane + edit/selection/scroll/macro
 - Batch 2 (37 tools): file/project operations
 - Batch 3 (22 tools): marks, jumps, folds, transform, browser, scope, arithmetic, tag indent
@@ -233,4 +234,3 @@ Do NOT copy entire file content via `insert`. Instead:
 1. Make targeted edits directly on the real file using `str_replace_based_edit_tool`
 2. Save with `save_file`
 3. Verify with `is_dirty` check (should be False after save)
-
