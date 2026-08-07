@@ -21,6 +21,7 @@ Run:
 """
 
 import asyncio
+from pathlib import Path
 
 import httpx
 import pytest
@@ -28,7 +29,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 BASE = "http://127.0.0.1:9500"
-PROXY_DIR = r"C:\Users\donal\projects\sublime-mcp\packages\python-proxy"
+PROXY_DIR = str(Path(__file__).resolve().parent.parent / "packages" / "python-proxy")
 
 
 @pytest.fixture(scope="session", autouse=True)
