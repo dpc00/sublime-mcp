@@ -37,6 +37,63 @@ function ok(data) {
 const server = new McpServer({ name: 'sublime-mcp', version: '1.3.3' });
 server.setToolRequestHandlers();
 
+// ── JSON Schema → Zod (shallow) for dynamic discovery ────────────────────────
+// Backend /mcp_tools returns full JSON Schemas; MCP SDK registerTool requires
+// Zod shapes. Convert properties/required/defaults so clients still see real
+// param docs instead of empty passthrough objects.
+
+function jsonSchemaPropToZod(prop) {
+  if (!prop || typeof prop !== 'object') return z.unknown();
+  let t;
+  switch (prop.type) {
+    case 'string':
+      t = z.string();
+      break;
+    case 'integer':
+      t = z.number().int();
+      break;
+    case 'number':
+      t = z.number();
+      break;
+    case 'boolean':
+      t = z.boolean();
+      break;
+    case 'array':
+      t = z.array(prop.items ? jsonSchemaPropToZod(prop.items) : z.unknown());
+      break;
+    case 'object':
+      t = prop.properties ? jsonSchemaToZod(prop) : z.record(z.string(), z.unknown());
+      break;
+    default:
+      t = z.unknown();
+  }
+  if (prop.description) t = t.describe(prop.description);
+  return t;
+}
+
+function jsonSchemaToZod(schema) {
+  if (!schema || typeof schema !== 'object') return z.object({}).passthrough();
+  const props = schema.properties || {};
+  const required = new Set(schema.required || []);
+  const shape = {};
+  for (const [key, prop] of Object.entries(props)) {
+    let field = jsonSchemaPropToZod(prop);
+    if (!required.has(key)) {
+      if (prop && Object.prototype.hasOwnProperty.call(prop, 'default')) {
+        field = field.default(prop.default);
+      } else {
+        field = field.optional();
+      }
+    } else if (prop && Object.prototype.hasOwnProperty.call(prop, 'default')) {
+      field = field.default(prop.default);
+    }
+    shape[key] = field;
+  }
+  if (Object.keys(shape).length === 0) return z.object({}).passthrough();
+  // Allow extra keys agents sometimes send; backend is the real validator.
+  return z.object(shape).passthrough();
+}
+
 // ── Dynamic tool discovery from backend ──────────────────────────────────────
 
 async function loadDynamicTools() {
@@ -49,8 +106,12 @@ async function loadDynamicTools() {
       if (!toolsList?.tools) throw new Error('backend returned no tool list');
 
       for (const tool of toolsList.tools) {
-        server.registerTool(tool.name, { description: tool.description, inputSchema: z.object({}).passthrough() },
-          async (args) => ok(await post('/' + tool.name, args)));
+        const inputSchema = jsonSchemaToZod(tool.inputSchema);
+        server.registerTool(
+          tool.name,
+          { description: tool.description, inputSchema },
+          async (args) => ok(await post('/' + tool.name, args ?? {})),
+        );
       }
       process.stderr.write(`mcp-commander: loaded ${toolsList.tools.length} dynamic tools from backend (attempt ${attempt})\n`);
       return true;
