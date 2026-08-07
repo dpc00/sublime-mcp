@@ -100,7 +100,8 @@ def _on_main(fn):
             done.set()
 
     sublime.set_timeout(_run, 0)
-    done.wait(5.0)
+    if not done.wait(5.0):
+        raise TimeoutError("main-thread timeout after 5s")
     if exc[0]:
         raise exc[0]
     return result[0]
@@ -2542,42 +2543,39 @@ def _p(endpoint):
 
 
 def _batch(args):
-    """Run multiple MCP tool calls in a single main-thread dispatch.
+    """Run multiple MCP tool calls in a single HTTP request (worker-thread loop).
 
-    Each nested call still gets its own _on_main() invocation, but since
-    _on_main() short-circuits when already running on the main thread, only
-    the OUTER _on_main() here actually schedules a sublime.set_timeout() /
-    waits on ST's event loop. N calls that would normally cost N HTTP round
-    trips (N TCP connections, N thread spawns, N scheduler ticks) cost 1.
+    Saves N HTTP round trips / TCP connections by dispatching many tools in one
+    request. Each nested handler still performs its own _on_main() when it needs
+    the ST API — this function does NOT wrap the whole batch in one outer
+    _on_main(), so tools that poll with time.sleep between brief main-thread
+    ticks (e.g. waiting for open_file load) cannot freeze the UI or deadlock.
     """
     calls = args.get("calls")
     if not isinstance(calls, list) or not calls:
         return {"error": "calls must be a non-empty list of {tool, args}"}
 
-    def fn():
-        with _mcp_tools_lock:
-            tools_by_name = {t[0]: t[3] for t in _MCP_TOOLS}
-        results = []
-        for call in calls:
-            if not isinstance(call, dict):
-                results.append({"error": "each call must be an object with tool/args"})
-                continue
-            tool_name = call.get("tool")
-            tool_args = call.get("args") or {}
-            if tool_name == "batch":
-                results.append({"error": "batch cannot call itself"})
-                continue
-            handler = tools_by_name.get(tool_name)
-            if handler is None:
-                results.append({"error": "unknown tool: {!r}".format(tool_name)})
-                continue
-            try:
-                results.append(handler(tool_args))
-            except Exception as e:
-                results.append({"error": str(e)})
-        return {"results": results}
-
-    return _on_main(fn)
+    with _mcp_tools_lock:
+        tools_by_name = {t[0]: t[3] for t in _MCP_TOOLS}
+    results = []
+    for call in calls:
+        if not isinstance(call, dict):
+            results.append({"error": "each call must be an object with tool/args"})
+            continue
+        tool_name = call.get("tool")
+        tool_args = call.get("args") or {}
+        if tool_name == "batch":
+            results.append({"error": "batch cannot call itself"})
+            continue
+        handler = tools_by_name.get(tool_name)
+        if handler is None:
+            results.append({"error": "unknown tool: {!r}".format(tool_name)})
+            continue
+        try:
+            results.append(handler(tool_args))
+        except Exception as e:
+            results.append({"error": str(e)})
+    return {"results": results}
 
 
 _POST["/batch"] = _batch
@@ -2789,10 +2787,10 @@ _POST["/install_package"] = _install_package
 _MCP_TOOLS = [
     # ── batch execution ───────────────────────────────────────────────────────
     ("batch",
-     "Run multiple sublime-mcp tool calls in a single request, sharing one main-thread\n"
-     "dispatch instead of paying a separate round trip per call. Use this whenever you\n"
-     "need more than one piece of editor state at once (e.g. get_active_file + get_selection\n"
-     "+ get_cursor_context), or want to chain several edits/reads together.\n"
+     "Run multiple sublime-mcp tool calls in a single request instead of paying a\n"
+     "separate HTTP round trip per call. Use this whenever you need more than one\n"
+     "piece of editor state at once (e.g. get_active_file + get_selection +\n"
+     "get_cursor_context), or want to chain several edits/reads together.\n"
      "calls: list of {tool: <tool name>, args: <object, optional>}. Cannot call 'batch' itself.\n"
      "Returns {results: [...]} — one entry per call, in order; failed calls return {error: ...}\n"
      "instead of aborting the whole batch.",
@@ -3807,6 +3805,17 @@ _MCP_TOOLS = [
 _mcp_tools_lock = threading.Lock()
 _mcp_tools_builtin_names = frozenset(t[0] for t in _MCP_TOOLS)
 
+# MCP tool-name HTTP aliases for node-proxy dynamic discovery (POST /{tool.name}).
+# Only paths that were not already REST routes — overwriting would break
+# _p("/save_all")-style wrappers that look up the real handler in _POST.
+_POST_MCP_ALIASES = set()
+for _name, _desc, _schema, _handler in _MCP_TOOLS:
+    _path = "/" + _name
+    if _path not in _POST:
+        _POST[_path] = _handler
+        _POST_MCP_ALIASES.add(_path)
+del _name, _desc, _schema, _handler, _path
+
 
 def register_mcp_tools(tools):
     """Register additional MCP tools from an extension plugin.
@@ -3814,7 +3823,8 @@ def register_mcp_tools(tools):
     Call from plugin_loaded(). tools is a list of
     (name, description, input_schema, handler) tuples, the same format
     as _MCP_TOOLS.  Built-in tool names are protected: a collision logs
-    a warning and keeps the built-in.
+    a warning and keeps the built-in.  Also installs POST /{name} for
+    node-proxy dynamic discovery when that path is free.
     """
     with _mcp_tools_lock:
         existing = {t[0] for t in _MCP_TOOLS}
@@ -3828,18 +3838,28 @@ def register_mcp_tools(tools):
                 continue
             _MCP_TOOLS.append(entry)
             existing.add(name)
+            path = "/" + name
+            if path not in _POST:
+                _POST[path] = entry[3]
+                _POST_MCP_ALIASES.add(path)
 
 
 def unregister_mcp_tools(tools):
     """Remove tools previously registered with register_mcp_tools.
 
     Call from plugin_unloaded(). Built-in tools are never removed.
+    Also removes any POST /{name} aliases installed by register_mcp_tools.
     """
     names = {entry[0] for entry in tools} - _mcp_tools_builtin_names
     with _mcp_tools_lock:
         for i in range(len(_MCP_TOOLS) - 1, -1, -1):
             if _MCP_TOOLS[i][0] in names:
+                name = _MCP_TOOLS[i][0]
                 _MCP_TOOLS.pop(i)
+                path = "/" + name
+                if path in _POST_MCP_ALIASES:
+                    _POST.pop(path, None)
+                    _POST_MCP_ALIASES.discard(path)
 
 
 def run_st_command(command, args=None, scope="window"):
