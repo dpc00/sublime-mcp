@@ -2542,6 +2542,9 @@ def _p(endpoint):
     return handler
 
 
+_BATCH_MAX_CALLS = 50
+
+
 def _batch(args):
     """Run multiple MCP tool calls in a single HTTP request (worker-thread loop).
 
@@ -2554,6 +2557,8 @@ def _batch(args):
     calls = args.get("calls")
     if not isinstance(calls, list) or not calls:
         return {"error": "calls must be a non-empty list of {tool, args}"}
+    if len(calls) > _BATCH_MAX_CALLS:
+        return {"error": "calls exceeds max batch size of {}".format(_BATCH_MAX_CALLS)}
 
     with _mcp_tools_lock:
         tools_by_name = {t[0]: t[3] for t in _MCP_TOOLS}
@@ -2792,11 +2797,13 @@ _MCP_TOOLS = [
      "piece of editor state at once (e.g. get_active_file + get_selection +\n"
      "get_cursor_context), or want to chain several edits/reads together.\n"
      "calls: list of {tool: <tool name>, args: <object, optional>}. Cannot call 'batch' itself.\n"
+     "Max 50 calls per batch.\n"
      "Returns {results: [...]} — one entry per call, in order; failed calls return {error: ...}\n"
      "instead of aborting the whole batch.",
      {"type": "object", "properties": {
          "calls": {
              "type": "array",
+             "maxItems": 50,
              "items": {
                  "type": "object",
                  "properties": {
