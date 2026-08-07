@@ -2413,6 +2413,8 @@ _POST = {
 
 
 class _Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def log_message(self, fmt, *args):
         pass  # suppress request log
 

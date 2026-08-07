@@ -57,6 +57,8 @@ class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
 
 class _MCPHandler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def log_message(self, fmt, *args):
         pass
 
@@ -206,6 +208,8 @@ def _to_get_params(args):
 
 
 class _Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def log_message(self, fmt, *args):
         pass
 
