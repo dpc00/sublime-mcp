@@ -4070,7 +4070,7 @@ def _start_servers():
     _install_console_capture()
     if not _server:
         try:
-            _server = HTTPServer(("0.0.0.0", _PORT), _Handler)
+            _server = _ThreadingHTTPServer(("0.0.0.0", _PORT), _Handler)
             threading.Thread(target=_server.serve_forever, daemon=True).start()
         except OSError as e:
             print("sublime-mcp: could not bind HTTP bridge on port {}: {}".format(_PORT, e))
