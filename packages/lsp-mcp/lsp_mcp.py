@@ -328,7 +328,7 @@ def _start_server():
             _server = None
     if not _http_server:
         try:
-            _http_server = HTTPServer(("0.0.0.0", _HTTP_PORT), _Handler)
+            _http_server = _ThreadingHTTPServer(("0.0.0.0", _HTTP_PORT), _Handler)
             threading.Thread(target=_http_server.serve_forever, daemon=True).start()
         except OSError as e:
             print("[lsp-mcp] could not bind HTTP bridge on port {}: {}".format(_HTTP_PORT, e))
