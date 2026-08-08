@@ -68,8 +68,16 @@ class _MCPHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if urlparse(self.path).path == "/sse":
+        path = urlparse(self.path).path
+        if path == "/sse":
             self._handle_sse()
+        elif path == "/mcp":
+            # Streamable HTTP allows an optional GET to open a server-push
+            # SSE stream; we don't support it (nothing to push -- see
+            # _handle_streamable_http). 405 tells compliant clients that's
+            # fine and to proceed POST-only, instead of a bare 404 which
+            # some clients (e.g. qwen-code) treat as a fatal connect error.
+            self.send_error(405)
         else:
             self.send_error(404)
 
