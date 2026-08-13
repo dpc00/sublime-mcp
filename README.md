@@ -13,6 +13,15 @@ references, diagnostics, rename, hover) the same way — both served over
 MCP SSE so an agent can debug and navigate code with full language-server
 awareness, not just text search.
 
+## Toolset
+
+220 typed MCP tools cover ST's built-in text/window/application commands
+(view, tab, pane, edit, selection, scroll, macro, file, project, marks,
+jumps, folds, transform, browser) plus read-only state getters, a `batch`
+tool for sending many calls in one round trip, and `eval_python` for
+anything the typed tools don't cover. Full reference in
+[docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md).
+
 ## Installation
 
 ### 1. Clone the Repository
