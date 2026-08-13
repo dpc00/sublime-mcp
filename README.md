@@ -1,5 +1,18 @@
 # Sublime-MCP: Universal AI Agent Connector for Sublime Text
 
+Gives any MCP-speaking AI agent (Claude Code, etc.) real control over a
+running Sublime Text 4 instance — not just file edits, but the editor
+itself: run any registered ST command, read/write views and selections,
+drive the command palette, inspect open tabs and project state, and
+execute arbitrary Python directly in Sublime's plugin host for anything
+the API doesn't expose a dedicated tool for. Two optional companion
+plugins extend this further: **debugger-mcp** exposes the Debugger
+package's DAP tools (breakpoints, stepping, variable inspection, call
+stacks) over MCP, and **lsp-mcp** exposes LSP tools (go-to-definition,
+references, diagnostics, rename, hover) the same way — both served over
+MCP SSE so an agent can debug and navigate code with full language-server
+awareness, not just text search.
+
 ## Installation
 
 ### 1. Clone the Repository
