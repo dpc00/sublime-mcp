@@ -67,6 +67,11 @@ from urllib.parse import parse_qs, urlparse
 import sublime
 import sublime_plugin
 
+try:
+    from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
+except ImportError:
+    from mcp_http_policy import is_oauth_discovery_path, send_no_authorization
+
 _PORT = int(os.environ.get("SUBLIME_MCP_PORT", 9500 if sys.platform == "win32" else 9501))
 
 
@@ -2428,6 +2433,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if is_oauth_discovery_path(self.path):
+            send_no_authorization(self)
+            return
         params = parse_qs(parsed.query)
         handler = _GET.get(parsed.path)
         if handler:
@@ -3909,6 +3917,9 @@ class _MCPHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        if is_oauth_discovery_path(self.path):
+            send_no_authorization(self)
+            return
         if path == "/sse":
             self._handle_sse()
         elif path == "/mcp":

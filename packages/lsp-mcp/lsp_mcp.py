@@ -16,6 +16,11 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 
+try:
+    from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
+except ImportError:
+    from mcp_http_policy import is_oauth_discovery_path, send_no_authorization
+
 _MCP_PORT = int(os.environ.get("LSP_MCP_PORT", 9506))
 _HTTP_PORT = int(os.environ.get("LSP_HTTP_PORT", 9516))
 
@@ -71,6 +76,9 @@ class _MCPHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        if is_oauth_discovery_path(self.path):
+            send_no_authorization(self)
+            return
         if path == "/sse":
             self._handle_sse()
         elif path == "/mcp":
@@ -230,6 +238,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if is_oauth_discovery_path(self.path):
+            send_no_authorization(self)
+            return
         params = parse_qs(parsed.query)
         handler = _GET.get(parsed.path)
         if handler:
