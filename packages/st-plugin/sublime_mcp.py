@@ -62,7 +62,7 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 import sublime
 import sublime_plugin
@@ -71,6 +71,30 @@ try:
     from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 except ImportError:
     from mcp_http_policy import is_oauth_discovery_path, send_no_authorization
+
+try:
+    from .ide_companion import (
+        IdeCompanionServer,
+        IdeContextTracker,
+        companion_dispatch,
+        create_gemini_discovery_file,
+        create_qwen_discovery_file,
+        remove_discovery_file,
+    )
+except ImportError:
+    from ide_companion import (
+        IdeCompanionServer,
+        IdeContextTracker,
+        companion_dispatch,
+        create_gemini_discovery_file,
+        create_qwen_discovery_file,
+        remove_discovery_file,
+    )
+
+try:
+    from .claude_ide import claude_dispatch, create_claude_discovery_file
+except ImportError:
+    from claude_ide import claude_dispatch, create_claude_discovery_file
 
 _PORT = int(os.environ.get("SUBLIME_MCP_PORT", 9500 if sys.platform == "win32" else 9501))
 
@@ -4084,6 +4108,381 @@ def _mcp_dispatch(msg):
 
 _server = None
 _mcp_server = None
+_ide_companion_server = None
+_ide_companion_discovery_file = None
+_qwen_companion_discovery_file = None
+_claude_companion_discovery_file = None
+_ide_context_tracker = IdeContextTracker()
+_ide_context_generation = 0
+_ide_diffs = {}
+
+
+def _ide_workspace_paths():
+    """Return unique workspace roots across this Sublime process."""
+    paths = []
+    seen = set()
+    for window in sublime.windows():
+        candidates = list(window.folders())
+        if not candidates:
+            project_file = window.project_file_name()
+            if project_file:
+                candidates.append(os.path.dirname(project_file))
+        for path in candidates:
+            absolute = os.path.abspath(os.path.normpath(path))
+            key = os.path.normcase(absolute)
+            if key not in seen:
+                seen.add(key)
+                paths.append(absolute)
+    return paths
+
+
+def _current_ide_context():
+    """Build IDE context on Sublime's main thread without changing focus."""
+    open_paths = []
+    for window in sublime.windows():
+        for candidate in window.views():
+            path = candidate.file_name()
+            if path:
+                open_paths.append(path)
+
+    active_view = sublime.active_window().active_view() if sublime.active_window() else None
+    active_path = active_view.file_name() if active_view else None
+    cursor = None
+    selected_text = None
+    if active_view and active_path and active_view.sel():
+        selection = active_view.sel()[0]
+        row, column = active_view.rowcol(selection.begin())
+        cursor = (row + 1, column + 1)
+        if not selection.empty():
+            selected_text = active_view.substr(selection)
+    return _ide_context_tracker.snapshot(
+        open_paths,
+        active_path=active_path,
+        cursor=cursor,
+        selected_text=selected_text,
+        is_trusted=True,
+    )
+
+
+def _publish_ide_context():
+    server = _ide_companion_server
+    if server:
+        server.notify("ide/contextUpdate", _current_ide_context())
+        window = sublime.active_window()
+        view = window.active_view() if window else None
+        path = view.file_name() if view else None
+        if path and view.sel():
+            region = view.sel()[0]
+            start_row, start_column = view.rowcol(region.begin())
+            end_row, end_column = view.rowcol(region.end())
+            server.notify(
+                "selection_changed",
+                {
+                    "selection": {
+                        "start": {"line": start_row, "character": start_column},
+                        "end": {"line": end_row, "character": end_column},
+                    },
+                    "text": view.substr(region),
+                    "filePath": path,
+                },
+            )
+
+
+def _schedule_ide_context_update():
+    """Debounce editor events using the specification's recommended 50 ms."""
+    global _ide_context_generation
+    _ide_context_generation += 1
+    generation = _ide_context_generation
+
+    def publish_if_latest():
+        if generation == _ide_context_generation:
+            _publish_ide_context()
+
+    sublime.set_timeout(publish_if_latest, 50)
+
+
+def _ide_tool_error(message):
+    return {
+        "isError": True,
+        "content": [{"type": "text", "text": message}],
+    }
+
+
+def _ide_review_group(window):
+    """Prefer a non-active group already used for disk-backed source files."""
+    active_group = window.active_group()
+    choices = []
+    for group in range(window.num_groups()):
+        if group == active_group:
+            continue
+        file_views = 0
+        for candidate in window.views_in_group(group):
+            if candidate.file_name():
+                file_views += 1
+        choices.append((file_views, -group, group))
+    return max(choices)[2] if choices else active_group
+
+
+def _ide_open_diff(arguments):
+    file_path = os.path.abspath(os.path.normpath(arguments.get("filePath", "")))
+    new_content = arguments.get("newContent")
+    if not arguments.get("filePath") or not os.path.isfile(file_path):
+        return _ide_tool_error("File not found: " + file_path)
+    if not isinstance(new_content, str):
+        return _ide_tool_error("newContent must be a string")
+    key = os.path.normcase(file_path)
+    if key in _ide_diffs:
+        return _ide_tool_error("A diff review is already open for: " + file_path)
+
+    original_view, error = _ensure_view(file_path)
+    if error:
+        return _ide_tool_error(error.get("error", str(error)))
+
+    def open_review():
+        window = original_view.window() or sublime.active_window()
+        original_content = original_view.substr(sublime.Region(0, original_view.size()))
+        group = _ide_review_group(window)
+        if original_view.sheet() and window.get_view_index(original_view)[0] != group:
+            window.move_sheets_to_group([original_view.sheet()], group, select=False)
+        review = window.new_file()
+        review.set_name("Diff Review: " + os.path.basename(file_path))
+        review.set_scratch(True)
+        syntax = sublime.find_syntax_for_file(file_path)
+        if syntax:
+            review.assign_syntax(syntax)
+        review.set_reference_document(original_content)
+        review.run_command(
+            "mcp_replace_region",
+            {"begin": 0, "end": review.size(), "text": new_content},
+        )
+        review.settings().set("ide_companion_diff_path", file_path)
+        review.set_status(
+            "ide_companion_diff",
+            "IDE Companion review — use Accept IDE Companion Diff or Reject IDE Companion Diff",
+        )
+        if review.sheet() and group != window.active_group():
+            window.move_sheets_to_group([review.sheet()], group, select=True)
+        _ide_diffs[key] = {
+            "file_path": file_path,
+            "review": review,
+            "original": original_view,
+            "original_content": original_content,
+        }
+        return {"content": []}
+
+    return _on_main(open_review)
+
+
+def _close_ide_diff(file_path):
+    key = os.path.normcase(os.path.abspath(os.path.normpath(file_path)))
+    state = _ide_diffs.pop(key, None)
+    if not state:
+        return None, _ide_tool_error("No diff review is open for: " + file_path)
+    review = state["review"]
+    final_content = review.substr(sublime.Region(0, review.size()))
+    review.set_scratch(True)
+    review.close()
+    return final_content, None
+
+
+def _ide_close_diff(arguments):
+    file_path = arguments.get("filePath", "")
+    if not file_path:
+        return _ide_tool_error("filePath is required")
+
+    def close_review():
+        final_content, error = _close_ide_diff(file_path)
+        if error:
+            return error
+        return {"content": [{"type": "text", "text": final_content}]}
+
+    return _on_main(close_review)
+
+
+def _ide_companion_dispatch(message):
+    return companion_dispatch(message, _ide_open_diff, _ide_close_diff)
+
+
+def _claude_get_diagnostics(arguments):
+    uri = arguments.get("uri")
+    file_path = None
+    if uri:
+        parsed = urlparse(uri)
+        file_path = unquote(parsed.path)
+        if sys.platform == "win32" and file_path.startswith("/"):
+            file_path = file_path[1:]
+        file_path = file_path.replace("/", os.sep)
+
+    def collect():
+        registry_module = sys.modules.get("LSP.plugin.core.registry")
+        if not registry_module:
+            return []
+        grouped = {}
+        for window in sublime.windows():
+            manager = registry_module.windows.lookup(window)
+            if not manager:
+                continue
+            for session in manager.get_sessions():
+                storage = getattr(session, "diagnostics", None)
+                if not storage:
+                    continue
+                for diagnostic_uri, by_provider in storage._diagnostics.items():
+                    local_path = diagnostic_uri
+                    if diagnostic_uri.startswith("file:///"):
+                        local_path = unquote(diagnostic_uri[8:])
+                        if sys.platform == "win32":
+                            local_path = local_path.replace("/", "\\")
+                    if file_path and os.path.normcase(os.path.abspath(local_path)) != os.path.normcase(os.path.abspath(file_path)):
+                        continue
+                    items = grouped.setdefault(diagnostic_uri, [])
+                    for diagnostics in by_provider.values():
+                        items.extend(diagnostics)
+        return [
+            {"uri": diagnostic_uri, "diagnostics": diagnostics}
+            for diagnostic_uri, diagnostics in grouped.items()
+        ]
+
+    return {"content": [{"type": "text", "text": json.dumps(_on_main(collect))}]}
+
+
+def _claude_open_diff(arguments):
+    file_path = arguments.get("old_file_path") or arguments.get("new_file_path") or ""
+    result = _ide_open_diff(
+        {"filePath": file_path, "newContent": arguments.get("new_file_contents")}
+    )
+    if result.get("isError"):
+        return result
+    key = os.path.normcase(os.path.abspath(os.path.normpath(file_path)))
+    state = _ide_diffs.get(key)
+    if not state:
+        return _ide_tool_error("Diff review did not open: " + file_path)
+    event = threading.Event()
+    state["claude_event"] = event
+    state["claude_result"] = [{"type": "text", "text": "DIFF_REJECTED"}]
+    state["claude_tab_name"] = arguments.get("tab_name")
+    event.wait()
+    return {"content": state["claude_result"]}
+
+
+def _claude_close_tab(arguments):
+    tab_name = arguments.get("tab_name")
+
+    def close():
+        for state in list(_ide_diffs.values()):
+            if state.get("claude_tab_name") == tab_name:
+                state["claude_result"] = [{"type": "text", "text": "TAB_CLOSED"}]
+                state["review"].close()
+                return {"content": [{"type": "text", "text": "TAB_CLOSED"}]}
+        return _ide_tool_error("Tab not found: " + str(tab_name))
+
+    return _on_main(close)
+
+
+def _claude_ide_dispatch(message):
+    return claude_dispatch(
+        message,
+        _claude_get_diagnostics,
+        _claude_open_diff,
+        _claude_close_tab,
+    )
+
+
+def _discard_ide_diffs_after_disconnect():
+    """Close orphaned scratch reviews without changing their source buffers."""
+    def discard():
+        states = list(_ide_diffs.values())
+        _ide_diffs.clear()
+        for state in states:
+            event = state.get("claude_event")
+            if event:
+                state["claude_result"] = [{"type": "text", "text": "DIFF_REJECTED"}]
+                event.set()
+            review = state["review"]
+            if review and review.is_valid():
+                review.settings().erase("ide_companion_diff_path")
+                review.set_scratch(True)
+                review.close()
+
+    sublime.set_timeout(discard, 0)
+
+
+def _start_ide_companion():
+    global _ide_companion_server, _ide_companion_discovery_file
+    global _qwen_companion_discovery_file, _claude_companion_discovery_file
+    if _ide_companion_server:
+        return
+    workspace_paths = _on_main(_ide_workspace_paths)
+    if not workspace_paths:
+        print("sublime-mcp: IDE Companion not published (no workspace roots)")
+        return
+    companion = IdeCompanionServer(
+        _ide_companion_dispatch,
+        legacy_dispatcher=_claude_ide_dispatch,
+        on_subscribe=_schedule_ide_context_update,
+        on_last_disconnect=_discard_ide_diffs_after_disconnect,
+    )
+    discovery_file = None
+    qwen_discovery_file = None
+    claude_discovery_file = None
+    try:
+        port = companion.start()
+        discovery_file = create_gemini_discovery_file(
+            pid=os.getpid(),
+            port=port,
+            workspace_paths=workspace_paths,
+            auth_token=companion.auth_token,
+        )
+        qwen_discovery_file = create_qwen_discovery_file(
+            port=port,
+            workspace_paths=workspace_paths,
+            auth_token=companion.auth_token,
+            parent_pid=os.getppid(),
+        )
+        claude_discovery_file = create_claude_discovery_file(
+            port=port,
+            workspace_paths=workspace_paths,
+            auth_token=companion.auth_token,
+            pid=os.getpid(),
+        )
+    except Exception:
+        remove_discovery_file(discovery_file)
+        remove_discovery_file(qwen_discovery_file)
+        remove_discovery_file(claude_discovery_file)
+        companion.stop()
+        raise
+    _ide_companion_server = companion
+    _ide_companion_discovery_file = discovery_file
+    _qwen_companion_discovery_file = qwen_discovery_file
+    _claude_companion_discovery_file = claude_discovery_file
+    os.environ["GEMINI_CLI_IDE_SERVER_PORT"] = str(port)
+    os.environ["QWEN_CODE_IDE_SERVER_PORT"] = str(port)
+    os.environ["CLAUDE_CODE_SSE_PORT"] = str(port)
+    print("sublime-mcp: IDE Companion on 127.0.0.1:{}".format(port))
+
+
+def _stop_ide_companion():
+    global _ide_companion_server, _ide_companion_discovery_file
+    global _qwen_companion_discovery_file, _claude_companion_discovery_file
+    server = _ide_companion_server
+    discovery_file = _ide_companion_discovery_file
+    qwen_discovery_file = _qwen_companion_discovery_file
+    claude_discovery_file = _claude_companion_discovery_file
+    port = server.port if server else None
+    _ide_companion_server = None
+    _ide_companion_discovery_file = None
+    _qwen_companion_discovery_file = None
+    _claude_companion_discovery_file = None
+    remove_discovery_file(discovery_file)
+    remove_discovery_file(qwen_discovery_file)
+    remove_discovery_file(claude_discovery_file)
+    if server:
+        server.stop()
+    if port is not None and os.environ.get("GEMINI_CLI_IDE_SERVER_PORT") == str(port):
+        os.environ.pop("GEMINI_CLI_IDE_SERVER_PORT", None)
+    if port is not None and os.environ.get("QWEN_CODE_IDE_SERVER_PORT") == str(port):
+        os.environ.pop("QWEN_CODE_IDE_SERVER_PORT", None)
+    if port is not None and os.environ.get("CLAUDE_CODE_SSE_PORT") == str(port):
+        os.environ.pop("CLAUDE_CODE_SSE_PORT", None)
 
 
 def _start_servers():
@@ -4104,10 +4503,15 @@ def _start_servers():
             print("sublime-mcp: could not bind MCP SSE on port {}: {}".format(_MCP_PORT, e))
             _mcp_server = None
     print("sublime-mcp: MCP SSE on 0.0.0.0:{}, HTTP bridge on 0.0.0.0:{}".format(_MCP_PORT, _PORT))
+    try:
+        _start_ide_companion()
+    except Exception as e:
+        print("sublime-mcp: could not start IDE Companion: {}".format(e))
 
 
 def _stop_servers():
     global _server, _mcp_server
+    _stop_ide_companion()
     if _server:
         _server.shutdown()
         _server = None
@@ -4126,6 +4530,105 @@ def plugin_loaded():
 
 def plugin_unloaded():
     _stop_servers()
+
+
+class IdeCompanionContextListener(sublime_plugin.EventListener):
+    """Publish disk-backed editor context without changing the active view."""
+
+    def on_activated(self, view):
+        _ide_context_tracker.touch(view.file_name())
+        _schedule_ide_context_update()
+
+    def on_load(self, view):
+        _ide_context_tracker.touch(view.file_name())
+        _schedule_ide_context_update()
+
+    def on_post_save(self, view):
+        _ide_context_tracker.touch(view.file_name())
+        _schedule_ide_context_update()
+
+    def on_selection_modified(self, view):
+        if view == sublime.active_window().active_view():
+            _schedule_ide_context_update()
+
+    def on_close(self, view):
+        diff_path = view.settings().get("ide_companion_diff_path")
+        if diff_path:
+            key = os.path.normcase(os.path.abspath(os.path.normpath(diff_path)))
+            state = _ide_diffs.pop(key, None)
+            if state and state.get("claude_event"):
+                state["claude_event"].set()
+            if state and _ide_companion_server:
+                _ide_companion_server.notify(
+                    "ide/diffRejected", {"filePath": state["file_path"]}
+                )
+        _ide_context_tracker.forget(view.file_name())
+        _schedule_ide_context_update()
+
+
+class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        review = self.window.active_view()
+        file_path = review.settings().get("ide_companion_diff_path") if review else None
+        if not file_path:
+            return
+        key = os.path.normcase(os.path.abspath(os.path.normpath(file_path)))
+        state = _ide_diffs.get(key)
+        if not state:
+            return
+        final_content = review.substr(sublime.Region(0, review.size()))
+        original = state["original"]
+        original.set_reference_document(state["original_content"])
+        original.run_command(
+            "mcp_replace_region",
+            {"begin": 0, "end": original.size(), "text": final_content},
+        )
+        if state.get("claude_event"):
+            state["claude_result"] = [
+                {"type": "text", "text": "FILE_SAVED"},
+                {"type": "text", "text": final_content},
+            ]
+            state["claude_event"].set()
+        _ide_diffs.pop(key, None)
+        review.settings().erase("ide_companion_diff_path")
+        review.set_scratch(True)
+        review.close()
+        self.window.focus_view(original)
+        if _ide_companion_server:
+            _ide_companion_server.notify(
+                "ide/diffAccepted",
+                {"filePath": file_path, "content": final_content},
+            )
+
+    def is_enabled(self):
+        view = self.window.active_view()
+        return bool(view and view.settings().get("ide_companion_diff_path"))
+
+
+class RejectIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        review = self.window.active_view()
+        file_path = review.settings().get("ide_companion_diff_path") if review else None
+        if not file_path:
+            return
+        key = os.path.normcase(os.path.abspath(os.path.normpath(file_path)))
+        state = _ide_diffs.pop(key, None)
+        if not state:
+            return
+        if state.get("claude_event"):
+            state["claude_result"] = [{"type": "text", "text": "DIFF_REJECTED"}]
+            state["claude_event"].set()
+        review.settings().erase("ide_companion_diff_path")
+        review.set_scratch(True)
+        review.close()
+        if _ide_companion_server:
+            _ide_companion_server.notify(
+                "ide/diffRejected", {"filePath": state["file_path"]}
+            )
+
+    def is_enabled(self):
+        view = self.window.active_view()
+        return bool(view and view.settings().get("ide_companion_diff_path"))
 
 
 # ── helper text commands ──────────────────────────────────────────────────────
