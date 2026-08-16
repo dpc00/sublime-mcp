@@ -1,6 +1,6 @@
 # Debugger MCP — standalone Sublime Text plugin
 # Serves Debugger DAP tools over MCP SSE on port 9505.
-# Refactored from debugger_mcp_tools.py (formerly an add-on to sublime-mcp).
+# Refactored from debugger_mcp_tools.py (previously part of sublime-mcp).
 
 import sublime
 import sublime_plugin
@@ -62,7 +62,7 @@ class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 class _MCPHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def log_message(self, fmt, *args):
+    def log_message(self, format, *args):
         pass
 
     def do_OPTIONS(self):
@@ -285,7 +285,7 @@ def _to_get_params(args):
 class _Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def log_message(self, fmt, *args):
+    def log_message(self, format, *args):
         pass
 
     def do_OPTIONS(self):
@@ -446,12 +446,25 @@ def mcp_debugger_get_state(body):
 
     return result
 
-def mcp_debugger_get_breakpoints(body):
-    dbg = get_debugger()
-    if not dbg:
+def _get_breakpoints():
+    db_mod = sys.modules.get("Debugger.modules.debugger")
+    if not db_mod or not hasattr(db_mod, "Debugger"):
         return {"error": "Debugger package not loaded."}
 
-    result = {"source_breakpoints": [], "function_breakpoints": []}
+    dbg = get_debugger()
+    if not dbg:
+        return {
+            "source_breakpoints": [],
+            "function_breakpoints": [],
+            "status": "inactive",
+            "message": "Debugger is loaded, but not active in any Sublime window.",
+        }
+
+    result = {
+        "source_breakpoints": [],
+        "function_breakpoints": [],
+        "status": "active",
+    }
     if dbg.breakpoints:
         if dbg.breakpoints.source:
             for bp in dbg.breakpoints.source.breakpoints:
@@ -459,8 +472,8 @@ def mcp_debugger_get_breakpoints(body):
                     "file": bp.file,
                     "line": bp.line,
                     "enabled": bp.enabled,
-                    "condition": bp.condition,
-                    "log_message": bp.log_message
+                    "condition": bp.dap.condition,
+                    "log_message": bp.dap.logMessage
                 })
         if dbg.breakpoints.function:
             for bp in dbg.breakpoints.function.breakpoints:
@@ -470,6 +483,9 @@ def mcp_debugger_get_breakpoints(body):
                     "condition": bp.dap.condition if hasattr(bp, "dap") else None
                 })
     return result
+
+def mcp_debugger_get_breakpoints(body):
+    return _get_breakpoints()
 
 def mcp_debugger_toggle_breakpoint(body):
     file_path = body["file_path"]
@@ -1391,11 +1407,19 @@ def _get_scopes():
 
 def _get_all_sessions():
     dbg = get_debugger()
-    if not dbg: return {"error": "Debugger package not loaded."}
+    if not dbg:
+        db_mod = sys.modules.get("Debugger.modules.debugger")
+        if not db_mod or not hasattr(db_mod, "Debugger"):
+            return {"error": "Debugger package not loaded."}
+        return {
+            "sessions": [],
+            "status": "inactive",
+            "message": "Debugger is loaded, but not active in any Sublime window."
+        }
     sessions = []
     for s in dbg.sessions:
         sessions.append({"name": s.name, "state": str(s.state)})
-    return {"sessions": sessions}
+    return {"sessions": sessions, "status": "active"}
 
 
 def _get_configurations():
@@ -1408,16 +1432,19 @@ def _get_configurations():
 
 
 def _get_adapters():
-    core = sys.modules.get("Debugger.modules.core")
-    if not core: return {"error": "Debugger core not loaded."}
-    try:
-        from .Debugger.modules.adapters import AdaptersRegistry  # noqa
-        adapters = []
-        for name in AdaptersRegistry.registered:
-            adapters.append({"name": name})
-        return {"adapters": adapters}
-    except Exception:
-        return {"adapters": [], "note": "Could not enumerate adapters."}
+    dap_mod = sys.modules.get("Debugger.modules.dap")
+    registry = getattr(dap_mod, "AdapterConfiguration", None) if dap_mod else None
+    if not registry:
+        return {"error": "Debugger adapter registry not loaded."}
+
+    names = []
+    for adapter in registry.registered:
+        adapter_types = getattr(adapter, "type", None)
+        if isinstance(adapter_types, str):
+            names.append(adapter_types)
+        elif isinstance(adapter_types, (list, tuple)):
+            names.extend(name for name in adapter_types if isinstance(name, str))
+    return {"adapters": [{"name": name} for name in sorted(set(names))]}
 
 
 def _get_storage_path():
@@ -1483,14 +1510,21 @@ _DEBUGGER_ST_COMMANDS = [
 ]
 
 
+def _debugger_command_args(key, body):
+    configuration_name = body.get("configuration_name")
+    if configuration_name is None:
+        return {}
+    if key in ("start", "open_and_start"):
+        return {"configuration": configuration_name}
+    return {"configuration_name": configuration_name}
+
+
 def _make_debugger_st_tool(key, desc):
     def _tool(body):
         window = sublime.active_window()
         if not window:
             return {"error": "No active window."}
-        args = {}
-        if "configuration_name" in body:
-            args["configuration_name"] = body["configuration_name"]
+        args = _debugger_command_args(key, body)
         window.run_command("debugger", {"action": key, **args})
         return {"success": True, "message": "Ran debugger command: {}".format(key)}
     return _tool
