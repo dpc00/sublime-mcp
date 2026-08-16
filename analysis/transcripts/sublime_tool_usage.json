@@ -1,0 +1,2070 @@
+{
+  "generated_at": "2026-08-15T22:16:58.182592-06:00",
+  "project_created_at": "2026-05-24T03:51:53-06:00",
+  "corpus": {
+    "claude:files": 174,
+    "claude:bytes": 190297822,
+    "claude:lines": 103063,
+    "codex:files": 139,
+    "codex:bytes": 48918926,
+    "codex:lines": 43936,
+    "cursor:files": 2,
+    "cursor:bytes": 22678,
+    "cursor:lines": 43,
+    "gemini:files": 137,
+    "gemini:bytes": 628064813,
+    "gemini:lines": 171283,
+    "grok:files": 552,
+    "grok:bytes": 178007896,
+    "grok:lines": 344047,
+    "jcode:files": 22,
+    "jcode:bytes": 456374,
+    "jcode:lines": 230,
+    "junie:files": 12,
+    "junie:bytes": 10531469,
+    "junie:lines": 4340,
+    "kimi-code:files": 46,
+    "kimi-code:bytes": 25261193,
+    "kimi-code:lines": 7959,
+    "kiro:files": 13,
+    "kiro:bytes": 486202,
+    "kiro:lines": 84,
+    "local:files": 2,
+    "local:bytes": 7499,
+    "local:lines": 66,
+    "prime:files": 2,
+    "prime:bytes": 3821,
+    "prime:lines": 10,
+    "prime:invalid_json": 1,
+    "qwen:files": 30,
+    "qwen:bytes": 164034,
+    "qwen:lines": 186,
+    "vibe:files": 23,
+    "vibe:bytes": 1531226,
+    "vibe:lines": 1077
+  },
+  "summary": {
+    "catalog_tools": 445,
+    "calls": 2832,
+    "direct_calls": 2826,
+    "batched_inner_calls": 6,
+    "used_tools": 36,
+    "unused_tools": 409
+  },
+  "tools": [
+    {
+      "tool": "eval_python",
+      "calls": 1421,
+      "direct": 1421,
+      "batched": 0,
+      "sessions": 84,
+      "clients": {
+        "claude": 959,
+        "gemini": 336,
+        "grok": 18,
+        "kimi-code": 108
+      },
+      "first_seen": "2026-07-10T14:49:54.936Z",
+      "last_seen": "2026-08-15T08:18:04.232Z",
+      "outcomes": {
+        "success": 1396,
+        "failed": 25
+      }
+    },
+    {
+      "tool": "get_view_content",
+      "calls": 338,
+      "direct": 338,
+      "batched": 0,
+      "sessions": 34,
+      "clients": {
+        "claude": 322,
+        "gemini": 1,
+        "grok": 10,
+        "kimi-code": 5
+      },
+      "first_seen": "2026-07-10T23:19:09.904Z",
+      "last_seen": "2026-08-15T05:01:32.674Z",
+      "outcomes": {
+        "success": 335,
+        "failed": 3
+      }
+    },
+    {
+      "tool": "get_console_log",
+      "calls": 195,
+      "direct": 195,
+      "batched": 0,
+      "sessions": 63,
+      "clients": {
+        "claude": 103,
+        "gemini": 76,
+        "grok": 12,
+        "kimi-code": 4
+      },
+      "first_seen": "2026-07-10T14:14:51.342Z",
+      "last_seen": "2026-08-15T07:31:01.218Z",
+      "outcomes": {
+        "success": 190,
+        "failed": 5
+      }
+    },
+    {
+      "tool": "run_command",
+      "calls": 185,
+      "direct": 185,
+      "batched": 0,
+      "sessions": 22,
+      "clients": {
+        "claude": 171,
+        "gemini": 11,
+        "grok": 3
+      },
+      "first_seen": "2026-07-15T07:31:45.310Z",
+      "last_seen": "2026-08-15T05:27:29.070Z",
+      "outcomes": {
+        "success": 183,
+        "failed": 2
+      }
+    },
+    {
+      "tool": "get_sheet_content",
+      "calls": 179,
+      "direct": 177,
+      "batched": 2,
+      "sessions": 30,
+      "clients": {
+        "claude": 59,
+        "gemini": 111,
+        "grok": 7,
+        "kiro": 2
+      },
+      "first_seen": "2026-07-10T11:53:17.268Z",
+      "last_seen": "2026-08-15T04:20:16.274Z",
+      "outcomes": {
+        "success": 169,
+        "failed": 7
+      }
+    },
+    {
+      "tool": "get_sheets",
+      "calls": 110,
+      "direct": 110,
+      "batched": 0,
+      "sessions": 53,
+      "clients": {
+        "claude": 72,
+        "codex": 1,
+        "gemini": 24,
+        "grok": 12,
+        "kiro": 1
+      },
+      "first_seen": "2026-07-10T11:53:17.259Z",
+      "last_seen": "2026-08-15T04:20:00.297Z",
+      "outcomes": {
+        "success": 106,
+        "failed": 2
+      }
+    },
+    {
+      "tool": "get_open_files",
+      "calls": 74,
+      "direct": 74,
+      "batched": 0,
+      "sessions": 46,
+      "clients": {
+        "claude": 56,
+        "codex": 1,
+        "gemini": 10,
+        "grok": 7
+      },
+      "first_seen": "2026-07-10T17:30:07.991Z",
+      "last_seen": "2026-08-15T05:17:36.136Z",
+      "outcomes": {
+        "success": 72,
+        "failed": 1
+      }
+    },
+    {
+      "tool": "get_active_file",
+      "calls": 67,
+      "direct": 65,
+      "batched": 2,
+      "sessions": 12,
+      "clients": {
+        "claude": 64,
+        "kimi-code": 3
+      },
+      "first_seen": "2026-07-30T23:39:54.559Z",
+      "last_seen": "2026-08-15T05:29:22.533Z",
+      "outcomes": {
+        "success": 62,
+        "failed": 3
+      }
+    },
+    {
+      "tool": "get_console_full",
+      "calls": 35,
+      "direct": 35,
+      "batched": 0,
+      "sessions": 27,
+      "clients": {
+        "claude": 19,
+        "gemini": 11,
+        "grok": 4,
+        "kimi-code": 1
+      },
+      "first_seen": "2026-07-10T14:14:51.341Z",
+      "last_seen": "2026-08-13T22:49:37.345Z",
+      "outcomes": {
+        "success": 34,
+        "failed": 1
+      }
+    },
+    {
+      "tool": "get_view_size",
+      "calls": 34,
+      "direct": 34,
+      "batched": 0,
+      "sessions": 4,
+      "clients": {
+        "claude": 1,
+        "grok": 1,
+        "kimi-code": 32
+      },
+      "first_seen": "2026-08-05T08:13:07.556Z",
+      "last_seen": "2026-08-15T04:38:04.533Z",
+      "outcomes": {
+        "success": 34
+      }
+    },
+    {
+      "tool": "get_commands",
+      "calls": 33,
+      "direct": 33,
+      "batched": 0,
+      "sessions": 11,
+      "clients": {
+        "claude": 28,
+        "gemini": 3,
+        "grok": 2
+      },
+      "first_seen": "2026-07-28T14:57:22.910Z",
+      "last_seen": "2026-08-14T22:41:57.024Z",
+      "outcomes": {
+        "failed": 1,
+        "success": 32
+      }
+    },
+    {
+      "tool": "get_view_chars",
+      "calls": 24,
+      "direct": 24,
+      "batched": 0,
+      "sessions": 2,
+      "clients": {
+        "kimi-code": 24
+      },
+      "first_seen": null,
+      "last_seen": null,
+      "outcomes": {
+        "success": 24
+      }
+    },
+    {
+      "tool": "get_console_win",
+      "calls": 23,
+      "direct": 23,
+      "batched": 0,
+      "sessions": 13,
+      "clients": {
+        "claude": 18,
+        "gemini": 4,
+        "grok": 1
+      },
+      "first_seen": "2026-07-10T23:41:56.123Z",
+      "last_seen": "2026-08-15T07:27:27.759Z",
+      "outcomes": {
+        "success": 13,
+        "failed": 10
+      }
+    },
+    {
+      "tool": "str_replace_based_edit_tool",
+      "calls": 18,
+      "direct": 18,
+      "batched": 0,
+      "sessions": 4,
+      "clients": {
+        "gemini": 16,
+        "grok": 2
+      },
+      "first_seen": "2026-07-10T12:05:51.038Z",
+      "last_seen": "2026-07-28T19:33:21.994Z",
+      "outcomes": {
+        "success": 17,
+        "failed": 1
+      }
+    },
+    {
+      "tool": "open_file",
+      "calls": 14,
+      "direct": 14,
+      "batched": 0,
+      "sessions": 5,
+      "clients": {
+        "gemini": 11,
+        "kimi-code": 3
+      },
+      "first_seen": "2026-07-10T23:29:06.666Z",
+      "last_seen": "2026-07-18T18:58:12.812Z",
+      "outcomes": {
+        "success": 13,
+        "failed": 1
+      }
+    },
+    {
+      "tool": "save_file",
+      "calls": 11,
+      "direct": 11,
+      "batched": 0,
+      "sessions": 5,
+      "clients": {
+        "gemini": 10,
+        "grok": 1
+      },
+      "first_seen": "2026-07-10T12:15:06.408Z",
+      "last_seen": "2026-07-28T11:01:29.581Z",
+      "outcomes": {
+        "success": 10,
+        "failed": 1
+      }
+    },
+    {
+      "tool": "send_to_view",
+      "calls": 11,
+      "direct": 11,
+      "batched": 0,
+      "sessions": 3,
+      "clients": {
+        "claude": 3,
+        "gemini": 8
+      },
+      "first_seen": "2026-07-15T07:31:45.297Z",
+      "last_seen": "2026-08-14T22:41:34.577Z",
+      "outcomes": {
+        "success": 11
+      }
+    },
+    {
+      "tool": "get_menu_items",
+      "calls": 10,
+      "direct": 10,
+      "batched": 0,
+      "sessions": 5,
+      "clients": {
+        "claude": 9,
+        "grok": 1
+      },
+      "first_seen": "2026-07-28T19:33:21.994Z",
+      "last_seen": "2026-08-14T21:11:43.244Z",
+      "outcomes": {
+        "success": 9
+      }
+    },
+    {
+      "tool": "close_file",
+      "calls": 9,
+      "direct": 9,
+      "batched": 0,
+      "sessions": 3,
+      "clients": {
+        "claude": 8,
+        "gemini": 1
+      },
+      "first_seen": "2026-07-11T03:15:23.760Z",
+      "last_seen": "2026-08-15T00:08:05.381Z",
+      "outcomes": {
+        "success": 9
+      }
+    },
+    {
+      "tool": "get_file_content",
+      "calls": 8,
+      "direct": 8,
+      "batched": 0,
+      "sessions": 3,
+      "clients": {
+        "claude": 1,
+        "gemini": 6,
+        "grok": 1
+      },
+      "first_seen": "2026-07-18T18:58:12.731Z",
+      "last_seen": "2026-08-12T02:26:29.677Z",
+      "outcomes": {
+        "success": 8
+      }
+    },
+    {
+      "tool": "get_selection",
+      "calls": 5,
+      "direct": 3,
+      "batched": 2,
+      "sessions": 3,
+      "clients": {
+        "claude": 4,
+        "grok": 1
+      },
+      "first_seen": "2026-07-28T08:23:16.993Z",
+      "last_seen": "2026-08-11T03:33:51.663Z",
+      "outcomes": {
+        "success": 3
+      }
+    },
+    {
+      "tool": "batch",
+      "calls": 3,
+      "direct": 3,
+      "batched": 0,
+      "sessions": 2,
+      "clients": {
+        "claude": 2,
+        "kiro": 1
+      },
+      "first_seen": "2026-08-04T21:14:25.037Z",
+      "last_seen": "2026-08-04T21:16:07.006Z",
+      "outcomes": {
+        "success": 2
+      }
+    },
+    {
+      "tool": "eval_python_latest",
+      "calls": 3,
+      "direct": 3,
+      "batched": 0,
+      "sessions": 2,
+      "clients": {
+        "gemini": 1,
+        "kimi-code": 2
+      },
+      "first_seen": "2026-07-11T01:54:21.698Z",
+      "last_seen": "2026-07-11T01:54:21.698Z",
+      "outcomes": {
+        "success": 3
+      }
+    },
+    {
+      "tool": "get_command_palette",
+      "calls": 3,
+      "direct": 3,
+      "batched": 0,
+      "sessions": 3,
+      "clients": {
+        "claude": 3
+      },
+      "first_seen": "2026-08-05T07:37:41.565Z",
+      "last_seen": "2026-08-14T01:26:27.919Z",
+      "outcomes": {
+        "success": 3
+      }
+    },
+    {
+      "tool": "get_project_folders",
+      "calls": 3,
+      "direct": 3,
+      "batched": 0,
+      "sessions": 3,
+      "clients": {
+        "gemini": 2,
+        "grok": 1
+      },
+      "first_seen": "2026-07-15T11:21:14.394Z",
+      "last_seen": "2026-07-28T20:36:43.770Z",
+      "outcomes": {
+        "success": 3
+      }
+    },
+    {
+      "tool": "next_view",
+      "calls": 3,
+      "direct": 3,
+      "batched": 0,
+      "sessions": 2,
+      "clients": {
+        "claude": 3
+      },
+      "first_seen": "2026-08-10T07:03:30.973Z",
+      "last_seen": "2026-08-15T00:07:56.163Z",
+      "outcomes": {
+        "failed": 1,
+        "success": 2
+      }
+    },
+    {
+      "tool": "get_active_panel",
+      "calls": 2,
+      "direct": 2,
+      "batched": 0,
+      "sessions": 2,
+      "clients": {
+        "claude": 2
+      },
+      "first_seen": "2026-08-05T08:27:55.742Z",
+      "last_seen": "2026-08-14T00:23:46.626Z",
+      "outcomes": {
+        "success": 2
+      }
+    },
+    {
+      "tool": "get_layout",
+      "calls": 2,
+      "direct": 2,
+      "batched": 0,
+      "sessions": 2,
+      "clients": {
+        "claude": 1,
+        "gemini": 1
+      },
+      "first_seen": "2026-07-15T07:49:23.624Z",
+      "last_seen": "2026-08-05T08:27:26.522Z",
+      "outcomes": {
+        "success": 2
+      }
+    },
+    {
+      "tool": "get_package_mcp_info",
+      "calls": 2,
+      "direct": 2,
+      "batched": 0,
+      "sessions": 1,
+      "clients": {
+        "gemini": 2
+      },
+      "first_seen": null,
+      "last_seen": null,
+      "outcomes": {
+        "success": 2
+      }
+    },
+    {
+      "tool": "find_in_file",
+      "calls": 1,
+      "direct": 1,
+      "batched": 0,
+      "sessions": 1,
+      "clients": {
+        "gemini": 1
+      },
+      "first_seen": "2026-07-11T02:26:52.462Z",
+      "last_seen": "2026-07-11T02:26:52.462Z",
+      "outcomes": {
+        "success": 1
+      }
+    },
+    {
+      "tool": "get_help",
+      "calls": 1,
+      "direct": 1,
+      "batched": 0,
+      "sessions": 1,
+      "clients": {
+        "claude": 1
+      },
+      "first_seen": "2026-08-04T21:14:24.717Z",
+      "last_seen": "2026-08-04T21:14:24.717Z",
+      "outcomes": {
+        "success": 1
+      }
+    },
+    {
+      "tool": "lsp_get_diagnostics",
+      "calls": 1,
+      "direct": 1,
+      "batched": 0,
+      "sessions": 1,
+      "clients": {
+        "gemini": 1
+      },
+      "first_seen": "2026-07-13T14:14:21.768Z",
+      "last_seen": "2026-07-13T14:14:21.768Z",
+      "outcomes": {
+        "success": 1
+      }
+    },
+    {
+      "tool": "lsp_get_sessions",
+      "calls": 1,
+      "direct": 1,
+      "batched": 0,
+      "sessions": 1,
+      "clients": {
+        "gemini": 1
+      },
+      "first_seen": "2026-07-13T14:14:21.768Z",
+      "last_seen": "2026-07-13T14:14:21.768Z",
+      "outcomes": {
+        "success": 1
+      }
+    },
+    {
+      "tool": "prev_view",
+      "calls": 1,
+      "direct": 1,
+      "batched": 0,
+      "sessions": 1,
+      "clients": {
+        "claude": 1
+      },
+      "first_seen": "2026-08-15T00:07:39.392Z",
+      "last_seen": "2026-08-15T00:07:39.392Z",
+      "outcomes": {
+        "success": 1
+      }
+    },
+    {
+      "tool": "replace_lines",
+      "calls": 1,
+      "direct": 1,
+      "batched": 0,
+      "sessions": 1,
+      "clients": {
+        "grok": 1
+      },
+      "first_seen": "2026-07-28T11:01:27.817Z",
+      "last_seen": "2026-07-28T11:01:27.817Z",
+      "outcomes": {
+        "success": 1
+      }
+    },
+    {
+      "tool": "show_panel",
+      "calls": 1,
+      "direct": 1,
+      "batched": 0,
+      "sessions": 1,
+      "clients": {
+        "claude": 1
+      },
+      "first_seen": "2026-08-13T22:24:53.191Z",
+      "last_seen": "2026-08-13T22:24:53.191Z",
+      "outcomes": {
+        "success": 1
+      }
+    }
+  ],
+  "unused": [
+    "add_folder",
+    "add_missing_newline",
+    "add_to_kill_ring",
+    "arithmetic",
+    "auto_complete_goto_definition",
+    "auto_indent",
+    "auto_indent_tag",
+    "clear_bookmarks",
+    "clear_fields",
+    "clone_file",
+    "close_all",
+    "close_other_tabs",
+    "close_others",
+    "close_pane",
+    "close_transient",
+    "close_unmodified",
+    "convert_color_scheme",
+    "convert_ident_case",
+    "convert_syntax",
+    "copy",
+    "copy_path",
+    "customize_color_scheme",
+    "customize_theme",
+    "cut",
+    "debugger_add_breakpoints",
+    "debugger_add_configuration",
+    "debugger_add_function_breakpoint",
+    "debugger_add_watch_expression",
+    "debugger_browse_storage",
+    "debugger_change_configuration",
+    "debugger_clear_all_breakpoints",
+    "debugger_clear_breakpoints",
+    "debugger_clear_console",
+    "debugger_continue",
+    "debugger_control",
+    "debugger_data_breakpoint_info",
+    "debugger_disassemble",
+    "debugger_disconnect",
+    "debugger_dispose_terminals",
+    "debugger_edit_configurations",
+    "debugger_evaluate",
+    "debugger_evaluate_expression",
+    "debugger_example_projects",
+    "debugger_expand_thread",
+    "debugger_first_non_subtle_frame",
+    "debugger_generate_commands",
+    "debugger_get_adapters",
+    "debugger_get_all_sessions",
+    "debugger_get_breakpoints",
+    "debugger_get_callstack",
+    "debugger_get_children",
+    "debugger_get_completions",
+    "debugger_get_configurations",
+    "debugger_get_console_output",
+    "debugger_get_current_session",
+    "debugger_get_disassembly",
+    "debugger_get_exception_info",
+    "debugger_get_help",
+    "debugger_get_loaded_sources",
+    "debugger_get_modules",
+    "debugger_get_output_panels",
+    "debugger_get_scopes",
+    "debugger_get_session_name",
+    "debugger_get_session_state",
+    "debugger_get_source",
+    "debugger_get_state",
+    "debugger_get_stepping_granularity",
+    "debugger_get_storage_path",
+    "debugger_get_thread",
+    "debugger_get_threads",
+    "debugger_get_variables",
+    "debugger_get_watch_expressions",
+    "debugger_has_children",
+    "debugger_input_command",
+    "debugger_install_adapters",
+    "debugger_is_paused",
+    "debugger_is_running",
+    "debugger_is_stoppable",
+    "debugger_launch",
+    "debugger_open",
+    "debugger_open_and_start",
+    "debugger_pause",
+    "debugger_pause_session",
+    "debugger_quit",
+    "debugger_read_memory",
+    "debugger_refresh_phantoms",
+    "debugger_refresh_scopes",
+    "debugger_refresh_threads",
+    "debugger_remove_session",
+    "debugger_restart",
+    "debugger_resume_session",
+    "debugger_reverse_continue",
+    "debugger_run_last_task",
+    "debugger_run_post_debug_task",
+    "debugger_run_pre_debug_task",
+    "debugger_run_task",
+    "debugger_run_to_current_line",
+    "debugger_run_to_line",
+    "debugger_save_data",
+    "debugger_save_session_data",
+    "debugger_select_thread",
+    "debugger_send_custom_request",
+    "debugger_set_breakpoints_for_file",
+    "debugger_set_configuration",
+    "debugger_set_current_session",
+    "debugger_set_data_breakpoints",
+    "debugger_set_exception_breakpoint_filters",
+    "debugger_set_function_breakpoints",
+    "debugger_set_variable",
+    "debugger_settings",
+    "debugger_show_protocol",
+    "debugger_start",
+    "debugger_start_no_debug",
+    "debugger_step",
+    "debugger_step_back",
+    "debugger_step_in",
+    "debugger_step_in_session",
+    "debugger_step_out",
+    "debugger_step_out_session",
+    "debugger_step_over",
+    "debugger_stop",
+    "debugger_stop_session",
+    "debugger_terminate",
+    "debugger_toggle_breakpoint",
+    "debugger_toggle_column_breakpoint",
+    "debugger_toggle_disassembly",
+    "delete_to_mark",
+    "detect_indentation",
+    "duplicate_line",
+    "echo",
+    "edit_settings",
+    "edit_syntax_settings",
+    "ensure_newline_at_eof",
+    "exec",
+    "expand_selection",
+    "expand_selection_to_brackets",
+    "expand_selection_to_indentation",
+    "expand_selection_to_paragraph",
+    "expand_selection_to_scope",
+    "expand_tabs",
+    "find_and_replace",
+    "find_in_files",
+    "find_in_folder",
+    "focus_group",
+    "focus_neighboring_group",
+    "fold_lines",
+    "fold_unfold",
+    "get_bookmarks",
+    "get_cursor_context",
+    "get_encoding",
+    "get_line_count",
+    "get_output_panel",
+    "get_project_data",
+    "get_scope_at_cursor",
+    "get_setting",
+    "get_symbols",
+    "get_syntaxes",
+    "get_variables",
+    "get_view_phantoms",
+    "get_word_at_cursor",
+    "goto_definition",
+    "goto_line",
+    "goto_reference",
+    "html_print",
+    "indent",
+    "insert",
+    "insert_snippet",
+    "install_package",
+    "install_package_control",
+    "invert_selection",
+    "join_lines",
+    "jump_back",
+    "jump_forward",
+    "lookup_symbol",
+    "lower_case",
+    "lsp_activate_tree_item",
+    "lsp_apply_document_edit",
+    "lsp_apply_text_document_edit",
+    "lsp_apply_workspace_edit",
+    "lsp_call_hierarchy",
+    "lsp_check_applicable",
+    "lsp_clear_log_panel",
+    "lsp_clear_panel",
+    "lsp_code_actions",
+    "lsp_collapse_tree_item",
+    "lsp_color_presentation",
+    "lsp_conclude_workspace_edit_panel",
+    "lsp_copy_text",
+    "lsp_copy_to_clipboard_from_base64",
+    "lsp_did_change",
+    "lsp_did_close",
+    "lsp_did_open",
+    "lsp_did_save",
+    "lsp_disable_language_server_globally",
+    "lsp_disable_language_server_in_project",
+    "lsp_document_symbols",
+    "lsp_enable_language_server_globally",
+    "lsp_enable_language_server_in_project",
+    "lsp_execute",
+    "lsp_expand_selection",
+    "lsp_expand_tree_item",
+    "lsp_find_references",
+    "lsp_fold",
+    "lsp_fold_all",
+    "lsp_format",
+    "lsp_format_document",
+    "lsp_format_document_range",
+    "lsp_get_call_hierarchy",
+    "lsp_get_code_action_resolve",
+    "lsp_get_code_action_with_context",
+    "lsp_get_code_actions",
+    "lsp_get_code_lens",
+    "lsp_get_code_lens_resolve",
+    "lsp_get_completion",
+    "lsp_get_completion_resolve",
+    "lsp_get_completion_with_context",
+    "lsp_get_configuration",
+    "lsp_get_declaration",
+    "lsp_get_definition_with_response",
+    "lsp_get_document_color",
+    "lsp_get_document_link_resolve",
+    "lsp_get_document_links",
+    "lsp_get_folding_ranges",
+    "lsp_get_help",
+    "lsp_get_implementation",
+    "lsp_get_inlay_hint_resolve",
+    "lsp_get_inlay_hints",
+    "lsp_get_linked_editing_range",
+    "lsp_get_moniker",
+    "lsp_get_prepare_call_hierarchy",
+    "lsp_get_prepare_document_highlight",
+    "lsp_get_prepare_type_hierarchy",
+    "lsp_get_progress",
+    "lsp_get_selection_range",
+    "lsp_get_semantic_tokens",
+    "lsp_get_show_document",
+    "lsp_get_signature_help",
+    "lsp_get_symbols",
+    "lsp_get_text_document_content",
+    "lsp_get_type_definition",
+    "lsp_get_type_hierarchy",
+    "lsp_get_will_create_files",
+    "lsp_get_will_delete_files",
+    "lsp_get_will_rename_files",
+    "lsp_get_workspace_folders",
+    "lsp_goto_definition",
+    "lsp_goto_diagnostic",
+    "lsp_handle_tree_view_action",
+    "lsp_hierarchy_toggle",
+    "lsp_hover",
+    "lsp_hover_info",
+    "lsp_inlay_hint_click",
+    "lsp_next_diagnostic",
+    "lsp_on_double_click",
+    "lsp_on_type_formatting",
+    "lsp_open_link",
+    "lsp_open_location",
+    "lsp_prepare_rename",
+    "lsp_prev_diagnostic",
+    "lsp_range_formatting",
+    "lsp_refactor",
+    "lsp_register_capability",
+    "lsp_rename_path",
+    "lsp_rename_symbol",
+    "lsp_resolve_docs",
+    "lsp_restart_server",
+    "lsp_run_text_command_helper",
+    "lsp_save",
+    "lsp_save_all",
+    "lsp_search_workspace_symbols",
+    "lsp_select_completion",
+    "lsp_selection_add",
+    "lsp_selection_clear",
+    "lsp_selection_set",
+    "lsp_show_diagnostics_panel",
+    "lsp_show_scope_name",
+    "lsp_signature_help_navigate",
+    "lsp_signature_help_show",
+    "lsp_source_action",
+    "lsp_symbol_declaration",
+    "lsp_symbol_definition",
+    "lsp_symbol_implementation",
+    "lsp_symbol_references",
+    "lsp_symbol_rename",
+    "lsp_symbol_type_definition",
+    "lsp_toggle_code_lenses",
+    "lsp_toggle_hover_popups",
+    "lsp_toggle_inlay_hints",
+    "lsp_toggle_server_panel",
+    "lsp_troubleshoot_server",
+    "lsp_type_hierarchy",
+    "lsp_unregister_capability",
+    "lsp_workspace_did_change_configuration",
+    "lsp_workspace_did_change_watched_files",
+    "lsp_workspace_did_change_workspace_folders",
+    "lsp_workspace_symbols",
+    "move_line_down",
+    "move_line_up",
+    "move_to_neighboring_group",
+    "move_view",
+    "new_build_system",
+    "new_file",
+    "new_file_at",
+    "new_folder",
+    "new_pane",
+    "new_plugin",
+    "new_snippet",
+    "new_syntax",
+    "new_view",
+    "next_bookmark",
+    "next_pane",
+    "next_result",
+    "next_view_in_stack",
+    "old_expand_selection_to_paragraph",
+    "old_wrap_lines",
+    "open_containing_folder",
+    "open_context_url",
+    "open_control_panel",
+    "open_file_settings",
+    "open_folder",
+    "open_in_browser",
+    "open_symbol_definition",
+    "paste",
+    "paste_and_indent",
+    "paste_from_history",
+    "permute_lines",
+    "permute_selection",
+    "play_macro",
+    "prev_bookmark",
+    "prev_pane",
+    "prev_result",
+    "prev_view_in_stack",
+    "profile_plugins",
+    "profile_syntax_definition",
+    "prompt_goto_line",
+    "quick_panel",
+    "redo",
+    "reindent",
+    "remove_folder",
+    "rename_file",
+    "reopen_closed_file",
+    "replace_in_files",
+    "replace_selection",
+    "revert_file",
+    "rot13",
+    "run_build",
+    "run_macro",
+    "run_syntax_tests",
+    "save_all",
+    "scroll_to_bof",
+    "scroll_to_eof",
+    "search_packages",
+    "select_all",
+    "select_all_bookmarks",
+    "select_color_scheme",
+    "select_lines",
+    "select_theme",
+    "select_to_mark",
+    "set_encoding",
+    "set_indent_spaces",
+    "set_indent_tabs",
+    "set_layout",
+    "set_mark",
+    "set_max_columns",
+    "set_setting",
+    "set_status",
+    "set_syntax",
+    "show_at_center",
+    "show_scope_name",
+    "shrink_selection",
+    "single_selection",
+    "sort_lines",
+    "sort_selection",
+    "split_line",
+    "split_selection_into_lines",
+    "swap_case",
+    "swap_line_down",
+    "swap_line_up",
+    "swap_with_mark",
+    "switch_file",
+    "syntax_definition_compatibility",
+    "tab",
+    "title_case",
+    "toggle_bookmark",
+    "toggle_case",
+    "toggle_comment",
+    "toggle_distraction_free",
+    "toggle_full_screen",
+    "toggle_menu",
+    "toggle_minimap",
+    "toggle_record_macro",
+    "toggle_side_bar",
+    "toggle_sidebar",
+    "toggle_status_bar",
+    "toggle_tabs",
+    "transformer",
+    "transpose",
+    "transpose_chars",
+    "trim_trailing_white_space",
+    "trim_whitespace",
+    "trim_whitespaces",
+    "undo",
+    "unexpand_tabs",
+    "unindent",
+    "upper_case",
+    "view_resource",
+    "wrap_block",
+    "wrap_lines",
+    "yank"
+  ],
+  "inner_commands": {
+    "eval_python_api": [
+      {
+        "name": "sublime.active_window",
+        "count": 319
+      },
+      {
+        "name": "window.views",
+        "count": 208
+      },
+      {
+        "name": "sublime.windows",
+        "count": 121
+      },
+      {
+        "name": "sublime.packages_path",
+        "count": 102
+      },
+      {
+        "name": "sublime.Region",
+        "count": 77
+      },
+      {
+        "name": "view.id",
+        "count": 70
+      },
+      {
+        "name": "window.active_view",
+        "count": 66
+      },
+      {
+        "name": "view.run_command",
+        "count": 60
+      },
+      {
+        "name": "view.name",
+        "count": 50
+      },
+      {
+        "name": "window.focus_view",
+        "count": 48
+      },
+      {
+        "name": "window.run_command",
+        "count": 47
+      },
+      {
+        "name": "view.size",
+        "count": 40
+      },
+      {
+        "name": "view.sel",
+        "count": 39
+      },
+      {
+        "name": "view.viewport_position",
+        "count": 39
+      },
+      {
+        "name": "view.settings",
+        "count": 37
+      },
+      {
+        "name": "sublime.load_settings",
+        "count": 28
+      },
+      {
+        "name": "view.file_name",
+        "count": 27
+      },
+      {
+        "name": "view.substr",
+        "count": 23
+      },
+      {
+        "name": "view.close",
+        "count": 21
+      },
+      {
+        "name": "view.viewport_extent",
+        "count": 18
+      },
+      {
+        "name": "sublime.set_timeout",
+        "count": 17
+      },
+      {
+        "name": "sublime.installed_packages_path",
+        "count": 15
+      },
+      {
+        "name": "sublime.View",
+        "count": 14
+      },
+      {
+        "name": "view.is_valid",
+        "count": 12
+      },
+      {
+        "name": "view.text_point",
+        "count": 12
+      },
+      {
+        "name": "view.rowcol",
+        "count": 12
+      },
+      {
+        "name": "window.focus_group",
+        "count": 12
+      },
+      {
+        "name": "window.get_view_index",
+        "count": 12
+      },
+      {
+        "name": "view.window",
+        "count": 12
+      },
+      {
+        "name": "view.layout_extent",
+        "count": 11
+      },
+      {
+        "name": "sublime.find_resources",
+        "count": 8
+      },
+      {
+        "name": "sublime.decode_value",
+        "count": 8
+      },
+      {
+        "name": "sublime.load_resource",
+        "count": 7
+      },
+      {
+        "name": "window.id",
+        "count": 6
+      },
+      {
+        "name": "view.text_to_layout",
+        "count": 6
+      },
+      {
+        "name": "window.sheets",
+        "count": 5
+      },
+      {
+        "name": "view.layout_to_window",
+        "count": 5
+      },
+      {
+        "name": "sublime.save_settings",
+        "count": 5
+      },
+      {
+        "name": "sublime.status_message",
+        "count": 4
+      },
+      {
+        "name": "view.set_viewport_position",
+        "count": 4
+      },
+      {
+        "name": "window.panels",
+        "count": 4
+      },
+      {
+        "name": "window.active_panel",
+        "count": 4
+      },
+      {
+        "name": "view.line_height",
+        "count": 4
+      },
+      {
+        "name": "view.is_read_only",
+        "count": 4
+      },
+      {
+        "name": "sublime.run_command",
+        "count": 3
+      },
+      {
+        "name": "window.active_view_in_group",
+        "count": 3
+      },
+      {
+        "name": "view.get_regions",
+        "count": 3
+      },
+      {
+        "name": "sublime.get_clipboard",
+        "count": 2
+      },
+      {
+        "name": "sublime.set_clipboard",
+        "count": 2
+      },
+      {
+        "name": "window.num_groups",
+        "count": 2
+      },
+      {
+        "name": "sublime.Window",
+        "count": 2
+      },
+      {
+        "name": "view.is_scratch",
+        "count": 2
+      },
+      {
+        "name": "sublime.executable_path",
+        "count": 2
+      },
+      {
+        "name": "view.line",
+        "count": 2
+      },
+      {
+        "name": "view.set_status",
+        "count": 2
+      },
+      {
+        "name": "sublime.set_timeout_async",
+        "count": 2
+      },
+      {
+        "name": "view.py",
+        "count": 2
+      },
+      {
+        "name": "sublime.OP_EQUAL",
+        "count": 1
+      },
+      {
+        "name": "sublime.OP_NOT_EQUAL",
+        "count": 1
+      },
+      {
+        "name": "window.folders",
+        "count": 1
+      },
+      {
+        "name": "window.active_sheet_in_group",
+        "count": 1
+      },
+      {
+        "name": "view.begin_edit",
+        "count": 1
+      },
+      {
+        "name": "view.window_to_text",
+        "count": 1
+      },
+      {
+        "name": "sublime.version",
+        "count": 1
+      },
+      {
+        "name": "window.focus_sheet",
+        "count": 1
+      },
+      {
+        "name": "sublime.log_commands",
+        "count": 1
+      },
+      {
+        "name": "sublime.log_input",
+        "count": 1
+      },
+      {
+        "name": "window.open_file",
+        "count": 1
+      },
+      {
+        "name": "sublime.TRANSIENT",
+        "count": 1
+      }
+    ],
+    "run_command_commands": [
+      {
+        "name": "ai_terminal_open_here",
+        "count": 97
+      },
+      {
+        "name": "ai_terminal_send_string_window",
+        "count": 25
+      },
+      {
+        "name": "ai_terminal_dump_screen",
+        "count": 19
+      },
+      {
+        "name": "ai_terminal_keypress",
+        "count": 8
+      },
+      {
+        "name": "close_by_index",
+        "count": 6
+      },
+      {
+        "name": "terminus_keypress",
+        "count": 6
+      },
+      {
+        "name": "st_config_open",
+        "count": 5
+      },
+      {
+        "name": "settings_editor_open",
+        "count": 4
+      },
+      {
+        "name": "ai_terminal_send_string",
+        "count": 3
+      },
+      {
+        "name": "terminus_send_string",
+        "count": 2
+      },
+      {
+        "name": "ai_terminal_toggle_copy_mode",
+        "count": 1
+      },
+      {
+        "name": "ai_terminal_select_profile",
+        "count": 1
+      },
+      {
+        "name": "ai_terminal_click",
+        "count": 1
+      },
+      {
+        "name": "pybackup_open",
+        "count": 1
+      },
+      {
+        "name": "focus_group",
+        "count": 1
+      },
+      {
+        "name": "ai_terminal_reload_plugin",
+        "count": 1
+      },
+      {
+        "name": "insert",
+        "count": 1
+      }
+    ],
+    "run_command_scopes": [
+      {
+        "name": "window",
+        "count": 70
+      },
+      {
+        "name": "view",
+        "count": 40
+      }
+    ],
+    "eval_python_run_commands": [
+      {
+        "name": "ai_terminal_keypress",
+        "count": 138
+      },
+      {
+        "name": "close_file",
+        "count": 45
+      },
+      {
+        "name": "ai_terminal_click",
+        "count": 21
+      },
+      {
+        "name": "ai_terminal_open_here",
+        "count": 18
+      },
+      {
+        "name": "ai_terminal_send_string",
+        "count": 14
+      },
+      {
+        "name": "show_panel",
+        "count": 9
+      },
+      {
+        "name": "ai_terminal_toggle_panel",
+        "count": 8
+      },
+      {
+        "name": "ai_terminal_send_string_window",
+        "count": 8
+      },
+      {
+        "name": "ai_terminal_toggle_copy_mode",
+        "count": 6
+      },
+      {
+        "name": "move",
+        "count": 6
+      },
+      {
+        "name": "ai_terminal_launcher",
+        "count": 6
+      },
+      {
+        "name": "move_to",
+        "count": 5
+      },
+      {
+        "name": "hide_panel",
+        "count": 4
+      },
+      {
+        "name": "ai_terminal_mouse_down",
+        "count": 4
+      },
+      {
+        "name": "scroll_lines",
+        "count": 4
+      },
+      {
+        "name": "ai_terminal_trackpad_scroll",
+        "count": 4
+      },
+      {
+        "name": "insert",
+        "count": 3
+      },
+      {
+        "name": "lsp_format_document",
+        "count": 3
+      },
+      {
+        "name": "copy",
+        "count": 2
+      },
+      {
+        "name": "hide_overlay",
+        "count": 2
+      },
+      {
+        "name": "terminus_send_string",
+        "count": 2
+      },
+      {
+        "name": "exit",
+        "count": 2
+      },
+      {
+        "name": "api_test_reload",
+        "count": 1
+      },
+      {
+        "name": "noop",
+        "count": 1
+      },
+      {
+        "name": "ai_terminal_dump_screen",
+        "count": 1
+      },
+      {
+        "name": "ai_terminal_open",
+        "count": 1
+      },
+      {
+        "name": "hide_auto_complete",
+        "count": 1
+      },
+      {
+        "name": "close_workspace",
+        "count": 1
+      },
+      {
+        "name": "open_project_or_workspace",
+        "count": 1
+      },
+      {
+        "name": "ai_toggle_fold_buttons",
+        "count": 1
+      },
+      {
+        "name": "drag_select",
+        "count": 1
+      },
+      {
+        "name": "terminus_keypress",
+        "count": 1
+      },
+      {
+        "name": "terminus_open",
+        "count": 1
+      },
+      {
+        "name": "panic_open",
+        "count": 1
+      },
+      {
+        "name": "pb_flask_silent",
+        "count": 1
+      }
+    ]
+  },
+  "top_sequences": [
+    {
+      "from": "eval_python",
+      "to": "eval_python",
+      "count": 962
+    },
+    {
+      "from": "get_view_content",
+      "to": "eval_python",
+      "count": 202
+    },
+    {
+      "from": "eval_python",
+      "to": "get_view_content",
+      "count": 162
+    },
+    {
+      "from": "get_console_log",
+      "to": "eval_python",
+      "count": 88
+    },
+    {
+      "from": "get_view_content",
+      "to": "get_view_content",
+      "count": 84
+    },
+    {
+      "from": "get_sheet_content",
+      "to": "get_sheet_content",
+      "count": 83
+    },
+    {
+      "from": "eval_python",
+      "to": "get_console_log",
+      "count": 78
+    },
+    {
+      "from": "get_sheets",
+      "to": "get_sheet_content",
+      "count": 49
+    },
+    {
+      "from": "run_command",
+      "to": "run_command",
+      "count": 49
+    },
+    {
+      "from": "eval_python",
+      "to": "run_command",
+      "count": 48
+    },
+    {
+      "from": "run_command",
+      "to": "get_view_content",
+      "count": 42
+    },
+    {
+      "from": "get_open_files",
+      "to": "get_view_content",
+      "count": 31
+    },
+    {
+      "from": "get_console_log",
+      "to": "get_console_log",
+      "count": 30
+    },
+    {
+      "from": "run_command",
+      "to": "get_active_file",
+      "count": 28
+    },
+    {
+      "from": "get_active_file",
+      "to": "run_command",
+      "count": 26
+    },
+    {
+      "from": "eval_python",
+      "to": "get_view_size",
+      "count": 26
+    },
+    {
+      "from": "get_sheet_content",
+      "to": "eval_python",
+      "count": 22
+    },
+    {
+      "from": "get_sheet_content",
+      "to": "get_sheets",
+      "count": 21
+    },
+    {
+      "from": "run_command",
+      "to": "get_sheet_content",
+      "count": 19
+    },
+    {
+      "from": "eval_python",
+      "to": "get_sheets",
+      "count": 19
+    },
+    {
+      "from": "get_console_log",
+      "to": "get_console_full",
+      "count": 18
+    },
+    {
+      "from": "get_view_chars",
+      "to": "eval_python",
+      "count": 18
+    },
+    {
+      "from": "run_command",
+      "to": "eval_python",
+      "count": 16
+    },
+    {
+      "from": "get_sheet_content",
+      "to": "run_command",
+      "count": 16
+    },
+    {
+      "from": "get_view_size",
+      "to": "eval_python",
+      "count": 16
+    },
+    {
+      "from": "get_open_files",
+      "to": "eval_python",
+      "count": 15
+    },
+    {
+      "from": "get_view_size",
+      "to": "get_view_chars",
+      "count": 15
+    },
+    {
+      "from": "run_command",
+      "to": "get_console_log",
+      "count": 14
+    },
+    {
+      "from": "eval_python",
+      "to": "get_sheet_content",
+      "count": 14
+    },
+    {
+      "from": "eval_python",
+      "to": "get_open_files",
+      "count": 12
+    },
+    {
+      "from": "get_console_log",
+      "to": "run_command",
+      "count": 12
+    },
+    {
+      "from": "get_active_file",
+      "to": "get_active_file",
+      "count": 12
+    },
+    {
+      "from": "run_command",
+      "to": "get_sheets",
+      "count": 12
+    },
+    {
+      "from": "get_view_content",
+      "to": "run_command",
+      "count": 12
+    },
+    {
+      "from": "get_view_content",
+      "to": "get_open_files",
+      "count": 11
+    },
+    {
+      "from": "get_sheets",
+      "to": "get_view_content",
+      "count": 10
+    },
+    {
+      "from": "get_active_file",
+      "to": "eval_python",
+      "count": 10
+    },
+    {
+      "from": "get_sheets",
+      "to": "eval_python",
+      "count": 10
+    },
+    {
+      "from": "eval_python",
+      "to": "get_active_file",
+      "count": 9
+    },
+    {
+      "from": "get_console_full",
+      "to": "get_console_win",
+      "count": 9
+    },
+    {
+      "from": "get_sheets",
+      "to": "run_command",
+      "count": 9
+    },
+    {
+      "from": "get_open_files",
+      "to": "get_console_log",
+      "count": 8
+    },
+    {
+      "from": "get_console_log",
+      "to": "get_open_files",
+      "count": 8
+    },
+    {
+      "from": "get_sheets",
+      "to": "get_open_files",
+      "count": 8
+    },
+    {
+      "from": "get_sheet_content",
+      "to": "send_to_view",
+      "count": 8
+    },
+    {
+      "from": "str_replace_based_edit_tool",
+      "to": "str_replace_based_edit_tool",
+      "count": 8
+    },
+    {
+      "from": "eval_python",
+      "to": "get_view_chars",
+      "count": 8
+    },
+    {
+      "from": "get_console_log",
+      "to": "get_sheets",
+      "count": 7
+    },
+    {
+      "from": "get_console_win",
+      "to": "get_console_win",
+      "count": 7
+    },
+    {
+      "from": "get_commands",
+      "to": "get_console_log",
+      "count": 7
+    },
+    {
+      "from": "get_commands",
+      "to": "eval_python",
+      "count": 7
+    },
+    {
+      "from": "get_open_files",
+      "to": "get_sheets",
+      "count": 7
+    },
+    {
+      "from": "get_commands",
+      "to": "get_commands",
+      "count": 7
+    },
+    {
+      "from": "get_console_win",
+      "to": "eval_python",
+      "count": 6
+    },
+    {
+      "from": "get_view_content",
+      "to": "get_console_log",
+      "count": 6
+    },
+    {
+      "from": "eval_python",
+      "to": "get_commands",
+      "count": 6
+    },
+    {
+      "from": "open_file",
+      "to": "get_file_content",
+      "count": 6
+    },
+    {
+      "from": "get_console_full",
+      "to": "eval_python",
+      "count": 5
+    },
+    {
+      "from": "get_console_log",
+      "to": "get_commands",
+      "count": 5
+    },
+    {
+      "from": "send_to_view",
+      "to": "get_sheet_content",
+      "count": 5
+    },
+    {
+      "from": "get_console_full",
+      "to": "get_console_log",
+      "count": 5
+    },
+    {
+      "from": "get_file_content",
+      "to": "open_file",
+      "count": 5
+    },
+    {
+      "from": "get_view_chars",
+      "to": "get_view_size",
+      "count": 5
+    },
+    {
+      "from": "get_console_log",
+      "to": "get_view_content",
+      "count": 4
+    },
+    {
+      "from": "eval_python",
+      "to": "get_console_full",
+      "count": 4
+    },
+    {
+      "from": "get_view_content",
+      "to": "get_sheets",
+      "count": 4
+    },
+    {
+      "from": "get_commands",
+      "to": "get_menu_items",
+      "count": 4
+    },
+    {
+      "from": "get_sheet_content",
+      "to": "str_replace_based_edit_tool",
+      "count": 4
+    },
+    {
+      "from": "open_file",
+      "to": "save_file",
+      "count": 4
+    },
+    {
+      "from": "str_replace_based_edit_tool",
+      "to": "eval_python",
+      "count": 4
+    },
+    {
+      "from": "get_console_win",
+      "to": "get_console_full",
+      "count": 3
+    },
+    {
+      "from": "get_console_log",
+      "to": "get_active_file",
+      "count": 3
+    },
+    {
+      "from": "get_sheet_content",
+      "to": "get_commands",
+      "count": 3
+    },
+    {
+      "from": "close_file",
+      "to": "run_command",
+      "count": 3
+    },
+    {
+      "from": "run_command",
+      "to": "close_file",
+      "count": 3
+    },
+    {
+      "from": "eval_python",
+      "to": "get_menu_items",
+      "count": 3
+    },
+    {
+      "from": "close_file",
+      "to": "get_sheets",
+      "count": 3
+    },
+    {
+      "from": "get_menu_items",
+      "to": "get_commands",
+      "count": 3
+    },
+    {
+      "from": "eval_python",
+      "to": "get_console_win",
+      "count": 3
+    },
+    {
+      "from": "get_console_full",
+      "to": "get_open_files",
+      "count": 3
+    },
+    {
+      "from": "send_to_view",
+      "to": "run_command",
+      "count": 3
+    },
+    {
+      "from": "get_sheet_content",
+      "to": "get_console_log",
+      "count": 3
+    },
+    {
+      "from": "save_file",
+      "to": "eval_python",
+      "count": 3
+    },
+    {
+      "from": "eval_python",
+      "to": "str_replace_based_edit_tool",
+      "count": 3
+    },
+    {
+      "from": "get_console_log",
+      "to": "get_sheet_content",
+      "count": 3
+    },
+    {
+      "from": "open_file",
+      "to": "get_active_file",
+      "count": 3
+    },
+    {
+      "from": "eval_python",
+      "to": "get_selection",
+      "count": 2
+    },
+    {
+      "from": "get_console_full",
+      "to": "get_commands",
+      "count": 2
+    },
+    {
+      "from": "get_active_file",
+      "to": "get_open_files",
+      "count": 2
+    },
+    {
+      "from": "get_active_file",
+      "to": "get_console_log",
+      "count": 2
+    },
+    {
+      "from": "eval_python",
+      "to": "get_file_content",
+      "count": 2
+    },
+    {
+      "from": "get_commands",
+      "to": "run_command",
+      "count": 2
+    },
+    {
+      "from": "get_active_file",
+      "to": "get_sheets",
+      "count": 2
+    },
+    {
+      "from": "get_sheets",
+      "to": "get_console_log",
+      "count": 2
+    },
+    {
+      "from": "get_menu_items",
+      "to": "eval_python",
+      "count": 2
+    },
+    {
+      "from": "get_sheet_content",
+      "to": "get_active_file",
+      "count": 2
+    },
+    {
+      "from": "get_sheets",
+      "to": "get_active_file",
+      "count": 2
+    },
+    {
+      "from": "get_active_file",
+      "to": "close_file",
+      "count": 2
+    },
+    {
+      "from": "get_sheets",
+      "to": "get_sheets",
+      "count": 2
+    },
+    {
+      "from": "get_open_files",
+      "to": "get_commands",
+      "count": 2
+    }
+  ]
+}

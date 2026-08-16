@@ -1,0 +1,1291 @@
+{
+  "summary": {
+    "calls": 1406,
+    "characters": 604290,
+    "lines": 18180,
+    "missing_code": 281,
+    "sessions": 66,
+    "unique_exact_snippets": 1286,
+    "calls_in_repeated_snippets": 181,
+    "max_calls_in_one_session": 214
+  },
+  "clients": {
+    "claude": 959,
+    "gemini": 337,
+    "kimi-code": 110
+  },
+  "dates": {
+    "2026-07-10": 43,
+    "2026-07-11": 30,
+    "2026-07-12": 81,
+    "2026-07-13": 3,
+    "2026-07-14": 5,
+    "2026-07-15": 57,
+    "2026-07-29": 12,
+    "2026-07-30": 126,
+    "2026-07-31": 1,
+    "2026-08-02": 21,
+    "2026-08-03": 1,
+    "2026-08-04": 3,
+    "2026-08-05": 57,
+    "2026-08-07": 28,
+    "2026-08-08": 53,
+    "2026-08-09": 5,
+    "2026-08-10": 64,
+    "2026-08-11": 146,
+    "2026-08-12": 6,
+    "2026-08-13": 311,
+    "2026-08-14": 25,
+    "2026-08-15": 100
+  },
+  "categories": [
+    {
+      "category": "terminal_control",
+      "calls": 915,
+      "sessions": 53
+    },
+    {
+      "category": "view_discovery",
+      "calls": 659,
+      "sessions": 44
+    },
+    {
+      "category": "buffer_inspection",
+      "calls": 548,
+      "sessions": 50
+    },
+    {
+      "category": "command_execution",
+      "calls": 277,
+      "sessions": 28
+    },
+    {
+      "category": "other",
+      "calls": 226,
+      "sessions": 32
+    },
+    {
+      "category": "settings_resources",
+      "calls": 219,
+      "sessions": 35
+    },
+    {
+      "category": "selection_region",
+      "calls": 108,
+      "sessions": 20
+    },
+    {
+      "category": "tab_close_lifecycle",
+      "calls": 107,
+      "sessions": 18
+    },
+    {
+      "category": "focus_navigation",
+      "calls": 100,
+      "sessions": 14
+    },
+    {
+      "category": "plugin_reload_test",
+      "calls": 69,
+      "sessions": 23
+    },
+    {
+      "category": "buffer_mutation",
+      "calls": 65,
+      "sessions": 7
+    },
+    {
+      "category": "viewport_geometry",
+      "calls": 63,
+      "sessions": 11
+    },
+    {
+      "category": "panel_console",
+      "calls": 41,
+      "sessions": 9
+    },
+    {
+      "category": "timers_async",
+      "calls": 13,
+      "sessions": 6
+    },
+    {
+      "category": "clipboard",
+      "calls": 5,
+      "sessions": 5
+    }
+  ],
+  "api": [
+    {
+      "name": "sublime.active_window",
+      "count": 319
+    },
+    {
+      "name": "window.views",
+      "count": 208
+    },
+    {
+      "name": "sublime.windows",
+      "count": 121
+    },
+    {
+      "name": "sublime.packages_path",
+      "count": 102
+    },
+    {
+      "name": "sublime.Region",
+      "count": 77
+    },
+    {
+      "name": "view.id",
+      "count": 70
+    },
+    {
+      "name": "window.active_view",
+      "count": 66
+    },
+    {
+      "name": "view.run_command",
+      "count": 60
+    },
+    {
+      "name": "view.name",
+      "count": 50
+    },
+    {
+      "name": "window.focus_view",
+      "count": 48
+    },
+    {
+      "name": "window.run_command",
+      "count": 47
+    },
+    {
+      "name": "view.size",
+      "count": 40
+    },
+    {
+      "name": "view.sel",
+      "count": 39
+    },
+    {
+      "name": "view.viewport_position",
+      "count": 39
+    },
+    {
+      "name": "view.settings",
+      "count": 37
+    },
+    {
+      "name": "sublime.load_settings",
+      "count": 28
+    },
+    {
+      "name": "view.file_name",
+      "count": 27
+    },
+    {
+      "name": "view.substr",
+      "count": 23
+    },
+    {
+      "name": "view.close",
+      "count": 21
+    },
+    {
+      "name": "view.viewport_extent",
+      "count": 18
+    },
+    {
+      "name": "sublime.set_timeout",
+      "count": 17
+    },
+    {
+      "name": "sublime.installed_packages_path",
+      "count": 15
+    },
+    {
+      "name": "sublime.View",
+      "count": 14
+    },
+    {
+      "name": "view.is_valid",
+      "count": 12
+    },
+    {
+      "name": "view.text_point",
+      "count": 12
+    },
+    {
+      "name": "view.rowcol",
+      "count": 12
+    },
+    {
+      "name": "window.focus_group",
+      "count": 12
+    },
+    {
+      "name": "window.get_view_index",
+      "count": 12
+    },
+    {
+      "name": "view.window",
+      "count": 12
+    },
+    {
+      "name": "view.layout_extent",
+      "count": 11
+    },
+    {
+      "name": "sublime.find_resources",
+      "count": 8
+    },
+    {
+      "name": "sublime.decode_value",
+      "count": 8
+    },
+    {
+      "name": "sublime.load_resource",
+      "count": 7
+    },
+    {
+      "name": "window.id",
+      "count": 6
+    },
+    {
+      "name": "view.text_to_layout",
+      "count": 6
+    },
+    {
+      "name": "window.sheets",
+      "count": 5
+    },
+    {
+      "name": "view.layout_to_window",
+      "count": 5
+    },
+    {
+      "name": "sublime.save_settings",
+      "count": 5
+    },
+    {
+      "name": "sublime.status_message",
+      "count": 4
+    },
+    {
+      "name": "view.set_viewport_position",
+      "count": 4
+    },
+    {
+      "name": "window.panels",
+      "count": 4
+    },
+    {
+      "name": "window.active_panel",
+      "count": 4
+    },
+    {
+      "name": "view.line_height",
+      "count": 4
+    },
+    {
+      "name": "view.is_read_only",
+      "count": 4
+    },
+    {
+      "name": "sublime.run_command",
+      "count": 3
+    },
+    {
+      "name": "window.active_view_in_group",
+      "count": 3
+    },
+    {
+      "name": "view.get_regions",
+      "count": 3
+    },
+    {
+      "name": "sublime.get_clipboard",
+      "count": 2
+    },
+    {
+      "name": "sublime.set_clipboard",
+      "count": 2
+    },
+    {
+      "name": "window.num_groups",
+      "count": 2
+    },
+    {
+      "name": "sublime.Window",
+      "count": 2
+    },
+    {
+      "name": "view.is_scratch",
+      "count": 2
+    },
+    {
+      "name": "sublime.executable_path",
+      "count": 2
+    },
+    {
+      "name": "view.line",
+      "count": 2
+    },
+    {
+      "name": "view.set_status",
+      "count": 2
+    },
+    {
+      "name": "sublime.set_timeout_async",
+      "count": 2
+    },
+    {
+      "name": "view.py",
+      "count": 2
+    },
+    {
+      "name": "sublime.OP_EQUAL",
+      "count": 1
+    },
+    {
+      "name": "sublime.OP_NOT_EQUAL",
+      "count": 1
+    },
+    {
+      "name": "window.folders",
+      "count": 1
+    },
+    {
+      "name": "window.active_sheet_in_group",
+      "count": 1
+    },
+    {
+      "name": "view.begin_edit",
+      "count": 1
+    },
+    {
+      "name": "view.window_to_text",
+      "count": 1
+    },
+    {
+      "name": "sublime.version",
+      "count": 1
+    },
+    {
+      "name": "window.focus_sheet",
+      "count": 1
+    },
+    {
+      "name": "sublime.log_commands",
+      "count": 1
+    },
+    {
+      "name": "sublime.log_input",
+      "count": 1
+    },
+    {
+      "name": "window.open_file",
+      "count": 1
+    },
+    {
+      "name": "sublime.TRANSIENT",
+      "count": 1
+    }
+  ],
+  "commands": [
+    {
+      "name": "ai_terminal_keypress",
+      "count": 138
+    },
+    {
+      "name": "close_file",
+      "count": 45
+    },
+    {
+      "name": "ai_terminal_click",
+      "count": 21
+    },
+    {
+      "name": "ai_terminal_open_here",
+      "count": 18
+    },
+    {
+      "name": "ai_terminal_send_string",
+      "count": 14
+    },
+    {
+      "name": "show_panel",
+      "count": 9
+    },
+    {
+      "name": "ai_terminal_toggle_panel",
+      "count": 8
+    },
+    {
+      "name": "ai_terminal_send_string_window",
+      "count": 8
+    },
+    {
+      "name": "ai_terminal_toggle_copy_mode",
+      "count": 6
+    },
+    {
+      "name": "move",
+      "count": 6
+    },
+    {
+      "name": "ai_terminal_launcher",
+      "count": 6
+    },
+    {
+      "name": "move_to",
+      "count": 5
+    },
+    {
+      "name": "hide_panel",
+      "count": 4
+    },
+    {
+      "name": "ai_terminal_mouse_down",
+      "count": 4
+    },
+    {
+      "name": "scroll_lines",
+      "count": 4
+    },
+    {
+      "name": "ai_terminal_trackpad_scroll",
+      "count": 4
+    },
+    {
+      "name": "insert",
+      "count": 3
+    },
+    {
+      "name": "lsp_format_document",
+      "count": 3
+    },
+    {
+      "name": "copy",
+      "count": 2
+    },
+    {
+      "name": "hide_overlay",
+      "count": 2
+    },
+    {
+      "name": "terminus_send_string",
+      "count": 2
+    },
+    {
+      "name": "exit",
+      "count": 2
+    },
+    {
+      "name": "api_test_reload",
+      "count": 1
+    },
+    {
+      "name": "noop",
+      "count": 1
+    },
+    {
+      "name": "ai_terminal_dump_screen",
+      "count": 1
+    },
+    {
+      "name": "ai_terminal_open",
+      "count": 1
+    },
+    {
+      "name": "hide_auto_complete",
+      "count": 1
+    },
+    {
+      "name": "close_workspace",
+      "count": 1
+    },
+    {
+      "name": "open_project_or_workspace",
+      "count": 1
+    },
+    {
+      "name": "ai_toggle_fold_buttons",
+      "count": 1
+    },
+    {
+      "name": "drag_select",
+      "count": 1
+    },
+    {
+      "name": "terminus_keypress",
+      "count": 1
+    },
+    {
+      "name": "terminus_open",
+      "count": 1
+    },
+    {
+      "name": "panic_open",
+      "count": 1
+    },
+    {
+      "name": "pb_flask_silent",
+      "count": 1
+    }
+  ],
+  "repeated_shapes": [
+    {
+      "hash": "e0c43e72fb6ca5ba",
+      "calls": 14,
+      "categories": [
+        "other"
+      ]
+    },
+    {
+      "hash": "005861fb0fba05a5",
+      "calls": 13,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "46edf96a0b9486fb",
+      "calls": 9,
+      "categories": [
+        "terminal_control",
+        "plugin_reload_test"
+      ]
+    },
+    {
+      "hash": "6af90575f0b3ffac",
+      "calls": 7,
+      "categories": [
+        "other"
+      ]
+    },
+    {
+      "hash": "01b723997623294e",
+      "calls": 7,
+      "categories": [
+        "terminal_control"
+      ]
+    },
+    {
+      "hash": "e675a84beb79e657",
+      "calls": 5,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection"
+      ]
+    },
+    {
+      "hash": "8f43ab4ca2b5b67b",
+      "calls": 4,
+      "categories": [
+        "terminal_control",
+        "plugin_reload_test"
+      ]
+    },
+    {
+      "hash": "e35161a2f0c2a96d",
+      "calls": 3,
+      "categories": [
+        "terminal_control",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "c4f672a6db9af5c9",
+      "calls": 3,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection"
+      ]
+    },
+    {
+      "hash": "bfef5f7d5fea29da",
+      "calls": 3,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "dc30a42c39b2bfa7",
+      "calls": 3,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "9bc646968403ef1b",
+      "calls": 3,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "7ee7da07e1c13ad1",
+      "calls": 3,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "5cfc594c67b2e873",
+      "calls": 3,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "c43007ef2bc555a9",
+      "calls": 3,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "8d16cee30b62e112",
+      "calls": 3,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "3afaecb8aaab13c1",
+      "calls": 3,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "c0263d5fc1735974",
+      "calls": 3,
+      "categories": [
+        "terminal_control",
+        "plugin_reload_test"
+      ]
+    },
+    {
+      "hash": "94f479e6adb4ecf5",
+      "calls": 3,
+      "categories": [
+        "other"
+      ]
+    },
+    {
+      "hash": "a27b766994c03c0d",
+      "calls": 3,
+      "categories": [
+        "plugin_reload_test"
+      ]
+    },
+    {
+      "hash": "eb9ebccc8f7372e6",
+      "calls": 3,
+      "categories": [
+        "plugin_reload_test"
+      ]
+    },
+    {
+      "hash": "5a7af29bffcf6cca",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "selection_region"
+      ]
+    },
+    {
+      "hash": "107bcdf40c2df88a",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "buffer_inspection"
+      ]
+    },
+    {
+      "hash": "ef6dbbf2d24e4274",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "panel_console"
+      ]
+    },
+    {
+      "hash": "30b8f5029694e721",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "viewport_geometry"
+      ]
+    },
+    {
+      "hash": "87b26716f990e499",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "panel_console",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "fc2121e05225271d",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection"
+      ]
+    },
+    {
+      "hash": "30c3b933e87c4389",
+      "calls": 2,
+      "categories": [
+        "other"
+      ]
+    },
+    {
+      "hash": "299446d6f00bca8e",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "d0f52efd3af9c338",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "8af530c15faba1d0",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "9beaa335507d33eb",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "798beae130f9a761",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "c85a4e791e1b19fa",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "cecc39d8d70eee22",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "660dce5eef58486b",
+      "calls": 2,
+      "categories": [
+        "other"
+      ]
+    },
+    {
+      "hash": "23e31cba7c3f49da",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "viewport_geometry",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "34dc0f139cc48c5b",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "60fbdc9591595e2b",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "b5421925fd3dc340",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "479a370116ccaffe",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "a721c774243ea338",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "6c57a37a6e1e76ea",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "dc0ebfb5d3989b1a",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "c71bf5aad65b21d2",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "buffer_inspection",
+        "selection_region"
+      ]
+    },
+    {
+      "hash": "e67eefedd4bb6ecf",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "buffer_inspection"
+      ]
+    },
+    {
+      "hash": "1ef2d2d467367ff5",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "buffer_inspection",
+        "settings_resources"
+      ]
+    },
+    {
+      "hash": "62faa1ab278a4458",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "buffer_inspection"
+      ]
+    },
+    {
+      "hash": "5c5004f44eaf8bee",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "focus_navigation"
+      ]
+    },
+    {
+      "hash": "5366a1afcd149b22",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "focus_navigation"
+      ]
+    },
+    {
+      "hash": "720b3dd68df9316a",
+      "calls": 2,
+      "categories": [
+        "settings_resources"
+      ]
+    },
+    {
+      "hash": "ec55518078bc32f3",
+      "calls": 2,
+      "categories": [
+        "view_discovery",
+        "focus_navigation",
+        "buffer_inspection",
+        "tab_close_lifecycle",
+        "command_execution"
+      ]
+    },
+    {
+      "hash": "efa45e7b41ff7375",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "plugin_reload_test"
+      ]
+    },
+    {
+      "hash": "6d99b5a02dc71f58",
+      "calls": 2,
+      "categories": [
+        "buffer_inspection",
+        "tab_close_lifecycle"
+      ]
+    },
+    {
+      "hash": "8a5ef5c4712208c4",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "plugin_reload_test"
+      ]
+    },
+    {
+      "hash": "01452389215c6f45",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "plugin_reload_test"
+      ]
+    },
+    {
+      "hash": "16676ca2768546f4",
+      "calls": 2,
+      "categories": [
+        "terminal_control"
+      ]
+    },
+    {
+      "hash": "c9f91fb5b2dd9e28",
+      "calls": 2,
+      "categories": [
+        "other"
+      ]
+    },
+    {
+      "hash": "96db9fe7c60def2e",
+      "calls": 2,
+      "categories": [
+        "terminal_control"
+      ]
+    },
+    {
+      "hash": "71bde93e815f5d10",
+      "calls": 2,
+      "categories": [
+        "other"
+      ]
+    },
+    {
+      "hash": "dd5d6393807f51b3",
+      "calls": 2,
+      "categories": [
+        "terminal_control",
+        "view_discovery",
+        "settings_resources",
+        "buffer_mutation"
+      ]
+    }
+  ],
+  "busiest_sessions": [
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\edf59175-1d2a-4910-94bf-455544e42b4b.jsonl",
+      "calls": 214
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\31f29589-5638-4778-94e5-4a00a3cef2f6.jsonl",
+      "calls": 117
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-13T00-38-d8976dfa.jsonl",
+      "calls": 83
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\18bff341-7362-47f3-82bd-3f3b0bc20c7d.jsonl",
+      "calls": 68
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\75cbc1a8-246f-4ce6-9064-30a844b898ef.jsonl",
+      "calls": 65
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\3059911d-a7f5-46db-9775-727849017eb3.jsonl",
+      "calls": 61
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.kimi-code\\sessions\\wd_stext_60397bce20c0\\session_d200df8e-ebaf-4b6c-bc09-f38e2e663b81\\agents\\main\\wire.jsonl",
+      "calls": 53
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\98028f67-c162-4468-9775-12e076206c9f.jsonl",
+      "calls": 47
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\f2bb642b-4ad2-429d-aacf-053fd4f087a4.jsonl",
+      "calls": 44
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-12T15-57-7631de79.jsonl",
+      "calls": 43
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.kimi-code\\sessions\\wd_stext_60397bce20c0\\session_03d06b56-fa86-486b-acb9-dd971e1ea4b2\\agents\\main\\wire.jsonl",
+      "calls": 42
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-11T01-04-fb6703d4.jsonl",
+      "calls": 41
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-15T17-56-bc86c1ac.jsonl",
+      "calls": 41
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\8338702c-0a00-477f-9840-315d2934ae50.jsonl",
+      "calls": 37
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-12T08-52-0f7ea71b.jsonl",
+      "calls": 34
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\7e317a16-2714-4f3e-8c0c-f9427a5b86fd.jsonl",
+      "calls": 33
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\d7b89f66-64c1-44da-b606-8d15604a2368.jsonl",
+      "calls": 30
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\6a35c745-8c42-453e-a70d-8a5e59b0e10f.jsonl",
+      "calls": 29
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-10T14-24-a10f8567.jsonl",
+      "calls": 23
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\06da6c76-950c-4341-8965-e8c860550366.jsonl",
+      "calls": 17
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\cc6e2a43-c71d-4b3b-8576-3f7e98596968.jsonl",
+      "calls": 16
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\b7d3ff06-a343-4085-9997-9978532a4e98.jsonl",
+      "calls": 15
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.kimi-code\\sessions\\wd_sublime-mcp_68420ba57791\\session_4d1ba0c7-b099-43a5-816a-251dd8c9d65a\\agents\\main\\wire.jsonl",
+      "calls": 15
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-pybackup\\c05c26f1-f3bf-47ff-90bb-851413e183ac.jsonl",
+      "calls": 13
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-10T19-47-d78569fa.jsonl",
+      "calls": 13
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-13T14-24-9bba48b3.jsonl",
+      "calls": 13
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\2517cadc-0da2-40d2-8524-d1a58d61423a.jsonl",
+      "calls": 12
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\f8eb384a-465b-4bc2-bf27-851c094ae814.jsonl",
+      "calls": 12
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-13T15-28-323b7f54.jsonl",
+      "calls": 12
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-15T16-09-c832d190.jsonl",
+      "calls": 12
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\dc4400fb-75bb-46e4-9c44-aea62895219f.jsonl",
+      "calls": 10
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\df4e76cf-f8f8-4dce-aa60-bc03840e313a.jsonl",
+      "calls": 10
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\bca88b1d-bfe8-425c-a1dd-3c09d613f7eb.jsonl",
+      "calls": 9
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\6310ddd8-d8a9-4abc-a4ea-04e47fe4ac28.jsonl",
+      "calls": 8
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\d17f907c-5c2a-4682-a099-cbd5d4f631d6.jsonl",
+      "calls": 8
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\stext\\chats\\session-2026-07-10T16-51-93977152.jsonl",
+      "calls": 8
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\46836ff0-c881-49d5-ac3e-ff3b9ad8277f.jsonl",
+      "calls": 7
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\1c183042-e236-4cc3-9cfa-bb987fbef7d2.jsonl",
+      "calls": 7
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\897b4bb7-020b-45ed-9960-4d32815ec431.jsonl",
+      "calls": 7
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.gemini\\tmp\\finance\\chats\\session-2026-07-14T18-35-834f2f77.jsonl",
+      "calls": 7
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\deaaf1fd-24b4-4e06-a026-8180894f9715.jsonl",
+      "calls": 6
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\fe2c84c8-69d2-4444-9c4b-5005de793feb.jsonl",
+      "calls": 6
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\5ae8a5f5-e12c-4430-bb49-0b38fc61a381.jsonl",
+      "calls": 5
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\4c70a728-0d08-4f61-9f5a-306c4ebd7891.jsonl",
+      "calls": 5
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\9ad9fd36-d480-475d-ab2d-b4207670ffae.jsonl",
+      "calls": 5
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\71451579-c72f-49e2-8984-6f9560263c7a.jsonl",
+      "calls": 4
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-GhostShell\\f322b36a-1652-4d31-8218-9b69e3a4f51e.jsonl",
+      "calls": 3
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\1d054077-9cf0-49f2-81eb-e7beca8f7c4e.jsonl",
+      "calls": 3
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-SText\\45ea1225-8985-4a28-914b-66f490e95487.jsonl",
+      "calls": 3
+    },
+    {
+      "transcript": "C:\\Users\\donal\\.claude\\projects\\C--Users-donal-projects-sublime-mcp\\69ebad8a-05a5-4e3b-853c-621a7210b80d.jsonl",
+      "calls": 3
+    }
+  ]
+}
