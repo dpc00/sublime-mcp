@@ -1,12 +1,20 @@
 # Session handoff
 
-Updated: 2026-08-16
+Updated: 2026-08-17
 
 ## Resume instruction
 
 Read `docs/roadmap.md`, then this file. Part 1 is complete on shared-product,
 mixed-client evidence. Continue only Part 2 of the roadmap. Do not reopen ACP,
 Claude `/ide`, or Antigravity IDE research during Part 2.
+
+## Recent code review (for agents)
+
+A full static review of recent `main` work (~2026-07-25 → 2026-08-16) is in
+`docs/code-review-2026-08-17.md`. Use it for security/concurrency/test gaps
+(companion auth, bind defaults, openDiff timeouts, proxy timeouts). It is a
+review snapshot, not live workflow state — prefer this handoff for Part 1/2
+runtime status.
 
 ## Current operating setup
 

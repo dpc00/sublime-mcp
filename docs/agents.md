@@ -30,6 +30,8 @@ Ports are overridable via env vars: `SUBLIME_MCP_BASE`,
 - `packages/lsp-mcp/lsp_mcp.py` (2047 lines) — LSP MCP; `TOOLS` list (line 1358) exposes ~120 `lsp_*` tools (hand-written request wrappers + ST command wrappers in `_LSP_ST_COMMANDS` at line 722)
 - `packages/python-proxy/mcp_server.py` — Python agent-side proxy (FastMCP → HTTP bridge to port 9500/9501)
 - `packages/node-proxy/index.js` — Node agent-side proxy (@modelcontextprotocol/sdk → HTTP bridge)
+- `docs/session-handoff.md` — Live workflow / Part 1–2 resume state for agents
+- `docs/code-review-2026-08-17.md` — Static code-review findings (auth, bind, timeouts, test gaps) for agents picking up tighten-and-ship work
 
 ## Connecting an Agent
 
