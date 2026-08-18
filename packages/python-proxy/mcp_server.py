@@ -19,23 +19,42 @@ from mcp.types import ImageContent
 # Platform detection: Windows ST uses 9500, WSL/Linux ST uses 9501
 DEFAULT_PORT = 9500 if sys.platform == "win32" else 9501
 BASE = os.environ.get("SUBLIME_MCP_BASE", f"http://127.0.0.1:{DEFAULT_PORT}")
-TIMEOUT = 10.0
+# PROOF: F5 — 2026-08-17. Per-endpoint HTTP timeouts. Quick reads stay at
+# 10s so a hung backend fails fast; batch / install / search / find /
+# eval_python_latest / run_build get 120s because those can legitimately
+# exceed 10s while Sublime is still working.
+DEFAULT_TIMEOUT = 10.0
+SLOW_TIMEOUT = 120.0
+SLOW_ENDPOINTS = frozenset({
+    "/batch",
+    "/install_package",
+    "/search_packages",
+    "/find_in_files",
+    "/eval_python_latest",
+    "/run_build",
+})
+TIMEOUT = DEFAULT_TIMEOUT
+
+
+def _timeout_for(endpoint: str) -> float:
+    return SLOW_TIMEOUT if endpoint in SLOW_ENDPOINTS else DEFAULT_TIMEOUT
+
 
 print(f"sublime-mcp: BASE={BASE} sys.platform={sys.platform}", file=sys.stderr)
 sys.stderr.flush()
 
 mcp = FastMCP("sublime-mcp")
-_client = httpx.Client(base_url=BASE, timeout=TIMEOUT)
+_client = httpx.Client(base_url=BASE, timeout=DEFAULT_TIMEOUT)
 
 
 def _get(endpoint: str, **params) -> dict:
-    r = _client.get(endpoint, params=params)
+    r = _client.get(endpoint, params=params, timeout=_timeout_for(endpoint))
     r.raise_for_status()
     return r.json()
 
 
 def _post(endpoint: str, **body) -> dict:
-    r = _client.post(endpoint, json=body)
+    r = _client.post(endpoint, json=body, timeout=_timeout_for(endpoint))
     r.raise_for_status()
     return r.json()
 
@@ -542,10 +561,12 @@ def edit_file(
 
 @mcp.tool()
 def batch(calls: list) -> dict:
-    """Run multiple sublime-mcp tool calls in a single request, sharing one main-thread
-    dispatch instead of paying a separate round trip per call. Use this whenever you
-    need more than one piece of editor state at once (e.g. get_active_file + get_selection
-    + get_cursor_context), or want to chain several edits/reads together.
+    """Run multiple sublime-mcp tool calls in a single HTTP request, saving a round
+    trip per call. Each call still does its own main-thread work independently —
+    the batch is not wrapped in one shared main-thread dispatch, so a slow or
+    polling call cannot freeze the UI for the rest of the batch. Use this whenever
+    you need more than one piece of editor state at once (e.g. get_active_file +
+    get_selection + get_cursor_context), or want to chain several edits/reads together.
     calls: list of {tool: <tool name>, args: <object, optional>}. Cannot call 'batch' itself.
     Returns {results: [...]} — one entry per call, in order; failed calls return {error: ...}
     instead of aborting the whole batch."""

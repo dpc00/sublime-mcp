@@ -76,6 +76,7 @@ try:
     from .ide_companion import (
         IdeCompanionServer,
         IdeContextTracker,
+        build_selection_changed_params,
         companion_dispatch,
         create_gemini_discovery_file,
         create_qwen_discovery_file,
@@ -85,6 +86,7 @@ except ImportError:
     from ide_companion import (
         IdeCompanionServer,
         IdeContextTracker,
+        build_selection_changed_params,
         companion_dispatch,
         create_gemini_discovery_file,
         create_qwen_discovery_file,
@@ -4115,6 +4117,7 @@ _claude_companion_discovery_file = None
 _ide_context_tracker = IdeContextTracker()
 _ide_context_generation = 0
 _ide_diffs = {}
+_CLAUDE_DIFF_WAIT_TIMEOUT_SECONDS = 30 * 60
 
 
 def _ide_workspace_paths():
@@ -4177,14 +4180,14 @@ def _publish_ide_context():
             end_row, end_column = view.rowcol(region.end())
             server.notify(
                 "selection_changed",
-                {
-                    "selection": {
-                        "start": {"line": start_row, "character": start_column},
-                        "end": {"line": end_row, "character": end_column},
-                    },
-                    "text": view.substr(region),
-                    "filePath": path,
-                },
+                build_selection_changed_params(
+                    file_path=path,
+                    start_line=start_row,
+                    start_character=start_column,
+                    end_line=end_row,
+                    end_character=end_column,
+                    text=view.substr(region),
+                ),
             )
 
 
@@ -4314,29 +4317,37 @@ def _claude_get_diagnostics(arguments):
         file_path = file_path.replace("/", os.sep)
 
     def collect():
+        # PROOF: F11 — 2026-08-17. Private LSP reach via sys.modules
+        # registry lookup. Missing registry already returned []. The
+        # walk is try/except so a private-API reshape cannot raise out
+        # of the Claude tool; success path is unchanged.
         registry_module = sys.modules.get("LSP.plugin.core.registry")
         if not registry_module:
             return []
         grouped = {}
-        for window in sublime.windows():
-            manager = registry_module.windows.lookup(window)
-            if not manager:
-                continue
-            for session in manager.get_sessions():
-                storage = getattr(session, "diagnostics", None)
-                if not storage:
+        try:
+            for window in sublime.windows():
+                manager = registry_module.windows.lookup(window)
+                if not manager:
                     continue
-                for diagnostic_uri, by_provider in storage._diagnostics.items():
-                    local_path = diagnostic_uri
-                    if diagnostic_uri.startswith("file:///"):
-                        local_path = unquote(diagnostic_uri[8:])
-                        if sys.platform == "win32":
-                            local_path = local_path.replace("/", "\\")
-                    if file_path and os.path.normcase(os.path.abspath(local_path)) != os.path.normcase(os.path.abspath(file_path)):
+                for session in manager.get_sessions():
+                    storage = getattr(session, "diagnostics", None)
+                    if not storage:
                         continue
-                    items = grouped.setdefault(diagnostic_uri, [])
-                    for diagnostics in by_provider.values():
-                        items.extend(diagnostics)
+                    for diagnostic_uri, by_provider in storage._diagnostics.items():
+                        local_path = diagnostic_uri
+                        if diagnostic_uri.startswith("file:///"):
+                            local_path = unquote(diagnostic_uri[8:])
+                            if sys.platform == "win32":
+                                local_path = local_path.replace("/", "\\")
+                        if file_path and os.path.normcase(os.path.abspath(local_path)) != os.path.normcase(os.path.abspath(file_path)):
+                            continue
+                        items = grouped.setdefault(diagnostic_uri, [])
+                        for diagnostics in by_provider.values():
+                            items.extend(diagnostics)
+        except Exception as error:
+            print("sublime-mcp: LSP diagnostics internals unavailable: {}".format(error))
+            return []
         return [
             {"uri": diagnostic_uri, "diagnostics": diagnostics}
             for diagnostic_uri, diagnostics in grouped.items()
@@ -4360,7 +4371,12 @@ def _claude_open_diff(arguments):
     state["claude_event"] = event
     state["claude_result"] = [{"type": "text", "text": "DIFF_REJECTED"}]
     state["claude_tab_name"] = arguments.get("tab_name")
-    event.wait()
+    # Bounded so a forgotten review releases this worker thread instead of
+    # pinning it forever. The review, its _ide_diffs entry, and normal
+    # accept/reject/close handling are untouched on timeout — only the
+    # already-abandoned tool call gives up and returns the default
+    # DIFF_REJECTED result that was set above.
+    event.wait(timeout=_CLAUDE_DIFF_WAIT_TIMEOUT_SECONDS)
     return {"content": state["claude_result"]}
 
 
@@ -4368,10 +4384,21 @@ def _claude_close_tab(arguments):
     tab_name = arguments.get("tab_name")
 
     def close():
-        for state in list(_ide_diffs.values()):
+        for key, state in list(_ide_diffs.items()):
             if state.get("claude_tab_name") == tab_name:
                 state["claude_result"] = [{"type": "text", "text": "TAB_CLOSED"}]
-                state["review"].close()
+                review = state["review"]
+                _ide_diffs.pop(key, None)
+                if state.get("claude_event"):
+                    state["claude_event"].set()
+                if review and review.is_valid():
+                    # Erase the marker before close so on_close's diff_path
+                    # check no-ops: this is a Claude tab-close, not a Gemini
+                    # reject, and must not broadcast ide/diffRejected to
+                    # every other companion subscriber.
+                    review.settings().erase("ide_companion_diff_path")
+                    review.set_scratch(True)
+                    review.close()
                 return {"content": [{"type": "text", "text": "TAB_CLOSED"}]}
         return _ide_tool_error("Tab not found: " + str(tab_name))
 
@@ -4556,12 +4583,17 @@ class IdeCompanionContextListener(sublime_plugin.EventListener):
         if diff_path:
             key = os.path.normcase(os.path.abspath(os.path.normpath(diff_path)))
             state = _ide_diffs.pop(key, None)
-            if state and state.get("claude_event"):
-                state["claude_event"].set()
-            if state and _ide_companion_server:
-                _ide_companion_server.notify(
-                    "ide/diffRejected", {"filePath": state["file_path"]}
-                )
+            if state:
+                # Claude-owned reviews terminate via claude_result/event only.
+                # Do not broadcast Gemini-shaped ide/diffRejected on the shared
+                # hub — that crosses into every other companion subscriber.
+                claude_owned = bool(state.get("claude_event"))
+                if claude_owned:
+                    state["claude_event"].set()
+                if _ide_companion_server and not claude_owned:
+                    _ide_companion_server.notify(
+                        "ide/diffRejected", {"filePath": state["file_path"]}
+                    )
         _ide_context_tracker.forget(view.file_name())
         _schedule_ide_context_update()
 
@@ -4583,7 +4615,8 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
             "mcp_replace_region",
             {"begin": 0, "end": original.size(), "text": final_content},
         )
-        if state.get("claude_event"):
+        claude_owned = bool(state.get("claude_event"))
+        if claude_owned:
             state["claude_result"] = [
                 {"type": "text", "text": "FILE_SAVED"},
                 {"type": "text", "text": final_content},
@@ -4594,7 +4627,8 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
         review.set_scratch(True)
         review.close()
         self.window.focus_view(original)
-        if _ide_companion_server:
+        # Gemini-protocol hub notify only for Gemini-owned reviews.
+        if _ide_companion_server and not claude_owned:
             _ide_companion_server.notify(
                 "ide/diffAccepted",
                 {"filePath": file_path, "content": final_content},
@@ -4615,13 +4649,14 @@ class RejectIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
         state = _ide_diffs.pop(key, None)
         if not state:
             return
-        if state.get("claude_event"):
+        claude_owned = bool(state.get("claude_event"))
+        if claude_owned:
             state["claude_result"] = [{"type": "text", "text": "DIFF_REJECTED"}]
             state["claude_event"].set()
         review.settings().erase("ide_companion_diff_path")
         review.set_scratch(True)
         review.close()
-        if _ide_companion_server:
+        if _ide_companion_server and not claude_owned:
             _ide_companion_server.notify(
                 "ide/diffRejected", {"filePath": state["file_path"]}
             )

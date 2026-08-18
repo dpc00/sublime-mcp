@@ -23,6 +23,7 @@ from urllib.parse import urlparse
 
 MAX_RECENT_FILES = 10
 MAX_SELECTED_TEXT_BYTES = 16 * 1024
+MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024
 
 COMPANION_TOOLS = (
     {
@@ -97,6 +98,26 @@ def truncate_utf8(text, max_bytes=MAX_SELECTED_TEXT_BYTES):
     if len(encoded) <= max_bytes:
         return text or ""
     return encoded[:max_bytes].decode("utf-8", errors="ignore")
+
+
+def build_selection_changed_params(
+    file_path,
+    start_line,
+    start_character,
+    end_line,
+    end_character,
+    text,
+    max_bytes=MAX_SELECTED_TEXT_BYTES,
+):
+    """Build the selection_changed notification params (capped like context)."""
+    return {
+        "selection": {
+            "start": {"line": int(start_line), "character": int(start_character)},
+            "end": {"line": int(end_line), "character": int(end_character)},
+        },
+        "text": truncate_utf8(text, max_bytes=max_bytes),
+        "filePath": file_path,
+    }
 
 
 class IdeContextTracker:
@@ -363,6 +384,23 @@ def _handler_class(
         def log_message(self, format, *args):
             pass
 
+        def _reject_body_too_large(self, length):
+            # HTTP/1.1 keep-alive requires the declared body to be fully
+            # consumed (or the connection closed) before writing a response,
+            # otherwise the next request on this connection gets misframed
+            # as leftover body bytes from this one. Draining keeps the
+            # connection reusable instead of racing a close against a
+            # client still mid-write.
+            remaining = length
+            chunk = 1024 * 1024
+            while remaining > 0:
+                read = self.rfile.read(min(chunk, remaining))
+                if not read:
+                    self.close_connection = True
+                    break
+                remaining -= len(read)
+            self._json(413, {"error": "request body too large"})
+
         def _json(self, status, body):
             payload = json.dumps(body).encode("utf-8")
             self.send_response(status)
@@ -446,6 +484,9 @@ def _handler_class(
                 return
             try:
                 length = int(self.headers.get("Content-Length", "0"))
+                if length > MAX_REQUEST_BODY_BYTES:
+                    self._reject_body_too_large(length)
+                    return
                 message = json.loads(self.rfile.read(length)) if length else {}
                 response = dispatcher(message)
             except (ValueError, TypeError, json.JSONDecodeError) as error:
@@ -513,6 +554,9 @@ def _handler_class(
                 return
             try:
                 length = int(self.headers.get("Content-Length", "0"))
+                if length > MAX_REQUEST_BODY_BYTES:
+                    self._reject_body_too_large(length)
+                    return
                 message = json.loads(self.rfile.read(length)) if length else {}
             except (ValueError, TypeError, json.JSONDecodeError) as error:
                 self._json(400, {"error": str(error)})

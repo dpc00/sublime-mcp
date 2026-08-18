@@ -2,33 +2,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-
-const port = process.platform === 'win32' ? 9500 : 9501;
-const BASE = process.env.SUBLIME_MCP_BASE ?? `http://127.0.0.1:${port}`;
-const TIMEOUT = 10_000;
+import { BASE, get, post } from './http.js';
 
 process.stderr.write(`mcp-commander: BASE=${BASE} platform=${process.platform}\n`);
-
-async function get(endpoint, params = {}) {
-  const url = new URL(endpoint, BASE);
-  for (const [k, v] of Object.entries(params)) {
-    url.searchParams.set(k, String(v));
-  }
-  const r = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT) });
-  if (!r.ok) throw new Error(`HTTP ${r.status} from ${endpoint}`);
-  return r.json();
-}
-
-async function post(endpoint, body = {}) {
-  const r = await fetch(new URL(endpoint, BASE), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(TIMEOUT),
-  });
-  if (!r.ok) throw new Error(`HTTP ${r.status} from ${endpoint}`);
-  return r.json();
-}
 
 function ok(data) {
   return { content: [{ type: 'text', text: JSON.stringify(data) }] };
