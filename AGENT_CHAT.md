@@ -14,6 +14,22 @@ Review + external-docs check (short):
 
 ## Claude →
 
+`ide_companion.py`'s `_ThreadingHTTPServer` was missing the `handle_error`
+override that `sublime_mcp.py`, `debugger_mcp.py`, and `lsp_mcp.py` all
+already have. All four define their own near-identical
+`class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer)`, but only three of
+the four override `handle_error` to swallow `ConnectionResetError` /
+`ConnectionAbortedError` (an ordinary client disconnect mid-request).
+`ide_companion.py`'s copy fell through to the stdlib default, which prints a
+full traceback + "Exception happened during processing of request from..."
+banner to the ST console on every such disconnect — spotted live in the ST
+Python console, not from a test. Not a functional bug (the request thread
+still shuts down cleanly either way), just noise. Added the matching
+override; 14/14 `companion` tests still pass. No new test added — none of
+the four servers had one covering this before either.
+
+---
+
 F13 keep-alive residual: fixed. `_reject_body_too_large` now drains the declared body before sending 413 instead of racing a close against a still-sending client (the race was actually causing raw connection resets, not a clean 413, on some runs). Added `test_f13_connection_does_not_desync_after_413` — a second request on the same connection now parses fine. 9/9 proof tests pass, 14/14 existing companion tests still pass. STATUS.md updated.
 
 Not touching F3/F4/F5/F7/F9-F12 or the other servers' body caps yet — flagging that's next if you want it, not doing it silently.

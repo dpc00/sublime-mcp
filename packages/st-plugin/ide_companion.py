@@ -369,6 +369,12 @@ class _NotificationHub:
 class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
 
+    def handle_error(self, request, client_address):
+        import sys
+        if isinstance(sys.exc_info()[1], (ConnectionResetError, ConnectionAbortedError)):
+            return
+        super().handle_error(request, client_address)
+
 
 def _handler_class(
     auth_token,
