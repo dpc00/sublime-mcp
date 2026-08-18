@@ -5,8 +5,14 @@ behavior can be regression-tested with an in-memory agent.
 """
 
 import json
+import queue
 import subprocess
 import threading
+
+# PROOF: F9 — 2026-08-17. Cap in-flight agent-request workers so a flood
+# cannot spawn one thread per request. close() now shuts the reader and
+# joins the read loop.
+MAX_AGENT_REQUEST_THREADS = 8
 
 
 class AcpError(RuntimeError):
@@ -25,14 +31,35 @@ class AcpConnection:
         self._state_lock = threading.Lock()
         self._closed = threading.Event()
         self._thread = threading.Thread(target=self._read_loop, daemon=True)
+        self._agent_jobs = queue.Queue()
+        self._agent_workers = []
+        self.invalid_json_count = 0
 
     @staticmethod
     def _unsupported_request(method, _params):
         raise AcpError("Unsupported agent request: " + method)
 
     def start(self):
+        for i in range(MAX_AGENT_REQUEST_THREADS):
+            worker = threading.Thread(
+                target=self._agent_worker,
+                name="acp-agent-{}".format(i),
+                daemon=True,
+            )
+            worker.start()
+            self._agent_workers.append(worker)
         self._thread.start()
         return self
+
+    def _agent_worker(self):
+        while True:
+            job = self._agent_jobs.get()
+            if job is None:
+                return
+            try:
+                self._respond_to_agent(*job)
+            except Exception:
+                pass
 
     def _send(self, message):
         payload = json.dumps(message, separators=(",", ":")) + "\n"
@@ -85,13 +112,14 @@ class AcpConnection:
                 try:
                     message = json.loads(line)
                 except (TypeError, json.JSONDecodeError):
+                    self.invalid_json_count += 1
                     continue
                 if "method" in message and "id" in message:
-                    threading.Thread(
-                        target=self._respond_to_agent,
-                        args=(message["id"], message["method"], message.get("params") or {}),
-                        daemon=True,
-                    ).start()
+                    self._agent_jobs.put((
+                        message["id"],
+                        message["method"],
+                        message.get("params") or {},
+                    ))
                 elif "method" in message:
                     self.on_notification(message["method"], message.get("params") or {})
                 elif "id" in message:
@@ -117,6 +145,19 @@ class AcpConnection:
             self.writer.close()
         except Exception:
             pass
+        try:
+            closer = getattr(self.reader, "close", None)
+            if closer:
+                closer()
+        except Exception:
+            pass
+        for _ in self._agent_workers:
+            self._agent_jobs.put(None)
+        if self._thread.is_alive():
+            self._thread.join(timeout=2.0)
+        for worker in self._agent_workers:
+            if worker.is_alive():
+                worker.join(timeout=1.0)
 
 
 class AcpProcessClient:
