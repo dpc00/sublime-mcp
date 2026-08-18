@@ -10,7 +10,7 @@ function ok(data) {
   return { content: [{ type: 'text', text: JSON.stringify(data) }] };
 }
 
-const server = new McpServer({ name: 'sublime-mcp', version: '1.3.3' });
+const server = new McpServer({ name: 'sublime-mcp', version: '1.4.0' });
 server.setToolRequestHandlers();
 
 // ── JSON Schema → Zod (shallow) for dynamic discovery ────────────────────────
