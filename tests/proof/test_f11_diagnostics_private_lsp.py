@@ -4,8 +4,18 @@ PROOF: F11 — 2026-08-17. Source lock: the function looks up
 `LSP.plugin.core.registry` via sys.modules and reads
 `storage._diagnostics`. Missing registry already returns []. The
 `_diagnostics` walk is wrapped so a private-API reshape cannot raise
-out of the Claude tool. Live runtime against a real LSP package is
-still pending (needs Sublime + LSP).
+out of the Claude tool.
+
+Live-runtime verified 2026-08-17 against a real Sublime Text + LSP
+(Pyright) instance: opened packages/debugger-mcp/debugger_mcp.py,
+waited for the language server to attach, and called
+_claude_get_diagnostics directly through the live plugin module. It
+returned 48 real diagnostics for that file through the try/except-
+guarded path, confirming the guard does not interfere with the normal
+success path. The failure branch (an actual LSP internals break) is
+still only proved at the source level — reproducing that live would
+require deliberately breaking a real LSP install, which isn't worth
+doing against the user's working environment.
 """
 from pathlib import Path
 
