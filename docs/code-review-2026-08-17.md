@@ -263,3 +263,14 @@ If picking up from this review:
 5. Cap selection text in Claude `selection_changed` publish path.
 
 Do not treat this file as a substitute for `docs/session-handoff.md` live workflow state; this is a static review snapshot from 2026-08-17.
+
+---
+
+## Proof obligation
+
+Latent findings above are **candidates**, not closed incidents. The bar to keep them is a deterministic mock client/server trial:
+
+→ `docs/proof-harness-proposal-2026-08-17.md`  
+→ scoreboard (when implemented): `tests/proof/STATUS.md`
+
+Each finding must end **PROVED**, **KILLED**, or **NARROWED**. Uninstrumented claims do not get to linger as settled bugs.
