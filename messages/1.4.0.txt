@@ -1,0 +1,19 @@
+MCP Commander 1.4.0
+===================
+
+220 typed MCP tools are now documented (up from 63), covering view, tab,
+pane, edit, selection, scroll, macro, file, project, marks, jumps, folds,
+transform, and browser commands, plus read-only getters, `batch`, and
+`eval_python`.
+
+New: `batch` tool — send multiple tool calls in one round trip (capped at
+50 calls per request), available in both the Python and Node proxies.
+
+New: `get_help` added to debugger-mcp and lsp-mcp for in-session tool
+discovery.
+
+Fixes: threaded HTTP bridges (no more blocking under concurrent
+requests), keep-alive on bridge/SSE handlers, several MCP bridge routing
+and startup-race fixes.
+
+Full documentation: https://github.com/dpc00/sublime-mcp
