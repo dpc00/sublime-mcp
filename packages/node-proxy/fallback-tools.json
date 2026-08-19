@@ -66,7 +66,7 @@
     },
     {
       "name": "batch",
-      "description": "Run multiple sublime-mcp tool calls in a single request instead of paying a\nseparate HTTP round trip per call. Use this whenever you need more than one\npiece of editor state at once (e.g. get_active_file + get_selection +\nget_cursor_context), or want to chain several edits/reads together.\ncalls: list of {tool: <tool name>, args: <object, optional>}. Cannot call 'batch' itself.\nMax 50 calls per batch.\nReturns {results: [...]} \u2014 one entry per call, in order; failed calls return {error: ...}\ninstead of aborting the whole batch.",
+      "description": "Run multiple sublime-mcp tool calls in a single request instead of paying a\nseparate HTTP round trip per call. Each call still does its own main-thread\nwork independently: the batch is not wrapped in one shared main-thread\ndispatch, so a slow or polling call cannot freeze the UI for the rest of\nthe batch. Use this whenever you need more than one piece of editor state\nat once (e.g. get_active_file + get_selection + get_cursor_context), or\nwant to chain several edits/reads together.\ncalls: list of {tool: <tool name>, args: <object, optional>}. Cannot call 'batch' itself.\nMax 50 calls per batch.\nReturns {results: [...]} \u2014 one entry per call, in order; failed calls return {error: ...}\ninstead of aborting the whole batch.",
       "inputSchema": {
         "type": "object",
         "properties": {

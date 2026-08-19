@@ -206,7 +206,7 @@ Gaps:
 
 Dynamic discovery first, static fallback second is correct. The fallback catalog remains a large second source of truth and will drift from backend tool schemas over time.
 
-**Resolved 2026-08-19.** The fallback is no longer hand-maintained. `tools/generate_fallback_catalog.py` emits `packages/node-proxy/fallback-tools.json` from the backend `_MCP_TOOLS`, and `index.js` registers from that file. `tests/proof/test_f10_proxy_catalog_drift.py` fails if the committed catalog is stale or if a hand-written tool list reappears. See `tests/proof/STATUS.md`.
+**Resolved 2026-08-19.** Neither proxy is hand-maintained now. `tools/generate_fallback_catalog.py` emits `packages/node-proxy/fallback-tools.json` and `packages/python-proxy/tool_catalog.py` from the backend `_MCP_TOOLS`, and both proxies register from those. The same pass found that python-proxy was the worse case: with no dynamic discovery at all, its 72 hand-written tools were the entire surface, so 148 backend tools were permanently unreachable rather than merely dropped on a discovery miss. It now exposes all 220. `tests/proof/test_f10_proxy_catalog_drift.py` and `tests/proof/test_f10_python_proxy_catalog.py` fail if a committed catalog is stale or a hand-written tool list reappears. See `tests/proof/STATUS.md`.
 
 #### 11. Diagnostics implementation is brittle by necessity
 
