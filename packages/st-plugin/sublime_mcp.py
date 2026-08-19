@@ -2829,9 +2829,12 @@ _MCP_TOOLS = [
     # ── batch execution ───────────────────────────────────────────────────────
     ("batch",
      "Run multiple sublime-mcp tool calls in a single request instead of paying a\n"
-     "separate HTTP round trip per call. Use this whenever you need more than one\n"
-     "piece of editor state at once (e.g. get_active_file + get_selection +\n"
-     "get_cursor_context), or want to chain several edits/reads together.\n"
+     "separate HTTP round trip per call. Each call still does its own main-thread\n"
+     "work independently: the batch is not wrapped in one shared main-thread\n"
+     "dispatch, so a slow or polling call cannot freeze the UI for the rest of\n"
+     "the batch. Use this whenever you need more than one piece of editor state\n"
+     "at once (e.g. get_active_file + get_selection + get_cursor_context), or\n"
+     "want to chain several edits/reads together.\n"
      "calls: list of {tool: <tool name>, args: <object, optional>}. Cannot call 'batch' itself.\n"
      "Max 50 calls per batch.\n"
      "Returns {results: [...]} — one entry per call, in order; failed calls return {error: ...}\n"

@@ -30,4 +30,7 @@ Repository = "https://github.com/dpc00/sublime-mcp"
 sublime-mcp = "mcp_server:main"
 
 [tool.setuptools]
-py-modules = ["mcp_server"]
+# tool_catalog is generated from the backend _MCP_TOOLS by
+# tools/generate_fallback_catalog.py and imported by mcp_server at
+# startup, so it must ship with the package.
+py-modules = ["mcp_server", "tool_catalog"]
