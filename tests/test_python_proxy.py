@@ -68,6 +68,99 @@ class TestToolDiscovery:
         names = asyncio.run(_run_session(go))
         assert "get_help" in names
 
+    def test_full_backend_catalog_is_exposed(self):
+        """F10 second surface: python-proxy used to expose 72 of 220 tools.
+
+        It has no dynamic discovery, so a missing tool was permanently
+        unreachable rather than merely dropped on a discovery miss. The
+        generated catalog must reach the client intact over real MCP stdio.
+        """
+        import json
+
+        catalog = json.loads(
+            (
+                Path(__file__).resolve().parent.parent
+                / "packages"
+                / "node-proxy"
+                / "fallback-tools.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected = {tool["name"] for tool in catalog["tools"]}
+
+        async def go(session):
+            tools = await session.list_tools()
+            return {t.name for t in tools.tools}
+
+        names = asyncio.run(_run_session(go))
+        assert expected - names == set(), "tools missing from python-proxy"
+        assert names - expected == set(), "python-proxy advertises unknown tools"
+
+    def test_generated_schemas_are_typed_not_passthrough(self):
+        """Registration must replay each schema, not degrade to an opaque dict."""
+
+        async def go(session):
+            tools = await session.list_tools()
+            return {t.name: t.inputSchema for t in tools.tools}
+
+        schemas = asyncio.run(_run_session(go))
+
+        open_file = schemas["open_file"]
+        assert open_file["required"] == ["path"]
+        assert open_file["properties"]["path"]["type"] == "string"
+        assert open_file["properties"]["line"]["default"] == 0
+
+        # Nested structure from the backend schema must survive.
+        calls = schemas["batch"]["properties"]["calls"]
+        assert calls["type"] == "array"
+        assert calls["items"]["required"] == ["tool"]
+
+        # A no-parameter tool must advertise no parameters.
+        assert schemas["get_active_file"].get("properties") == {}
+
+
+class TestGeneratedToolCalls:
+    """The generated wrappers must actually reach the backend."""
+
+    def test_newly_reachable_tool_works(self):
+        """get_view_size was absent from the old hand-written 72."""
+
+        async def go(session):
+            return await session.call_tool("get_view_size", {})
+
+        result = asyncio.run(_run_session(go))
+        assert not result.isError
+        import json
+
+        assert "size" in json.loads(result.content[0].text)
+
+    def test_optional_param_without_default_is_omitted_not_nulled(self):
+        """Optional params carry a None sentinel; it must not be sent as null.
+
+        The deterministic body-level assertion lives in
+        tests/proof/test_f10_python_proxy_catalog.py against a fake bridge.
+        This is the live smoke check that the same call reaches Sublime.
+        """
+
+        async def go(session):
+            return await session.call_tool("get_setting", {"key": "tab_size"})
+
+        result = asyncio.run(_run_session(go))
+        assert not result.isError
+        import json
+
+        assert "value" in json.loads(result.content[0].text)
+
+    def test_image_override_still_shapes_the_response(self):
+        """get_sheet_content is a declared override, not a generated twin."""
+
+        async def go(session):
+            tools = await session.list_tools()
+            return [t for t in tools.tools if t.name == "get_sheet_content"]
+
+        matches = asyncio.run(_run_session(go))
+        assert len(matches) == 1, "override must replace, not duplicate, the generated tool"
+        assert matches[0].inputSchema["required"] == ["index"]
+
 
 class TestBatchToolCall:
     def test_batch_returns_results_for_each_call(self):

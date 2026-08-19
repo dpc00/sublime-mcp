@@ -3,18 +3,33 @@
 Wraps the HTTP API exposed by sublime_mcp.py (the ST plugin) and
 presents it as MCP tools to Claude Code (or any MCP client).
 
+Tools are built from `tool_catalog.py`, which is generated from the
+backend's `_MCP_TOOLS` by `tools/generate_fallback_catalog.py`. This file
+therefore contains no hand-maintained tool list: it used to carry 72
+hand-written tools against a backend serving 220, which meant 148 tools
+were permanently unreachable through this proxy (F10). Add tools to the
+backend and regenerate; do not hand-write them here.
+
 Requirements: pip install mcp httpx
 Run:          python mcp_server.py
 Register:     add to ~/.claude/settings.json mcpServers
 """
 
+import inspect
 import os
 import sys
-from typing import Optional
+from typing import Annotated, Any, Optional
 
 import httpx
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ImageContent
+from pydantic import Field
+
+try:
+    from tool_catalog import TOOLS
+except ImportError:  # running from a source checkout without the package installed
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from tool_catalog import TOOLS
 
 # Platform detection: Windows ST uses 9500, WSL/Linux ST uses 9501
 DEFAULT_PORT = 9500 if sys.platform == "win32" else 9501
@@ -59,155 +74,109 @@ def _post(endpoint: str, **body) -> dict:
     return r.json()
 
 
-# ── no-parameter pass-through tools ───────────────────────────────────────────
-# Each entry: (tool_name, "GET"|"POST", endpoint, docstring)
+# ── generated tool registration ───────────────────────────────────────────────
+# Every backend tool has a POST /{name} alias, so one uniform call shape
+# works for all of them. FastMCP derives each tool's JSON Schema from the
+# function signature, so the catalog's schema is replayed as real typed
+# parameters rather than an untyped passthrough dict.
 
-_PASSTHROUGH = [
-    (
-        "get_active_file",
-        "GET",
-        "/active_file",
-        "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name.",
-    ),
-    (
-        "get_selection",
-        "GET",
-        "/selection",
-        "Return the current selection(s): text and begin/end line+col for each.",
-    ),
-    (
-        "get_open_files",
-        "GET",
-        "/open_files",
-        "List all files open in the current window (path, name, is_dirty).",
-    ),
-    (
-        "get_sheets",
-        "GET",
-        "/sheets",
-        "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\n"
-        "Returns index, type (TextSheet/ImageSheet), path, name, is_dirty for each.\n"
-        "Use index with get_sheet_content to read a specific tab.",
-    ),
-    (
-        "get_project_folders",
-        "GET",
-        "/project_folders",
-        "Return the project's root folder paths.",
-    ),
-    (
-        "get_symbols",
-        "GET",
-        "/symbols",
-        "Return all symbols (functions, classes, etc.) in the active file with line numbers.",
-    ),
-    (
-        "get_project_data",
-        "GET",
-        "/project_data",
-        "Return the raw .sublime-project JSON data for the current project.",
-    ),
-    (
-        "get_variables",
-        "GET",
-        "/variables",
-        "Return Sublime Text's build variables: $file, $project_path, $platform, etc.",
-    ),
-    (
-        "get_active_panel",
-        "GET",
-        "/active_panel",
-        "Return the active panel id and, if it is an output panel, its content.",
-    ),
-    (
-        "get_syntaxes",
-        "GET",
-        "/syntaxes",
-        "List all syntax definitions available in Sublime Text (name + path).",
-    ),
-    (
-        "get_encoding",
-        "GET",
-        "/encoding",
-        "Return the character encoding of the active file.",
-    ),
-    (
-        "get_scope_at_cursor",
-        "GET",
-        "/scope_at_cursor",
-        "Return the full syntax scope string at the cursor position.",
-    ),
-    (
-        "get_word_at_cursor",
-        "GET",
-        "/word_at_cursor",
-        "Return the word under the cursor and its line/col.",
-    ),
-    (
-        "get_bookmarks",
-        "GET",
-        "/bookmarks",
-        "Return all bookmarked positions in the active file.",
-    ),
-    (
-        "get_line_count",
-        "GET",
-        "/line_count",
-        "Return the total number of lines in the active file.",
-    ),
-    (
-        "get_layout",
-        "GET",
-        "/layout",
-        "Return the current window layout (groups, cells) and which files are in each group.",
-    ),
-    ("save_all", "POST", "/save_all", "Save all open files."),
-    (
-        "revert_file",
-        "POST",
-        "/revert_file",
-        "Revert the active file to its last saved state, discarding unsaved changes.",
-    ),
-    ("undo", "POST", "/undo", "Undo the last edit in the active file."),
-    ("redo", "POST", "/redo", "Redo the last undone edit in the active file."),
-    (
-        "duplicate_line",
-        "POST",
-        "/duplicate_line",
-        "Duplicate the current line(s) in the active file.",
-    ),
-    (
-        "toggle_sidebar",
-        "POST",
-        "/toggle_sidebar",
-        "Show or hide the Sublime Text sidebar.",
-    ),
-]
-
-for _name, _method, _endpoint, _doc in _PASSTHROUGH:
-
-    def _make(_m=_method, _e=_endpoint):
-        def _tool() -> dict:
-            return (_get if _m == "GET" else _post)(_e)
-
-        return _tool
-
-    _f = _make()
-    _f.__name__ = _name
-    _f.__doc__ = _doc
-    mcp.tool(name=_name)(_f)
+_JSON_TYPES = {
+    "string": str,
+    "integer": int,
+    "number": float,
+    "boolean": bool,
+    "array": list,
+    "object": dict,
+}
 
 
-# ── parameterised tools ───────────────────────────────────────────────────────
+def _annotation(prop: dict):
+    """Turn one JSON Schema property into a typed annotation.
+
+    Descriptions and extra keywords (nested `items`, `maxItems`, ...) are
+    carried through a pydantic Field so the client sees the same parameter
+    documentation the backend publishes.
+    """
+    base = _JSON_TYPES.get(prop.get("type"), Any)
+    extra = {
+        key: value
+        for key, value in prop.items()
+        if key not in ("type", "description", "default", "title")
+    }
+    field_kwargs = {}
+    if prop.get("description"):
+        field_kwargs["description"] = prop["description"]
+    if extra:
+        field_kwargs["json_schema_extra"] = extra
+    if not field_kwargs:
+        return base
+    return Annotated[base, Field(**field_kwargs)]
 
 
-@mcp.tool()
-def get_cursor_context(lines: int = 10) -> dict:
-    """Return `lines` lines above and below the cursor with 1-based line numbers prepended."""
-    return _get("/cursor_context", lines=lines)
+def _build_tool(name: str, description: str, schema: dict):
+    """Create a typed function for one catalog entry."""
+    properties = (schema or {}).get("properties") or {}
+    required = set((schema or {}).get("required") or [])
+
+    parameters = []
+    annotations = {}
+    for key, prop in properties.items():
+        prop = prop if isinstance(prop, dict) else {}
+        annotation = _annotation(prop)
+        if key in required:
+            default = inspect.Parameter.empty
+        elif "default" in prop:
+            default = prop["default"]
+        else:
+            # Optional with no backend default: omit it from the request
+            # entirely rather than inventing a value.
+            default = None
+            annotation = Optional[annotation]
+        parameters.append(
+            inspect.Parameter(
+                key, inspect.Parameter.KEYWORD_ONLY, default=default, annotation=annotation
+            )
+        )
+        annotations[key] = annotation
+
+    optional_without_default = {
+        key
+        for key, prop in properties.items()
+        if key not in required and not (isinstance(prop, dict) and "default" in prop)
+    }
+
+    def call(**kwargs):
+        body = {
+            key: value
+            for key, value in kwargs.items()
+            if not (value is None and key in optional_without_default)
+        }
+        return _post("/" + name, **body)
+
+    call.__name__ = name
+    call.__doc__ = description
+    call.__signature__ = inspect.Signature(parameters, return_annotation=dict)
+    annotations["return"] = dict
+    call.__annotations__ = annotations
+    return call
 
 
-@mcp.tool()
+for _tool in TOOLS:
+    mcp.add_tool(_build_tool(_tool["name"], _tool["description"], _tool.get("inputSchema")))
+
+
+# ── hand-written overrides ────────────────────────────────────────────────────
+# Only for tools that need to post-process the backend response. Everything
+# else comes from the generated catalog above. Each override replaces its
+# generated twin, so registration order does not decide which one wins.
+
+_OVERRIDDEN = ("get_sheet_content",)
+
+for _name in _OVERRIDDEN:
+    mcp.remove_tool(_name)
+
+
+@mcp.tool(name="get_sheet_content")
 def get_sheet_content(index: int):
     """Return the content of any tab by its sheet index (from get_sheets).
     Works for text tabs including untitled buffers and Terminus tabs.
@@ -221,423 +190,6 @@ def get_sheet_content(index: int):
                "image/gif" if path.lower().endswith(".gif") else "image/png"
         return [ImageContent(type="image", data=b64, mimeType=mime)]
     return result
-
-
-@mcp.tool()
-def get_file_content(path: str) -> dict:
-    """Return the full content of an already-open file by its path."""
-    return _get("/file_content", path=path)
-
-
-@mcp.tool()
-def get_view_content(name: str = "", index: int = -1) -> dict:
-    """Return the full content of any open tab by name (partial match, case-insensitive).
-    Works for Terminus tabs and other nameless views that have no file path.
-    Use index (0-based, from get_open_files) to target a tab by position instead of name.
-    Omit both to read the active view."""
-    return _get("/view_content", name=name, index=index)
-
-
-@mcp.tool()
-def get_view_size(name: str = "") -> dict:
-    """Return the total character count of any open tab by name (partial match, case-insensitive).
-    Use before get_view_chars to compute offsets — e.g. begin=size-5000, end=size for the tail.
-    Omit name for the active view."""
-    return _get("/view_size", name=name)
-
-
-@mcp.tool()
-def get_view_chars(begin: int, end: int, name: str = "") -> dict:
-    """Return text at character offsets begin..end (0-based, end exclusive) from any open tab.
-    Works for Terminus tabs and any other view.  Clamps to buffer bounds automatically.
-    Use get_view_size first, then e.g. begin=size-5000, end=size to read the last 5000 chars.
-    Omit name for the active view."""
-    return _get("/view_chars", name=name, begin=begin, end=end)
-
-
-@mcp.tool()
-def get_view_phantoms(name: str = "", key: str = "") -> dict:
-    """Return phantom HTML and extracted text from a view by name.
-    If key is omitted, defaults to the common 'pybackup' phantom key."""
-    return _get("/view_phantoms", name=name, key=key)
-
-
-@mcp.tool()
-def get_output_panel(name: str = "") -> dict:
-    """Return the text content of an output panel.
-    If name is omitted, read the active output panel.  Use name='exec' for build output.
-    """
-    return _get("/output_panel", name=name)
-
-
-@mcp.tool()
-def lookup_symbol(symbol: str) -> dict:
-    """Find where a symbol is defined across all open files."""
-    return _get("/lookup_symbol", symbol=symbol)
-
-
-@mcp.tool()
-def add_folder(path: str) -> dict:
-    """Add a folder to the current project."""
-    data = _get("/project_data").get("project_data") or {}
-    folders = data.get("folders", [])
-    if not any(f.get("path") == path for f in folders):
-        folders.append({"path": path})
-        data["folders"] = folders
-        return _post("/set_project_data", data=data)
-    return {"ok": True, "note": "already present"}
-
-
-@mcp.tool()
-def remove_folder(path: str) -> dict:
-    """Remove a folder from the current project by path."""
-    data = _get("/project_data").get("project_data") or {}
-    folders = data.get("folders", [])
-    new_folders = [f for f in folders if f.get("path") != path]
-    if len(new_folders) == len(folders):
-        return {"ok": False, "note": "folder not found"}
-    data["folders"] = new_folders
-    return _post("/set_project_data", data=data)
-
-
-@mcp.tool()
-def send_to_view(text: str, name: str = "", index: int = -1) -> dict:
-    """Send a string to any open tab by name (partial match, case-insensitive).
-    Inserts the text at the cursor of the resolved view using the standard insert command; returns an error if the view is read-only.
-    Use index (0-based, from get_open_files) to target a tab by position instead of name.
-    Omit both name and index to target the active view."""
-    return _post("/send_to_view", text=text, name=name, index=index)
-
-
-@mcp.tool()
-def open_file(path: str, line: int = 0, col: int = 0) -> dict:
-    """Open a file in Sublime Text, optionally jumping to a specific line and column."""
-    return _post("/open_file", path=path, line=line, col=col)
-
-
-@mcp.tool()
-def goto_line(line: int, col: int = 1) -> dict:
-    """Move the cursor to a line (and optional column) in the active file."""
-    return _post("/goto_line", line=line, col=col)
-
-
-@mcp.tool()
-def show_panel(name: str = "exec") -> dict:
-    """Bring an output panel to the front.  Use name='exec' for the build panel."""
-    return _post("/show_panel", name=name)
-
-
-@mcp.tool()
-def replace_selection(text: str) -> dict:
-    """Replace the current selection(s) with text."""
-    return _post("/replace_selection", text=text)
-
-
-@mcp.tool()
-def replace_lines(
-    begin: int, end: int, text: str, path: str = "", index: int = -1
-) -> dict:
-    """Replace lines begin through end (inclusive, 1-based) in the active file with text.
-    Pass path to target a specific open file regardless of which tab is focused.
-    Use index (0-based, from get_open_files) to target a nameless tab by position."""
-    return _post(
-        "/replace_lines", begin=begin, end=end, text=text, path=path, index=index
-    )
-
-
-@mcp.tool()
-def run_command(
-    command: str, args: Optional[dict] = None, scope: str = "window"
-) -> dict:
-    """Run any Sublime Text command.  scope='window' (default) or 'view'."""
-    return _post("/run_command", command=command, args=args or {}, scope=scope)
-
-
-@mcp.tool()
-def run_build(
-    cmd: Optional[list] = None, shell_cmd: Optional[str] = None, working_dir: str = ""
-) -> dict:
-    """Trigger the current build system, or pass cmd/shell_cmd to run a specific command."""
-    body = {}
-    if cmd:
-        body["cmd"] = cmd
-    if shell_cmd:
-        body["shell_cmd"] = shell_cmd
-    if working_dir:
-        body["working_dir"] = working_dir
-    return _post("/run_build", **body)
-
-
-@mcp.tool()
-def set_status(value: str, key: str = "sublime_mcp") -> dict:
-    """Write a message to Sublime Text's status bar."""
-    return _post("/set_status", key=key, value=value)
-
-
-@mcp.tool()
-def save_file(path: str = "") -> dict:
-    """Save a file. Pass path to save a specific open file; omit path to save the active file."""
-    return _post("/save_file", path=path) if path else _post("/save_file")
-
-
-@mcp.tool()
-def close_file(path: str = "") -> dict:
-    """Close a file by path, or close the active file if path is omitted."""
-    return _post("/close_file", path=path)
-
-
-@mcp.tool()
-def toggle_comment(block: bool = False) -> dict:
-    """Toggle line comment (or block comment if block=True) on the current selection."""
-    return _post("/toggle_comment", block=block)
-
-
-@mcp.tool()
-def sort_lines(case_sensitive: bool = False) -> dict:
-    """Sort the selected lines (or all lines if nothing is selected)."""
-    return _post("/sort_lines", case_sensitive=case_sensitive)
-
-
-@mcp.tool()
-def select_lines(begin: int, end: int = 0) -> dict:
-    """Select lines begin through end (1-based, inclusive).  end defaults to begin."""
-    return _post("/select_lines", begin=begin, end=end or begin)
-
-
-@mcp.tool()
-def fold_lines(begin: int, end: int) -> dict:
-    """Fold (collapse) lines begin through end (1-based) in the active file."""
-    return _post("/fold_lines", begin=begin, end=end)
-
-
-@mcp.tool()
-def insert_snippet(contents: str) -> dict:
-    """Insert a snippet at the cursor using Sublime Text's snippet syntax (e.g. $1 for tab stops)."""
-    return _post("/insert_snippet", contents=contents)
-
-
-@mcp.tool()
-def find_in_file(
-    pattern: str, case_sensitive: bool = False, regex: bool = False
-) -> dict:
-    """Find all occurrences of pattern in the active file.  Returns list of {line, col, text}."""
-    return _post(
-        "/find_in_file", pattern=pattern, case_sensitive=case_sensitive, regex=regex
-    )
-
-
-@mcp.tool()
-def find_in_files(
-    pattern: str,
-    folders: Optional[list] = None,
-    case_sensitive: bool = False,
-    regex: bool = False,
-    max_results: int = 200,
-) -> dict:
-    """Search for pattern across project folders (or the supplied folder list).
-    Skips .git, __pycache__, node_modules, .venv.  Returns list of {path, line, match}.
-    """
-    body = dict(
-        pattern=pattern,
-        case_sensitive=case_sensitive,
-        regex=regex,
-        max_results=max_results,
-    )
-    if folders:
-        body["folders"] = folders
-    return _post("/find_in_files", **body)
-
-
-@mcp.tool()
-def get_command_palette(
-    package: str = "", command: str = "", caption: str = ""
-) -> dict:
-    """List Command Palette entries from installed *.sublime-commands resources.
-    Optional filters: package, command id, or caption substring."""
-    return _get("/command_palette", package=package, command=command, caption=caption)
-
-
-@mcp.tool()
-def get_commands(
-    package: str = "", command: str = "", include_palette: bool = True
-) -> dict:
-    """List runnable Sublime command ids from loaded command classes, optionally enriched
-    with matching Command Palette entries from installed packages."""
-    return _get(
-        "/commands",
-        package=package,
-        command=command,
-        include_palette=str(include_palette).lower(),
-    )
-
-
-@mcp.tool()
-def get_menu_items(menu: str = "", caption: str = "", command: str = "") -> dict:
-    """List installed menu items from *.sublime-menu resources.
-    Optional filters: menu filename, caption substring, or command id substring."""
-    return _get("/menu_items", menu=menu, caption=caption, command=command)
-
-
-@mcp.tool()
-def set_syntax(name: str) -> dict:
-    """Set the syntax of the active file by name (case-insensitive partial match is fine)."""
-    return _post("/set_syntax", name=name)
-
-
-@mcp.tool()
-def set_encoding(encoding: str) -> dict:
-    """Set the character encoding of the active file (e.g. 'UTF-8', 'Western (Windows 1252)')."""
-    return _post("/set_encoding", encoding=encoding)
-
-
-@mcp.tool()
-def get_setting(key: str, scope: str = "view") -> dict:
-    """Get a Sublime Text setting by key.  scope='view' (default) or 'window'."""
-    return _post("/get_setting", key=key, scope=scope)
-
-
-@mcp.tool()
-def set_setting(key: str, value: object, scope: str = "view") -> dict:
-    """Set a Sublime Text setting by key.  scope='view' (default) or 'window'."""
-    return _post("/set_setting", key=key, value=value, scope=scope)
-
-
-@mcp.tool()
-def focus_group(group: int) -> dict:
-    """Move focus to a pane group by 0-based index."""
-    return _post("/focus_group", group=group)
-
-
-@mcp.tool()
-def set_layout(layout: dict) -> dict:
-    """Set the window pane layout.  layout must be a ST layout dict with cols, rows, cells keys."""
-    return _post("/set_layout", layout=layout)
-
-
-@mcp.tool(name="str_replace_based_edit_tool")
-def edit_file(
-    command: str,
-    path: str = "",
-    old_str: Optional[str] = None,
-    new_str: Optional[str] = None,
-    insert_line: Optional[int] = None,
-    insert_text: Optional[str] = None,
-    file_text: Optional[str] = None,
-    view_range: Optional[list] = None,
-) -> dict:
-    """ST-native file editor implementing the standard str_replace_based_edit_tool interface.
-    Edits appear live in Sublime Text with full undo (Ctrl+Z), gutter diff markers,
-    and 30-second highlight annotations showing what changed.
-
-    command='str_replace': replace old_str with new_str in path.
-      old_str must match exactly once (whitespace-sensitive).
-      Returns error if 0 or 2+ matches, listing ambiguous line numbers.
-
-    command='insert': insert insert_text after line insert_line (1-based).
-      insert_line=0 inserts at the very start of the file.
-
-    command='create': create a new file at path with file_text content.
-      Syntax is auto-detected from the file extension. Errors if path exists.
-
-    command='view': return file content with 1-based line numbers prepended.
-      Optional view_range=[start, end] to read a slice (end=-1 for EOF).
-
-    All commands auto-open the file in ST if not already open."""
-    body: dict = {"command": command, "path": path}
-    if old_str is not None:
-        body["old_str"] = old_str
-    if new_str is not None:
-        body["new_str"] = new_str
-    if insert_line is not None:
-        body["insert_line"] = insert_line
-    if insert_text is not None:
-        body["insert_text"] = insert_text
-    if file_text is not None:
-        body["file_text"] = file_text
-    if view_range is not None:
-        body["view_range"] = view_range
-    return _post("/edit_file", **body)
-
-
-@mcp.tool()
-def batch(calls: list) -> dict:
-    """Run multiple sublime-mcp tool calls in a single HTTP request, saving a round
-    trip per call. Each call still does its own main-thread work independently —
-    the batch is not wrapped in one shared main-thread dispatch, so a slow or
-    polling call cannot freeze the UI for the rest of the batch. Use this whenever
-    you need more than one piece of editor state at once (e.g. get_active_file +
-    get_selection + get_cursor_context), or want to chain several edits/reads together.
-    calls: list of {tool: <tool name>, args: <object, optional>}. Cannot call 'batch' itself.
-    Returns {results: [...]} — one entry per call, in order; failed calls return {error: ...}
-    instead of aborting the whole batch."""
-    return _post("/batch", calls=calls)
-
-
-@mcp.tool()
-def eval_python(code: str) -> dict:
-    """Execute arbitrary Python in Sublime Text's main thread.
-    Locals: sublime, window, view, print.  Returns captured stdout in 'output'."""
-    return _post("/eval_python", code=code)
-
-
-@mcp.tool()
-def get_console_log(tail: int = 100) -> dict:
-    """Return recent Sublime Text console output (plugin log messages and stdout).
-    tail=N limits to the last N entries. tail=0 returns all captured entries."""
-    return _get("/console_log", tail=tail)
-
-
-@mcp.tool()
-def get_console_full() -> dict:
-    """Return the entire captured ST console buffer with no tail limit.
-    Use this when get_console_log (tail=N) doesn't show enough history."""
-    return _get("/console_full")
-
-
-@mcp.tool()
-def eval_python_latest(code: str) -> dict:
-    """Run code using the system Python interpreter (outside ST's embedded sandbox).
-    Useful when you need access to packages not available in ST's Python.
-    Returns stdout, stderr, and returncode."""
-    return _post("/eval_python_latest", code=code)
-
-
-
-@mcp.tool()
-def get_console_win() -> dict:
-    """Windows-only fallback: captures ST console by clicking the output area via ctypes then Ctrl+A/Ctrl+C.
-    Use when get_console_full fails."""
-    return _get("/console_win")
-
-
-@mcp.tool()
-def get_help() -> dict:
-    """Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use sublime-mcp tools correctly."""
-    return _get("/get_help")
-
-
-@mcp.tool()
-def open_control_panel() -> dict:
-    """Open (or focus) the Claude MCP Control Panel: an interactive minihtml dashboard in a dedicated Sublime view."""
-    return _post("/open_control_panel")
-
-
-@mcp.tool()
-def get_package_mcp_info(package: str) -> dict:
-    """Return everything needed to write an MCP extension for an installed Package Control package."""
-    return _post("/package_mcp_info", package=package)
-
-
-@mcp.tool()
-def search_packages(query: str = "", limit: int = 20) -> dict:
-    """Search Package Control for installable Sublime Text packages."""
-    return _get("/search_packages", query=query, limit=limit)
-
-
-@mcp.tool()
-def install_package(package: str) -> dict:
-    """Install a Package Control package by exact name."""
-    return _post("/install_package", package=package)
 
 
 def main():
