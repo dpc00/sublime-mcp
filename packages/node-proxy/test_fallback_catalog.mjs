@@ -94,6 +94,20 @@ async function main() {
     const openFile = listed.tools.find(t => t.name === 'open_file');
     assert.ok(openFile.inputSchema?.properties?.path, 'open_file lost its typed schema');
     console.log('PASS: generated schemas reach the client');
+
+    // The server must report the published package version. This is also the
+    // check that catches index.js failing to even start: package.json here is
+    // BOM-prefixed, and JSON.parse rejects a leading BOM.
+    const pkg = JSON.parse(
+      readFileSync(new URL('./package.json', import.meta.url), 'utf8').replace(/^\uFEFF/, ''),
+    );
+    const reported = client.getServerVersion();
+    assert.equal(
+      reported?.version,
+      pkg.version,
+      `server reported version ${reported?.version}, package.json says ${pkg.version}`,
+    );
+    console.log('PASS: server reports the package.json version (%s)', pkg.version);
   } finally {
     await client.close();
     server.close();

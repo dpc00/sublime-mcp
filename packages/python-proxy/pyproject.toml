@@ -4,12 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sublime-mcp"
-version = "1.4.1"
+version = "1.4.2"
 description = "MCP server for Sublime Text 4 — lets Claude Code read and control a running ST instance"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-dependencies = ["mcp", "httpx"]
+# mcp 2.0.0 removed mcp.server.fastmcp, which this server is built on.
+# Unpinned installs resolved to 2.x and failed at import.
+dependencies = ["mcp>=1.2,<2", "httpx"]
 keywords = ["mcp", "sublime-text", "claude", "ai", "editor"]
 classifiers = [
     "Development Status :: 4 - Beta",
