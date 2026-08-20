@@ -1,98 +1,80 @@
 # Agent Guide for debugger-mcp
 
-This document teaches AI agents how to use debugger-mcp tools correctly.
-Call `debugger_get_help` first if you're unsure how to launch a session,
-set breakpoints, or read stack/variable state.
+Call `debugger_get_help` if you are unsure how to launch a session, set
+breakpoints, or read stack/variable state.
 
-debugger-mcp wraps Sublime Text's **Debugger** package (a DAP — Debug
-Adapter Protocol — front end) and exposes it as ~101 MCP tools. It serves
-MCP/SSE on port 9505 and a plain HTTP bridge on port 9515 (used by
-node-proxy / python-proxy, not by direct SSE clients).
+Wraps Sublime Text's **Debugger** package (DAP). 102 MCP tools. MCP SSE on
+port 9505; HTTP bridge on 9515 (`GET /mcp_tools` for the live catalog). Override
+with `DEBUGGER_MCP_PORT` / `DEBUGGER_HTTP_PORT`.
 
-## Prerequisite: the Debugger package must be loaded and open
+## Prerequisite
 
-Almost every tool starts by calling `get_debugger()` internally, which
-looks for a running or open instance of the **Debugger** ST package. If
-it's not installed/enabled, or no debugger UI has ever been opened in the
-current window, tools return `{"error": "Debugger package not loaded."}`.
-Call `debugger_open` (or `debugger_open_and_start`) first if you get that
-error.
+Tools call `get_debugger()` internally. If the Debugger package is not
+installed/enabled, or its UI has never been opened in this window, you get
+`{"error": "Debugger package not loaded."}`. Call `debugger_open` first.
 
 ## Two tool families
 
-1. **DAP session tools** (hand-written wrappers around the Debugger
-   package's Python API) — `debugger_get_state`, `debugger_evaluate`,
-   `debugger_get_variables`, `debugger_get_callstack`,
-   `debugger_set_breakpoints_for_file`, etc. These take real typed
-   arguments and return structured JSON.
-2. **ST command passthroughs** (`debugger_open`, `debugger_start`,
-   `debugger_step_over`, `debugger_continue`, `debugger_stop`, ...) — thin
-   wrappers around `window.run_command("debugger", {"action": ...})`.
-   These mostly take no arguments (or just `configuration_name` for
-   `debugger_start`) and return `{"success": true, "message": "..."}`
-   rather than structured state — call `debugger_get_state` afterward if
-   you need to see the result.
+1. **Hand-written DAP wrappers** — typed args, structured JSON. Prefer these:
+   `debugger_get_state`, `debugger_control`, `debugger_toggle_breakpoint`,
+   `debugger_get_variables`, `debugger_get_callstack`, `debugger_evaluate`,
+   `debugger_set_breakpoints_for_file`, …
+2. **ST command passthroughs** — `window.run_command("debugger", {action})`.
+   Mostly `{"success": true}`. The real effect is ST UI. Use for opening the
+   Debugger (`debugger_open`, `debugger_open_and_start`) or when you want the
+   human to see a panel. Do not fire UI dialogs the user did not ask for
+   (`debugger_settings`, `debugger_install_adapters`,
+   `debugger_change_configuration`, `debugger_edit_configurations`,
+   `debugger_example_projects`, `debugger_show_protocol`).
 
-Use your MCP client's `tools/list` (or `GET /mcp_tools` on the HTTP bridge,
-port 9515) to see every registered tool name with its live description and
-JSON schema — more reliable than guessing from tool-name patterns.
+## Focus-independent tools use the selected thread/frame
 
-## Critical mental model: "focus-independent" tools operate on the active thread/frame
+You usually omit `session_id`. The Debugger tracks one active session with a
+selected thread/frame. `debugger_evaluate`, `debugger_get_variables`, and
+`debugger_get_callstack` use that selection (`thread_id` only to pick another
+thread). Check `debugger_get_state` first: you need `is_paused: true` and a
+non-null `active_frame` before evaluating or reading variables.
 
-You do **not** need to pass a `session_id` to most tools. The Debugger
-package tracks one active session with a `selected_thread` and
-`selected_frame`, and tools like `debugger_evaluate`, `debugger_get_variables`,
-and `debugger_get_callstack` operate on whatever is currently selected —
-pass `thread_id` only if you need a *different* thread than the selected
-one. This is simpler than raw DAP, but it means these tools give
-misleading results if called while nothing is paused — check
-`debugger_get_state` first and confirm `is_paused: true` with a non-null
-`active_frame` before evaluating expressions or reading variables.
+## Coordinates
 
-## Common workflow
+`debugger_toggle_breakpoint` `line` is **1-based** (same as sublime-mcp, not
+lsp-mcp).
+
+## Workflow
 
 ```
-1. debugger_open                                   (open the UI if not already)
-2. debugger_set_breakpoints_for_file                (file_path, breakpoints=[{line: N}])
-3. debugger_start   or  debugger_open_and_start     (configuration_name optional)
-4. debugger_get_state                               (poll — check is_paused)
-   ... once paused ...
-5. debugger_get_callstack                           (see where execution stopped)
-6. debugger_get_variables                           (variables_reference optional — omit for top-level scope)
-7. debugger_evaluate                                (expression="some_var.field")
-8. debugger_step_over / debugger_step_in / debugger_continue
+1. debugger_open
+2. debugger_toggle_breakpoint(file_path, line)     # 1-based line
+   # or debugger_set_breakpoints_for_file(file_path, breakpoints=[{line: N}])
+   #    — this REPLACES all breakpoints for that file
+3. debugger_control(action="start", configuration_name="<launch config name>")
+   # without configuration_name, action="start" only opens the Debugger UI
+4. debugger_get_state                              # poll until is_paused
+5. debugger_get_callstack
+6. debugger_get_variables                          # omit variables_reference for top scope
+7. debugger_evaluate(expression="some_var.field")
+8. debugger_control(action="step_over"|"step_in"|"step_out"|"resume"|"pause"|"stop")
 9. debugger_stop  or  debugger_terminate
 ```
 
-## Breakpoints
+## Breakpoints and variables
 
-- `debugger_set_breakpoints_for_file` **replaces** all breakpoints for
-  that file — it is not additive. Pass the full desired set every time.
-- `debugger_toggle_breakpoint` toggles a single breakpoint at the cursor
-  in the active view (ST command, no `file_path`/`line` args — position
-  comes from the current selection).
-- `debugger_clear_breakpoints` removes everything, across all files.
-- `debugger_set_function_breakpoints` / `debugger_set_data_breakpoints`
-  are separate breakpoint classes (by function name / by variable
-  read-write) — they don't interact with source breakpoints.
-
-## Variables and nested structures
-
-`debugger_get_variables` without `variables_reference` returns the
-top-level scope of the selected frame. Each variable in the response may
-carry its own `variables_reference` (a DAP handle) — pass that back in as
-`variables_reference` to expand nested fields/children (objects, arrays).
-This is a drill-down pattern, not a single flat dump.
+- `debugger_toggle_breakpoint(file_path, line)` — add/remove one source
+  breakpoint. Not cursor-based.
+- `debugger_set_breakpoints_for_file` — replace the whole set for that file.
+- `debugger_clear_breakpoints` — all files.
+- `debugger_set_function_breakpoints` / `debugger_set_data_breakpoints` are
+  separate classes; they do not interact with source breakpoints.
+- `debugger_get_variables` without `variables_reference` is the selected
+  frame's top scope. Nested objects carry their own `variables_reference` —
+  pass it back to expand children.
 
 ## Reverse debugging
 
-`debugger_step_back` / `debugger_reverse_continue` only work if the
-active adapter supports reverse execution (most don't — e.g. standard
-Python/Node debuggers won't). Expect an adapter-level error otherwise.
+`debugger_step_back` / `debugger_reverse_continue` only work if the adapter
+supports reverse execution (most Python/Node adapters do not).
 
 ## Full tool list
 
-Use `tools/list` (MCP) or `GET /mcp_tools` (HTTP bridge) for the complete,
-current set of ~101 tools with descriptions and JSON schemas — this guide
-intentionally doesn't enumerate every tool since that list is always
-available live and can drift from a static doc.
+`tools/list` (MCP) or `GET /mcp_tools` on port 9515. Do not rely on a static
+enumeration.

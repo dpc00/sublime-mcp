@@ -1,81 +1,61 @@
 # Agent Guide for lsp-mcp
 
-This document teaches AI agents how to use lsp-mcp tools correctly.
-Call `lsp_get_help` first if you're unsure how to navigate code, apply an
-edit, or read diagnostics.
+Call `lsp_get_help` if you are unsure how to navigate, apply an edit, or
+read diagnostics.
 
-lsp-mcp wraps Sublime Text's **LSP** package (the Language Server Protocol
-client) and exposes it as ~122 MCP tools. It serves MCP/SSE on port 9506
-and a plain HTTP bridge on port 9516 (used by node-proxy / python-proxy,
-not by direct SSE clients).
+Wraps Sublime Text's **LSP** package. 123 MCP tools. MCP SSE on port 9506;
+HTTP bridge on 9516 (`GET /mcp_tools` for the live catalog). Override with
+`LSP_MCP_PORT` / `LSP_HTTP_PORT`.
 
-## Two tool families — pick the right one
+## Two tool families
 
-1. **Hand-written LSP request wrappers** — `lsp_hover_info`,
-   `lsp_goto_definition`, `lsp_find_references`, `lsp_get_diagnostics`,
-   `lsp_get_symbols`, `lsp_get_code_actions`, `lsp_rename_symbol`,
-   `lsp_get_completion`, `lsp_get_signature_help`, `lsp_get_implementation`,
-   `lsp_get_type_definition`, `lsp_get_declaration`,
-   `lsp_format_document`. These take explicit `line`/`column`/`file_path`
-   arguments and return **structured JSON** — the results of a raw LSP
-   request. Prefer these when you need data back to reason over.
+1. **Hand-written LSP request wrappers** — explicit `line`/`column`/`file_path`,
+   structured JSON. Prefer these when you need data back:
+   `lsp_hover_info`, `lsp_goto_definition`, `lsp_find_references`,
+   `lsp_get_diagnostics`, `lsp_get_symbols`, `lsp_get_code_actions`,
+   `lsp_rename_symbol`, `lsp_get_completion`, `lsp_get_signature_help`,
+   `lsp_get_implementation`, `lsp_get_type_definition`, `lsp_get_declaration`,
+   `lsp_format_document`, `lsp_search_workspace_symbols`.
+2. **ST command passthroughs** — `lsp_symbol_rename`, `lsp_symbol_references`,
+   `lsp_code_actions`, `lsp_hover`, `lsp_document_symbols`, `lsp_call_hierarchy`,
+   … These run `view.run_command` at the **active view's current cursor** (no
+   line/column honored) and return `{"success": true}`; the result is ST UI.
+   Use only to show something to the human. Do not fire
+   `lsp_toggle_server_panel`, `lsp_show_diagnostics_panel`,
+   `lsp_document_symbols`, `lsp_workspace_symbols`, `lsp_call_hierarchy`,
+   `lsp_type_hierarchy` just to "verify" them.
 
-2. **ST command passthroughs** — everything else (`lsp_symbol_rename`,
-   `lsp_symbol_references`, `lsp_code_actions`, `lsp_hover`,
-   `lsp_document_symbols`, `lsp_call_hierarchy`, ...). These call
-   `view.run_command(<lsp_command>, args)` against the **active view's
-   current cursor position** (no line/column args honored) and mostly
-   return only `{"success": true}` — the real result opens as **interactive
-   UI in Sublime Text** (a popup, a panel, a rename prompt, a quick-panel
-   list). Don't expect structured data back from these; use them only when
-   you specifically want to show something in the ST UI for the human, not
-   to read a result yourself. As with sublime-mcp's own UI-interactive
-   commands, be cautious about firing dialogs the user didn't ask for.
+## Coordinates are 0-based
 
-When in doubt: if the tool name looks like a hand-written wrapper above
-(clear `get_`/`find_`/`rename_symbol` semantics with typed params), it's
-(1). If it's a bare `lsp_<verb>` matching an ST command name with no real
-params, it's (2).
+Hand-written wrappers take LSP **0-based** `line`/`column`. sublime-mcp tools
+are **1-based**. Convert before crossing servers (`lsp_line = st_line - 1`).
 
-## Coordinates are 0-based (LSP convention), not 1-based
+## Rename is two steps
 
-Every hand-written wrapper takes `line`/`column` as **0-based** LSP
-protocol positions — this differs from sublime-mcp's own tools (ST
-convention, 1-based lines). Double-check which server a coordinate came
-from before passing it to the other one; an off-by-one here is a common
-mistake when combining sublime-mcp navigation with lsp-mcp queries in the
-same task.
+`lsp_rename_symbol` only **calculates** `textDocument/rename` and returns
+`{"workspace_edit": ...}` — it does not touch files. Apply with
+`lsp_apply_workspace_edit(session_name=..., edit=<that workspace_edit>)`
+(`session_name` from `lsp_get_sessions`), or use interactive
+`lsp_symbol_rename` for ST's own rename UI. Same pattern for code actions:
+`lsp_get_code_actions` then `lsp_apply_text_document_edit` /
+`lsp_apply_workspace_edit`.
 
-## Renaming is two steps, not one
-
-`lsp_rename_symbol` only **calculates** the rename (issues a
-`textDocument/rename` LSP request) and returns `{"workspace_edit": ...}`
-— it does **not** touch any files. To actually apply it, pass that edit to
-`lsp_apply_workspace_edit` (an ST command passthrough) separately, or use
-the interactive `lsp_symbol_rename` command if you want ST's own rename UI
-to handle both the calculation and the apply. Don't assume calling
-`lsp_rename_symbol` alone changed anything on disk.
-
-## Common workflow (read-then-navigate)
+## Workflow
 
 ```
-1. lsp_get_diagnostics                 (file_path optional — omit for all open files)
-2. lsp_hover_info / lsp_get_symbols    (line, column both 0-based)
+1. lsp_get_diagnostics                 # file_path optional; omit for all open files
+2. lsp_hover_info / lsp_get_symbols    # line, column 0-based
 3. lsp_goto_definition / lsp_find_references / lsp_get_implementation
-4. lsp_get_code_actions                (start_line required; end_line defaults to start_line)
-5. lsp_rename_symbol  →  lsp_apply_workspace_edit   (two calls, not one)
-6. lsp_format_document                 (file_path optional — defaults to active file)
+4. lsp_get_code_actions                # start_line required; end_line defaults to start_line
+5. lsp_rename_symbol → lsp_apply_workspace_edit
+6. lsp_format_document                 # file_path optional — defaults to active file
 ```
 
 ## Diagnostics severity
 
-`lsp_get_diagnostics` takes optional `min_severity` (1=Error, 2=Warning,
-3=Info, 4=Hint, default 4 — i.e. everything). Pass `min_severity=1` to see
-only errors.
+`lsp_get_diagnostics` `min_severity`: 1=Error, 2=Warning, 3=Info, 4=Hint
+(default 4 = everything). Use `min_severity=1` for errors only.
 
 ## Full tool list
 
-Use `tools/list` (MCP) or `GET /mcp_tools` (HTTP bridge) for the complete,
-current set of ~122 tools with descriptions and JSON schemas — this guide
-intentionally doesn't enumerate every tool since that list is always
-available live and can drift from a static doc.
+`tools/list` (MCP) or `GET /mcp_tools` on port 9516.
