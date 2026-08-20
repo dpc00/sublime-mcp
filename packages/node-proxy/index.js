@@ -20,7 +20,17 @@ function ok(data) {
   return { content: [{ type: 'text', text: JSON.stringify(data) }] };
 }
 
-const server = new McpServer({ name: 'sublime-mcp', version: '1.4.0' });
+// Version comes from package.json so the advertised MCP serverInfo cannot
+// drift from the published package (it had already fallen behind at 1.4.0).
+// package.json is BOM-prefixed here and JSON.parse rejects a leading BOM.
+const VERSION = JSON.parse(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'package.json'),
+    'utf8',
+  ).replace(/^\uFEFF/, ''),
+).version;
+
+const server = new McpServer({ name: 'sublime-mcp', version: VERSION });
 server.setToolRequestHandlers();
 
 // ── JSON Schema → Zod (shallow) for dynamic discovery ────────────────────────
