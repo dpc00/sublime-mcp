@@ -67,6 +67,11 @@ from urllib.parse import parse_qs, unquote, urlparse
 import sublime
 import sublime_plugin
 
+# Single source of truth for the version this plugin advertises over MCP.
+# Keep in step with packages/node-proxy/package.json and
+# packages/python-proxy/pyproject.toml; tests/proof/test_release_dependency_pins.py enforces it.
+__version__ = "1.4.2"
+
 try:
     from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 except ImportError:
@@ -4066,7 +4071,7 @@ def _mcp_dispatch(msg):
             result = {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "sublime-mcp", "version": "1.3.1"},
+                "serverInfo": {"name": "sublime-mcp", "version": __version__},
             }
         elif method in ("notifications/initialized", "notifications/cancelled"):
             return
