@@ -1,0 +1,16 @@
+sublime-mcp 1.4.3
+
+Fixes the mcp 2.0 pin and a get_sheet_content bug.
+
+- mcp>=1.2,<2 is now mcp>=1.2. mcp_server.py binds FastMCP (mcp<2)
+  or MCPServer (mcp>=2.0, which renamed it) at import time, so both
+  major versions work without a dependency ceiling.
+
+- get_sheet_content assumed the backend returned a dict with a
+  "content_base64" key. It never did — that key only ever existed
+  in the docstring. Image tabs now parse the actual response shape
+  (a list of content blocks), and the image's MIME type is sniffed
+  from its magic bytes instead of trusted from the file extension
+  (which was wrong or absent for some files).
+
+No tool or API changes otherwise.

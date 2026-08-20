@@ -21,9 +21,21 @@ import sys
 from typing import Annotated, Any, Optional
 
 import httpx
-from mcp.server.fastmcp import FastMCP
 from mcp.types import ImageContent
 from pydantic import Field
+
+try:
+    # mcp>=2.0: FastMCP was renamed to MCPServer; ImageContent takes mime_type.
+    from mcp.server import MCPServer as FastMCP
+
+    def _image_content(data: str, mime: str) -> ImageContent:
+        return ImageContent(type="image", data=data, mime_type=mime)
+except ImportError:
+    # mcp<2: FastMCP; ImageContent takes mimeType.
+    from mcp.server.fastmcp import FastMCP
+
+    def _image_content(data: str, mime: str) -> ImageContent:
+        return ImageContent(type="image", data=data, mimeType=mime)
 
 try:
     from tool_catalog import TOOLS
@@ -182,13 +194,17 @@ def get_sheet_content(index: int):
     Works for text tabs including untitled buffers and Terminus tabs.
     For image tabs returns the image directly as a renderable image."""
     result = _get("/sheet_content", index=index)
-    b64 = result.get("content_base64")
-    if b64:
-        path = result.get("path", "")
-        mime = "image/png" if path.lower().endswith(".png") else \
-               "image/jpeg" if path.lower().endswith((".jpg", ".jpeg")) else \
-               "image/gif" if path.lower().endswith(".gif") else "image/png"
-        return [ImageContent(type="image", data=b64, mimeType=mime)]
+    # Backend returns a list of content blocks for a readable image
+    # (see sublime_mcp.py:_get_sheet_content), a dict with no image data
+    # when the image has no path to read, or a dict with "content" for
+    # text sheets. There is no "content_base64" key at any point.
+    if isinstance(result, list):
+        return [
+            _image_content(block["data"], block.get("mimeType", "image/png"))
+            if isinstance(block, dict) and block.get("type") == "image"
+            else block
+            for block in result
+        ]
     return result
 
 

@@ -70,7 +70,7 @@ import sublime_plugin
 # Single source of truth for the version this plugin advertises over MCP.
 # Keep in step with packages/node-proxy/package.json and
 # packages/python-proxy/pyproject.toml; tests/proof/test_release_dependency_pins.py enforces it.
-__version__ = "1.4.2"
+__version__ = "1.4.3"
 
 try:
     from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
@@ -408,6 +408,28 @@ def _get_sheets(params):
     return _on_main(fn)
 
 
+def _sniff_image_mime(raw, path=None):
+    if raw.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if raw.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if raw[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    if raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
+        return "image/webp"
+    if raw[:2] == b"BM":
+        return "image/bmp"
+    # Magic bytes are the source of truth; extension is only a last resort
+    # for formats not sniffed above.
+    if path:
+        ext = path.lower().rsplit(".", 1)[-1] if "." in path else ""
+        return {
+            "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+            "gif": "image/gif", "webp": "image/webp", "bmp": "image/bmp",
+        }.get(ext, "image/png")
+    return "image/png"
+
+
 def _get_sheet_content(params):
     index = int(params.get("index", [0])[0])
 
@@ -428,9 +450,9 @@ def _get_sheet_content(params):
             if path:
                 try:
                     with open(path, "rb") as f:
-                        b64 = base64.b64encode(f.read()).decode("ascii")
-                    ext = path.lower().rsplit(".", 1)[-1] if "." in path else ""
-                    mime = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif"}.get(ext, "image/png")
+                        raw = f.read()
+                    b64 = base64.b64encode(raw).decode("ascii")
+                    mime = _sniff_image_mime(raw, path)
                     return [{"type": "image", "data": b64, "mimeType": mime}]
                 except Exception:
                     pass
