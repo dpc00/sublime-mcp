@@ -19,9 +19,9 @@ Independent ST plugins. Connect to the subset you need.
 | **debugger-mcp** | `packages/debugger-mcp`  | 9505                            | 9515                            | 102, `debugger_*`              |
 | **lsp-mcp**      | `packages/lsp-mcp`       | 9506                            | 9516                            | 123, `lsp_*`                   |
 
-Env overrides: `SUBLIME_MCP_MCP_PORT`, `SUBLIME_MCP_PORT`,
-`SUBLIME_MCP_BASE` (proxy → HTTP bridge), `DEBUGGER_MCP_PORT`,
-`DEBUGGER_HTTP_PORT`, `LSP_MCP_PORT`, `LSP_HTTP_PORT`.
+Ports are configured per-plugin via `<name>.sublime-settings` (`"mcp_port"` /
+`"http_port"`), overridable in `Packages/User/`. The proxy → HTTP bridge URL
+is the one remaining env var: `SUBLIME_MCP_BASE`.
 
 Guides (also served by `get_help` / `debugger_get_help` / `lsp_get_help`):
 `packages/st-plugin/AGENT_GUIDE.md`, `packages/debugger-mcp/AGENT_GUIDE.md`,

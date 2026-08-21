@@ -27,11 +27,15 @@ Agent how-to: [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) (also served live by
 Each plugin serves **MCP SSE** (direct clients) and a **plain HTTP bridge**.
 The bundled Node/Python proxies use sublime-mcp's HTTP bridge only. Defaults:
 
-| Plugin        | MCP SSE                         | HTTP bridge                     | Env overrides                          |
-| ------------- | ------------------------------- | ------------------------------- | -------------------------------------- |
-| sublime-mcp   | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | `SUBLIME_MCP_MCP_PORT`, `SUBLIME_MCP_PORT` |
-| debugger-mcp  | 9505                            | 9515                            | `DEBUGGER_MCP_PORT`, `DEBUGGER_HTTP_PORT` |
-| lsp-mcp       | 9506                            | 9516                            | `LSP_MCP_PORT`, `LSP_HTTP_PORT`        |
+| Plugin        | MCP SSE                         | HTTP bridge                     | Settings file                        |
+| ------------- | ------------------------------- | ------------------------------- | ------------------------------------- |
+| sublime-mcp   | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | `sublime-mcp.sublime-settings`        |
+| debugger-mcp  | 9505                            | 9515                            | `debugger-mcp.sublime-settings`       |
+| lsp-mcp       | 9506                            | 9516                            | `lsp-mcp.sublime-settings`            |
+
+Each settings file takes `"mcp_port"` and `"http_port"` keys; edit your copy
+under `Packages/User/` (Preferences > Package Settings) to override the
+defaults above — no env vars needed.
 
 SSE URL form: `http://127.0.0.1:<sse-port>/sse`. The bundled Node/Python
 proxies talk to sublime-mcp's **HTTP bridge**, not SSE; override with

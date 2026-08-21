@@ -1,6 +1,7 @@
 # Debugger MCP — standalone Sublime Text plugin
 # Serves Debugger DAP tools over MCP SSE on port 9505.
 # Refactored from debugger_mcp_tools.py (previously part of sublime-mcp).
+# Ports are configured via debugger-mcp.sublime-settings (Preferences: Debugger MCP Settings).
 
 import sublime
 import sublime_plugin
@@ -19,8 +20,15 @@ try:
 except ImportError:
     from mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
-_MCP_PORT = int(os.environ.get("DEBUGGER_MCP_PORT", 9505))
-_HTTP_PORT = int(os.environ.get("DEBUGGER_HTTP_PORT", 9515))
+_MCP_PORT = 9505
+_HTTP_PORT = 9515
+
+
+def _load_ports():
+    global _MCP_PORT, _HTTP_PORT
+    settings = sublime.load_settings("debugger-mcp.sublime-settings")
+    _MCP_PORT = int(settings.get("mcp_port", 9505))
+    _HTTP_PORT = int(settings.get("http_port", 9515))
 
 
 # ── MCP server boilerplate ────────────────────────────────────────────────────
@@ -342,6 +350,7 @@ _http_server = None
 
 def _start_servers():
     global _server, _http_server
+    _load_ports()
     if not _server:
         try:
             _server = _ThreadingHTTPServer(("0.0.0.0", _MCP_PORT), _MCPHandler)

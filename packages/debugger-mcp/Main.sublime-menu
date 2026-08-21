@@ -1,0 +1,31 @@
+[
+    {
+        "id": "preferences",
+        "children":
+        [
+            {
+                "id": "package-settings",
+                "children":
+                [
+                    {
+                        "caption": "Debugger MCP",
+                        "id": "debugger-mcp",
+                        "children":
+                        [
+                            {
+                                "command": "open_file",
+                                "args": {"file": "${packages}/debugger-mcp/debugger-mcp.sublime-settings"},
+                                "caption": "Settings"
+                            },
+                            {
+                                "command": "open_file",
+                                "args": {"file": "${packages}/User/debugger-mcp.sublime-settings"},
+                                "caption": "Settings – User"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]

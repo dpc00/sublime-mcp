@@ -4,8 +4,8 @@ Call `lsp_get_help` if you are unsure how to navigate, apply an edit, or
 read diagnostics.
 
 Wraps Sublime Text's **LSP** package. 123 MCP tools. MCP SSE on port 9506;
-HTTP bridge on 9516 (`GET /mcp_tools` for the live catalog). Override with
-`LSP_MCP_PORT` / `LSP_HTTP_PORT`.
+HTTP bridge on 9516 (`GET /mcp_tools` for the live catalog). Override via
+`lsp-mcp.sublime-settings` (`"mcp_port"` / `"http_port"`).
 
 ## Two tool families
 

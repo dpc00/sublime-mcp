@@ -5,7 +5,7 @@ breakpoints, or read stack/variable state.
 
 Wraps Sublime Text's **Debugger** package (DAP). 102 MCP tools. MCP SSE on
 port 9505; HTTP bridge on 9515 (`GET /mcp_tools` for the live catalog). Override
-with `DEBUGGER_MCP_PORT` / `DEBUGGER_HTTP_PORT`.
+via `debugger-mcp.sublime-settings` (`"mcp_port"` / `"http_port"`).
 
 ## Prerequisite
 

@@ -37,7 +37,8 @@ Ports
   MCP SSE (default):   Windows 9502  /  Mac/Linux 9503
   HTTP bridge:         Windows 9500  /  Mac/Linux 9501
 
-Override with env vars SUBLIME_MCP_MCP_PORT or SUBLIME_MCP_PORT.
+Override via Preferences > Package Settings > MCP Commander > Settings
+(sublime-mcp.sublime-settings, keys "mcp_port" / "http_port").
 Check View > Show Console for startup confirmation.
 
 

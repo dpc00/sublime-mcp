@@ -1,6 +1,6 @@
 ﻿{
   "name": "sublime-mcp",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "MCP server for Sublime Text 4 — exposes editor state and editing tools to AI assistants via the Model Context Protocol.",
   "type": "module",
   "bin": {

@@ -13,7 +13,7 @@ Model Context Protocol.  The plugin runs two local HTTP servers on load:
   HTTP bridge     127.0.0.1:9500 (Windows) / 9501 (Mac/Linux)
     Internal REST API used by the MCP SSE dispatcher above.
 
-Override ports via env vars: SUBLIME_MCP_MCP_PORT, SUBLIME_MCP_PORT.
+Ports are configured via sublime-mcp.sublime-settings (Preferences: MCP Commander Settings).
 Use "MCP Commander: Server Status" in the Command Palette to stop or start.
 
 Thread model
@@ -70,7 +70,7 @@ import sublime_plugin
 # Single source of truth for the version this plugin advertises over MCP.
 # Keep in step with packages/node-proxy/package.json and
 # packages/python-proxy/pyproject.toml; tests/proof/test_release_dependency_pins.py enforces it.
-__version__ = "1.4.3"
+__version__ = "1.4.4"
 
 try:
     from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
@@ -103,7 +103,7 @@ try:
 except ImportError:
     from claude_ide import claude_dispatch, create_claude_discovery_file
 
-_PORT = int(os.environ.get("SUBLIME_MCP_PORT", 9500 if sys.platform == "win32" else 9501))
+_PORT = 9500 if sys.platform == "win32" else 9501
 
 
 # ── main-thread dispatch ──────────────────────────────────────────────────────
@@ -2521,13 +2521,22 @@ class _Handler(BaseHTTPRequestHandler):
 # Claude Code config:
 #   { "type": "sse", "url": "http://127.0.0.1:9502/sse" }   (Windows)
 #   { "type": "sse", "url": "http://127.0.0.1:9503/sse" }   (Mac/Linux)
-# or set SUBLIME_MCP_MCP_PORT to override.
+# Override via sublime-mcp.sublime-settings ("mcp_port" / "http_port").
 
 import queue as _queue
 import uuid as _uuid
 
-_MCP_PORT = int(os.environ.get("SUBLIME_MCP_MCP_PORT", 9502 if sys.platform == "win32" else 9503))
+_MCP_PORT = 9502 if sys.platform == "win32" else 9503
 _mcp_sessions = {}  # session_id -> queue.Queue
+
+
+def _load_ports():
+    global _PORT, _MCP_PORT
+    settings = sublime.load_settings("sublime-mcp.sublime-settings")
+    default_mcp_port = 9502 if sys.platform == "win32" else 9503
+    default_http_port = 9500 if sys.platform == "win32" else 9501
+    _MCP_PORT = int(settings.get("mcp_port", default_mcp_port))
+    _PORT = int(settings.get("http_port", default_http_port))
 
 _EXTENSION_TEMPLATE = """\
 Place this file in Packages/<YourPackage>/<yourpackage>_mcp_tools.py.
@@ -4544,6 +4553,7 @@ def _stop_ide_companion():
 
 def _start_servers():
     global _server, _mcp_server
+    _load_ports()
     _install_console_capture()
     if not _server:
         try:

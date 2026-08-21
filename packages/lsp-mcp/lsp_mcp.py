@@ -2,6 +2,7 @@
 # Serves LSP (Language Server Protocol) tools over MCP SSE on port 9506.
 # Refactored from lsp_mcp_tools.py (formerly an add-on to sublime-mcp).
 # Includes all LSP ST commands (67 user-facing) + hand-written request wrappers (13).
+# Ports are configured via lsp-mcp.sublime-settings (Preferences: LSP MCP Settings).
 
 import sublime
 import sublime_plugin
@@ -21,8 +22,15 @@ try:
 except ImportError:
     from mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
-_MCP_PORT = int(os.environ.get("LSP_MCP_PORT", 9506))
-_HTTP_PORT = int(os.environ.get("LSP_HTTP_PORT", 9516))
+_MCP_PORT = 9506
+_HTTP_PORT = 9516
+
+
+def _load_ports():
+    global _MCP_PORT, _HTTP_PORT
+    settings = sublime.load_settings("lsp-mcp.sublime-settings")
+    _MCP_PORT = int(settings.get("mcp_port", 9506))
+    _HTTP_PORT = int(settings.get("http_port", 9516))
 
 
 # ── MCP server boilerplate ────────────────────────────────────────────────────
@@ -342,6 +350,7 @@ _http_server = None
 
 def _start_server():
     global _server, _http_server
+    _load_ports()
     if not _server:
         try:
             _server = _ThreadingHTTPServer(("0.0.0.0", _MCP_PORT), _MCPHandler)

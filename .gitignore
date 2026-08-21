@@ -2,7 +2,8 @@
 *.log
 *.py[codz]
 *.pyc
-*.sublime-*
+*.sublime-project
+*.sublime-workspace
 .cache
 .claude/*
 .env

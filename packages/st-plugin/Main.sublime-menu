@@ -1,0 +1,31 @@
+[
+    {
+        "id": "preferences",
+        "children":
+        [
+            {
+                "id": "package-settings",
+                "children":
+                [
+                    {
+                        "caption": "MCP Commander",
+                        "id": "sublime-mcp",
+                        "children":
+                        [
+                            {
+                                "command": "open_file",
+                                "args": {"file": "${packages}/sublime-mcp/sublime-mcp.sublime-settings"},
+                                "caption": "Settings"
+                            },
+                            {
+                                "command": "open_file",
+                                "args": {"file": "${packages}/User/sublime-mcp.sublime-settings"},
+                                "caption": "Settings – User"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]

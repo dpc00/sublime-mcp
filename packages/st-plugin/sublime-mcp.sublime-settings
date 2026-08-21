@@ -1,0 +1,9 @@
+{
+    // Port for the MCP SSE endpoint (point your MCP client's "url" here, e.g. http://127.0.0.1:9502/sse).
+    // Defaults to 9502 on Windows, 9503 on Mac/Linux, if unset.
+    // "mcp_port": 9502,
+
+    // Port for the internal HTTP bridge used by the MCP SSE dispatcher above.
+    // Defaults to 9500 on Windows, 9501 on Mac/Linux, if unset.
+    // "http_port": 9500
+}

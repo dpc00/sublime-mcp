@@ -1,0 +1,7 @@
+{
+    // Port for the MCP SSE endpoint (point your MCP client's "url" here, e.g. http://127.0.0.1:9505/sse)
+    "mcp_port": 9505,
+
+    // Port for the internal HTTP bridge used by the MCP SSE dispatcher above
+    "http_port": 9515
+}

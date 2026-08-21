@@ -1,0 +1,31 @@
+[
+    {
+        "id": "preferences",
+        "children":
+        [
+            {
+                "id": "package-settings",
+                "children":
+                [
+                    {
+                        "caption": "LSP MCP",
+                        "id": "lsp-mcp",
+                        "children":
+                        [
+                            {
+                                "command": "open_file",
+                                "args": {"file": "${packages}/lsp-mcp/lsp-mcp.sublime-settings"},
+                                "caption": "Settings"
+                            },
+                            {
+                                "command": "open_file",
+                                "args": {"file": "${packages}/User/lsp-mcp.sublime-settings"},
+                                "caption": "Settings – User"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]
