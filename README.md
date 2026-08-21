@@ -21,6 +21,7 @@ lsp-mcp adds 123 `lsp_*` tools.
 
 Agent how-to: [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) (also served live by
 `get_help`). Workflow across all three MCPs: [docs/agents.md](docs/agents.md).
+Release history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Ports
 
@@ -119,3 +120,7 @@ Or point an MCP client with SSE transport at the SSE URL (Windows example):
   }
 }
 ```
+
+Each plugin's MCP server starts automatically when ST loads it. To stop or
+restart sublime-mcp's, run "MCP Commander: Server Status" from the Command
+Palette. Check View > Show Console for startup confirmation.
