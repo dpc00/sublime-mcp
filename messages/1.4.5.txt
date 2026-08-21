@@ -1,0 +1,17 @@
+sublime-mcp 1.4.5
+
+Fixes the Preferences > Package Settings menu added in 1.4.4.
+
+- The three plugins' Main.sublime-menu entries used a non-standard
+  open_file x2 pattern (separate "Settings" / "Settings – User" items).
+  Replaced with the standard edit_settings command, matching how every
+  other Sublime Text package exposes its settings (a synced default/user
+  split view opened from a single "Settings" menu item).
+
+- Also added the "Preferences" (mnemonic n) and "Package Settings"
+  (mnemonic P) caption/mnemonic pair on the parent menu nodes, matching
+  Sublime's own Default package and third-party packages like TreeSitter,
+  so the menu merges correctly instead of relying on another package
+  having already defined those captions.
+
+No functional or tool changes; ports and defaults are unchanged from 1.4.4.

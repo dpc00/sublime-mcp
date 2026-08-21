@@ -9,8 +9,8 @@ Replaces the port-configuration env vars with real Sublime Text settings.
   LSP_HTTP_PORT — all removed).
 
 - Each plugin now has a Preferences > Package Settings menu entry
-  (Settings / Settings – User) so overriding a port is a normal ST
-  settings edit, not a shell environment variable.
+  so overriding a port is a normal ST settings edit, not a shell
+  environment variable.
 
 - sublime-mcp's SUBLIME_MCP_MCP_PORT/SUBLIME_MCP_PORT naming was also
   inconsistent with debugger-mcp/lsp-mcp's <NAME>_MCP_PORT/<NAME>_HTTP_PORT
