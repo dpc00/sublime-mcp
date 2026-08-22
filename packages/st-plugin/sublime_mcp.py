@@ -4265,6 +4265,164 @@ def _ide_review_group(window):
     return max(choices)[2] if choices else active_group
 
 
+def _line_diff_ops(a, b):
+    """Hand-rolled line-level LCS diff (Wagner-Fischer DP + backtrace).
+
+    No external diff library — matches difflib.SequenceMatcher.get_opcodes()'s
+    shape (tag, i1, i2, j1, j2) so callers don't care how it was computed.
+    Guarded against O(n*m) blowup on huge files: falls back to a single
+    'equal'/'replace' block above the size cap rather than hanging.
+    """
+    n, m = len(a), len(b)
+    if n * m > 4_000_000:
+        return [('equal', 0, n, 0, m)] if a == b else [('replace', 0, n, 0, m)]
+
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(n - 1, -1, -1):
+        row_i, row_i1 = dp[i], dp[i + 1]
+        ai = a[i]
+        for j in range(m - 1, -1, -1):
+            if ai == b[j]:
+                row_i[j] = row_i1[j + 1] + 1
+            else:
+                row_i[j] = row_i1[j] if row_i1[j] >= row_i[j + 1] else row_i[j + 1]
+
+    tokens = []  # 'm' matched line, 'd' line only in a, 'i' line only in b
+    i = j = 0
+    while i < n and j < m:
+        if a[i] == b[j]:
+            tokens.append('m')
+            i += 1
+            j += 1
+        elif dp[i + 1][j] >= dp[i][j + 1]:
+            tokens.append('d')
+            i += 1
+        else:
+            tokens.append('i')
+            j += 1
+    tokens.extend('d' for _ in range(n - i))
+    tokens.extend('i' for _ in range(m - j))
+
+    ops = []
+    i = j = 0
+    k = 0
+    while k < len(tokens):
+        if tokens[k] == 'm':
+            i0, j0 = i, j
+            while k < len(tokens) and tokens[k] == 'm':
+                i += 1
+                j += 1
+                k += 1
+            ops.append(('equal', i0, i, j0, j))
+        else:
+            i0, j0 = i, j
+            d_count = i_count = 0
+            while k < len(tokens) and tokens[k] != 'm':
+                if tokens[k] == 'd':
+                    i += 1
+                    d_count += 1
+                else:
+                    j += 1
+                    i_count += 1
+                k += 1
+            tag = 'replace' if d_count and i_count else ('delete' if d_count else 'insert')
+            ops.append((tag, i0, i, j0, j))
+    return ops
+
+
+def _removed_lines_html(lines):
+    rows = []
+    for line in lines:
+        escaped = html.escape(line) if line else "&nbsp;"
+        rows.append(
+            '<div style="color:#f92672;text-decoration:line-through;'
+            'white-space:pre;font-family:monospace;font-size:0.95em;">{}</div>'.format(escaped)
+        )
+    return (
+        '<body style="margin:0;padding:2px 6px 2px 24px;background-color:#2b1414;'
+        'border-left:3px solid #f92672;">' + "".join(rows) + "</body>"
+    )
+
+
+def _render_diff_markup(review, original_content, new_content, file_path):
+    """Highlight the diff directly in the single review view.
+
+    Added/changed lines get a colored region (annotation-style, matching
+    McpStrReplaceCommand/McpInsertTextCommand's existing conventions).
+    Removed lines have no text left to highlight, so they get an inline
+    block phantom showing the struck-through content at the point they used
+    to occupy — otherwise a deletion is invisible in a single-buffer view.
+    """
+    old_lines = original_content.splitlines()
+    new_lines = new_content.splitlines()
+    ops = _line_diff_ops(old_lines, new_lines)
+
+    def row_region(row):
+        return review.full_line(review.text_point(row, 0))
+
+    added_regions, added_annotations = [], []
+    changed_regions, changed_annotations = [], []
+    removed_count = 0
+
+    for tag, i1, i2, j1, j2 in ops:
+        if tag in ("insert", "replace"):
+            for row in range(j1, j2):
+                region = row_region(row)
+                if tag == "insert":
+                    added_regions.append(region)
+                    added_annotations.append("")
+                else:
+                    changed_regions.append(region)
+                    changed_annotations.append("")
+        if tag in ("delete", "replace") and i2 > i1:
+            removed_count += 1
+            anchor_pt = review.text_point(j1, 0) if j1 < len(new_lines) else review.size()
+            review.add_phantom(
+                "ide_diff_removed_{}".format(removed_count),
+                sublime.Region(anchor_pt, anchor_pt),
+                _removed_lines_html(old_lines[i1:i2]),
+                sublime.LAYOUT_BLOCK,
+            )
+
+    if added_regions:
+        review.add_regions(
+            "ide_diff_added", added_regions, "region.greenish", "",
+            sublime.DRAW_NO_OUTLINE, annotations=added_annotations,
+            annotation_color="#a6e22e",
+        )
+    if changed_regions:
+        review.add_regions(
+            "ide_diff_changed", changed_regions, "region.bluish", "",
+            sublime.DRAW_NO_OUTLINE, annotations=changed_annotations,
+            annotation_color="#66d9ef",
+        )
+
+    def on_navigate(href):
+        window = review.window()
+        if not window:
+            return
+        window.focus_view(review)
+        if href == "accept":
+            window.run_command("accept_ide_companion_diff")
+        elif href == "reject":
+            window.run_command("reject_ide_companion_diff")
+
+    banner_html = (
+        '<body style="margin:0;padding:6px 12px;background-color:#1e1e1e;'
+        'border-bottom:1px solid #f92672;font-family:sans-serif;font-size:0.95em;'
+        'color:#f8f8f2;">'
+        '<b>Reviewing:</b> {name} &nbsp;&nbsp; '
+        '<a href="accept" style="color:#a6e22e;font-weight:bold;text-decoration:none;">Accept</a>'
+        ' &nbsp; '
+        '<a href="reject" style="color:#f92672;font-weight:bold;text-decoration:none;">Reject</a>'
+        '</body>'
+    ).format(name=html.escape(os.path.basename(file_path)))
+    review.add_phantom(
+        "ide_diff_banner", sublime.Region(0, 0), banner_html,
+        sublime.LAYOUT_BLOCK, on_navigate=on_navigate,
+    )
+
+
 def _ide_open_diff(arguments):
     file_path = os.path.abspath(os.path.normpath(arguments.get("filePath", "")))
     new_content = arguments.get("newContent")
@@ -4276,16 +4434,24 @@ def _ide_open_diff(arguments):
     if key in _ide_diffs:
         return _ide_tool_error("A diff review is already open for: " + file_path)
 
-    original_view, error = _ensure_view(file_path)
-    if error:
-        return _ide_tool_error(error.get("error", str(error)))
+    # Only reuse an ALREADY-open tab for the original file — never open one.
+    # Opening it here is exactly what produced the confusing two-tab review
+    # (the file tab plus the "Diff:..." tab) with no clue what was proposed.
+    original_view = _on_main(lambda: sublime.active_window().find_open_file(file_path))
+    if original_view:
+        original_content = _on_main(
+            lambda: original_view.substr(sublime.Region(0, original_view.size()))
+        )
+    else:
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                original_content = f.read()
+        except Exception as e:
+            return _ide_tool_error("Could not read file: {}".format(e))
 
     def open_review():
-        window = original_view.window() or sublime.active_window()
-        original_content = original_view.substr(sublime.Region(0, original_view.size()))
+        window = (original_view.window() if original_view else None) or sublime.active_window()
         group = _ide_review_group(window)
-        if original_view.sheet() and window.get_view_index(original_view)[0] != group:
-            window.move_sheets_to_group([original_view.sheet()], group, select=False)
         review = window.new_file()
         review.set_name("Diff Review: " + os.path.basename(file_path))
         review.set_scratch(True)
@@ -4300,10 +4466,12 @@ def _ide_open_diff(arguments):
         review.settings().set("ide_companion_diff_path", file_path)
         review.set_status(
             "ide_companion_diff",
-            "IDE Companion review — use Accept IDE Companion Diff or Reject IDE Companion Diff",
+            "IDE Companion review — Accept/Reject via the banner links, "
+            "or the Accept IDE Companion Diff / Reject IDE Companion Diff commands",
         )
         if review.sheet() and group != window.active_group():
             window.move_sheets_to_group([review.sheet()], group, select=True)
+        _render_diff_markup(review, original_content, new_content, file_path)
         _ide_diffs[key] = {
             "file_path": file_path,
             "review": review,
@@ -4650,11 +4818,21 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
             return
         final_content = review.substr(sublime.Region(0, review.size()))
         original = state["original"]
-        original.set_reference_document(state["original_content"])
-        original.run_command(
-            "mcp_replace_region",
-            {"begin": 0, "end": original.size(), "text": final_content},
-        )
+        if original and original.is_valid():
+            original.set_reference_document(state["original_content"])
+            original.run_command(
+                "mcp_replace_region",
+                {"begin": 0, "end": original.size(), "text": final_content},
+            )
+        else:
+            try:
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(final_content)
+            except Exception as e:
+                sublime.error_message(
+                    "Failed to save {}: {}".format(file_path, e)
+                )
+                return
         claude_owned = bool(state.get("claude_event"))
         if claude_owned:
             state["claude_result"] = [
