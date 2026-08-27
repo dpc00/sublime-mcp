@@ -674,6 +674,7 @@ def _get_console_win(params):
             "panel": window.active_panel(),
             "view": window.active_view(),
             "clipboard": sublime.get_clipboard(),
+            "foreground": foreground,
         }
 
     snapshot = _on_main(snapshot_ui)
@@ -682,6 +683,7 @@ def _get_console_win(params):
     )
 
     result = {"text": None, "error": None}
+    cleanup = {"cancelled": False, "restore_started": False}
     done = threading.Event()
 
     def _INP():
@@ -698,11 +700,17 @@ def _get_console_win(params):
         return INP
 
     def do_show():
+        if cleanup["cancelled"]:
+            restore_ui()
+            return
         sublime.set_clipboard(sentinel)
         snapshot["window"].run_command("show_panel", {"panel": "console"})
         sublime.set_timeout(do_click, 300)
 
     def do_click():
+        if cleanup["cancelled"]:
+            restore_ui()
+            return
         INP = _INP()
         user32.SetForegroundWindow(hwnd)
         user32.SetCursorPos(cx, cy)
@@ -713,6 +721,9 @@ def _get_console_win(params):
         sublime.set_timeout(do_ctrl_a, 300)
 
     def do_ctrl_a():
+        if cleanup["cancelled"]:
+            restore_ui()
+            return
         INP = _INP()
         def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
         def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
@@ -720,6 +731,9 @@ def _get_console_win(params):
         sublime.set_timeout(do_ctrl_c, 250)
 
     def do_ctrl_c():
+        if cleanup["cancelled"]:
+            restore_ui()
+            return
         INP = _INP()
         def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
         def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
@@ -727,6 +741,9 @@ def _get_console_win(params):
         sublime.set_timeout(read_clip, 400)
 
     def read_clip():
+        if cleanup["cancelled"]:
+            restore_ui()
+            return
         CF_UNICODETEXT = 13
         if user32.OpenClipboard(0):
             h = user32.GetClipboardData(CF_UNICODETEXT)
@@ -749,6 +766,9 @@ def _get_console_win(params):
         restore_ui()
 
     def restore_ui():
+        if cleanup["restore_started"]:
+            return
+        cleanup["restore_started"] = True
         # Restore the visible panel before focusing the prior view; panel
         # transitions can otherwise steal focus back from the editor.
         previous_panel = snapshot["panel"]
@@ -764,11 +784,15 @@ def _get_console_win(params):
         previous_view = snapshot["view"]
         if previous_view and previous_view.is_valid():
             snapshot["window"].focus_view(previous_view)
+        previous_foreground = snapshot["foreground"]
+        if previous_foreground and previous_foreground != hwnd:
+            user32.SetForegroundWindow(previous_foreground)
         done.set()
 
     sublime.set_timeout(do_show, 0)
     if not done.wait(timeout=6.0):
         # Best-effort cleanup even when an earlier UI callback did not run.
+        cleanup["cancelled"] = True
         sublime.set_timeout(restore_ui, 0)
         return {"error": "timeout waiting for console capture"}
     if result["text"] is not None:
