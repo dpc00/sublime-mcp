@@ -67,10 +67,15 @@ from urllib.parse import parse_qs, unquote, urlparse
 import sublime
 import sublime_plugin
 
+try:
+    from .search_results import parse_find_results, search_is_complete
+except ImportError:
+    from search_results import parse_find_results, search_is_complete
+
 # Single source of truth for the version this plugin advertises over MCP.
 # Keep in step with packages/node-proxy/package.json and
 # packages/python-proxy/pyproject.toml; tests/proof/test_release_dependency_pins.py enforces it.
-__version__ = "1.4.6"
+__version__ = "1.5.0"
 
 try:
     from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
@@ -242,43 +247,68 @@ def _clean_phantom_text(text):
 
 # ── console log capture ───────────────────────────────────────────────────────
 
-_console_buf = []
-_console_patched = False
+_CONSOLE_CAPTURE_STATE_KEY = "_sublime_mcp_console_capture_state"
+_CONSOLE_CAPTURE_LIMIT = 10000
+_console_state = None
 
+
+def _closure_value(fn, name):
+    """Return a named closure value, used to unwind pre-fix reload wrappers."""
+    closure = getattr(fn, "__closure__", None) or ()
+    freevars = getattr(getattr(fn, "__code__", None), "co_freevars", ())
+    for key, cell in zip(freevars, closure):
+        if key == name:
+            try:
+                return cell.cell_contents
+            except ValueError:
+                return None
+    return None
+
+
+def _unwrap_legacy_console_hook(fn, closure_name):
+    """Remove wrappers installed by older reload-unsafe plugin versions."""
+    seen = set()
+    while (callable(fn) and id(fn) not in seen and
+           getattr(fn, "__name__", "") in ("_capture_log", "_capture_write")):
+        seen.add(id(fn))
+        original = _closure_value(fn, closure_name)
+        if not callable(original):
+            break
+        fn = original
+    return fn
 
 def _install_console_capture():
-    """Monkey-patch ST's console and stdout to capture messages into _console_buf.
-
-    Called once (guarded by _console_patched).  Wraps two entry points:
-      1. sublime_api.log_message — the C-level function behind ST's console;
-         every ST internal log and print() that goes through sublime_api passes here.
-      2. sys.stdout.write — captures print() output from plugin code that
-         hasn't gone through sublime_api (tagged with '[stdout]' prefix).
-
-    The buffer is a plain list; callers slice the tail with _console_buf[-n:].
-    """
-    global _console_patched
-    if _console_patched:
-        return
+    """Install one process-wide, reload-safe capture of ST console messages."""
+    global _console_state
     import sublime_api as _sapi
 
-    _orig_log = _sapi.log_message
+    state = getattr(sys, _CONSOLE_CAPTURE_STATE_KEY, None)
+    if state and getattr(_sapi.log_message, "_sublime_mcp_console_capture", False):
+        _console_state = state
+        return
+
+    # Package reload resets module globals but not sys.stdout or sublime_api.
+    # Unwind wrappers from the old implementation before installing one stable
+    # hook. Capturing log_message alone avoids recording the same print through
+    # both sys.stdout.write and Sublime's logging bridge.
+    if getattr(sys.stdout.write, "__name__", "") == "_capture_write":
+        sys.stdout.write = _unwrap_legacy_console_hook(sys.stdout.write, "orig_write")
+    original_log = _unwrap_legacy_console_hook(_sapi.log_message, "_orig_log")
+    state = {"entries": [], "dropped": 0, "original_log": original_log}
 
     def _capture_log(msg):
-        _console_buf.append(msg)
-        _orig_log(msg)
+        entries = state["entries"]
+        entries.append(str(msg))
+        if len(entries) > _CONSOLE_CAPTURE_LIMIT:
+            overflow = len(entries) - _CONSOLE_CAPTURE_LIMIT
+            del entries[:overflow]
+            state["dropped"] += overflow
+        original_log(msg)
 
+    _capture_log._sublime_mcp_console_capture = True
     _sapi.log_message = _capture_log
-
-    orig_write = sys.stdout.write
-
-    def _capture_write(s):
-        _console_buf.append("[stdout]{}".format(s))
-        return orig_write(s)
-
-    sys.stdout.write = _capture_write
-    sys.stdout._capture_patched = True
-    _console_patched = True
+    setattr(sys, _CONSOLE_CAPTURE_STATE_KEY, state)
+    _console_state = state
 
 
 # ── GET handlers ──────────────────────────────────────────────────────────────
@@ -555,6 +585,9 @@ def _send_to_view(body):
 def _get_output_panel(params):
     name = params.get("name", [""])[0]
 
+    if name and name.lower() == "console":
+        return _get_console({"mode": ["auto"]})
+
     def fn():
         w = sublime.active_window()
         panel_name = name
@@ -574,42 +607,29 @@ def _get_output_panel(params):
 def _get_console_log(params):
     _install_console_capture()
     tail = int(params.get("tail", ["200"])[0])
-    entries = _console_buf[-tail:] if tail > 0 else list(_console_buf)
-    return {"entries": entries, "total": len(_console_buf)}
-
+    all_entries = list(_console_state["entries"])
+    entries = all_entries[-tail:] if tail > 0 else all_entries
+    return {
+        "entries": entries,
+        "text": "".join(entries),
+        "length": sum(len(entry) for entry in entries),
+        "total": len(all_entries),
+        "dropped": _console_state["dropped"],
+        "source": "captured",
+        "complete": False,
+    }
 
 def _get_console_full(params):
-    """Capture the entire ST console via show_panel → select_all → copy → sublime.get_clipboard().
-    Cross-platform: uses only ST's own Python API, no ctypes."""
-    result = {}
-    done = threading.Event()
-
-    def do_show():
-        sublime.active_window().run_command("show_panel", {"panel": "console"})
-        sublime.set_timeout(do_select_all, 300)
-
-    def do_select_all():
-        sublime.active_window().run_command("select_all")
-        sublime.set_timeout(do_copy, 150)
-
-    def do_copy():
-        sublime.active_window().run_command("copy")
-        sublime.set_timeout(read_clip, 150)
-
-    def read_clip():
-        result["text"] = sublime.get_clipboard()
-        done.set()
-
-    sublime.set_timeout(do_show, 0)
-    if not done.wait(timeout=5.0):
-        return {"error": "timeout waiting for console capture"}
-    text = result.get("text", "")
-    return {"text": text, "length": len(text)}
-
+    """Backward-compatible alias for a complete visible-console capture."""
+    if sys.platform != "win32":
+        return {
+            "error": "complete console capture is currently supported only on Windows",
+            "fallback": _get_console_log({"tail": ["0"]}),
+        }
+    return _get_console_win(params)
 
 def _get_console_win(params):
-    """Windows-only fallback: click the console output area via ctypes, then Ctrl+A / Ctrl+C."""
-    import sys
+    """Capture the visible console on Windows and restore user UI state."""
     if sys.platform != "win32":
         return {"error": "get_console_win is Windows-only"}
     import ctypes
@@ -622,12 +642,17 @@ def _get_console_win(params):
     kernel32.GlobalLock.argtypes = [ctypes.c_void_p]
     kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
 
+    foreground = user32.GetForegroundWindow()
     _hwnd = [None]
     def _enum(h, _):
         buf = ctypes.create_unicode_buffer(256)
         user32.GetWindowTextW(h, buf, 256)
         if "Sublime Text" in buf.value:
-            _hwnd[0] = h
+            if h == foreground:
+                _hwnd[0] = h
+                return False
+            if _hwnd[0] is None:
+                _hwnd[0] = h
         return True
     user32.EnumWindows(ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_size_t, ctypes.c_size_t)(_enum), 0)
     hwnd = _hwnd[0]
@@ -638,6 +663,23 @@ def _get_console_win(params):
     user32.GetWindowRect(hwnd, ctypes.byref(rect))
     cx = (rect.left + rect.right) // 2
     cy = rect.bottom - 80  # console output area, above the input field
+
+    cursor = ctypes.wintypes.POINT()
+    user32.GetCursorPos(ctypes.byref(cursor))
+
+    def snapshot_ui():
+        window = sublime.active_window()
+        return {
+            "window": window,
+            "panel": window.active_panel(),
+            "view": window.active_view(),
+            "clipboard": sublime.get_clipboard(),
+        }
+
+    snapshot = _on_main(snapshot_ui)
+    sentinel = "sublime-mcp-console-copy-{}-{}".format(
+        threading.get_ident(), id(snapshot)
+    )
 
     result = {"text": None, "error": None}
     done = threading.Event()
@@ -656,7 +698,8 @@ def _get_console_win(params):
         return INP
 
     def do_show():
-        sublime.active_window().run_command("show_panel", {"panel": "console"})
+        sublime.set_clipboard(sentinel)
+        snapshot["window"].run_command("show_panel", {"panel": "console"})
         sublime.set_timeout(do_click, 300)
 
     def do_click():
@@ -690,7 +733,11 @@ def _get_console_win(params):
             if h:
                 ptr = kernel32.GlobalLock(h)
                 if ptr:
-                    result["text"] = ctypes.wstring_at(ptr)
+                    text = ctypes.wstring_at(ptr)
+                    if text == sentinel:
+                        result["error"] = "console copy did not update the clipboard"
+                    else:
+                        result["text"] = text
                     kernel32.GlobalUnlock(h)
                 else:
                     result["error"] = "GlobalLock failed"
@@ -699,14 +746,61 @@ def _get_console_win(params):
             user32.CloseClipboard()
         else:
             result["error"] = "OpenClipboard failed"
+        restore_ui()
+
+    def restore_ui():
+        # Restore the visible panel before focusing the prior view; panel
+        # transitions can otherwise steal focus back from the editor.
+        previous_panel = snapshot["panel"]
+        if previous_panel:
+            snapshot["window"].run_command("show_panel", {"panel": previous_panel})
+        else:
+            snapshot["window"].run_command("hide_panel")
+        sublime.set_clipboard(snapshot["clipboard"])
+        user32.SetCursorPos(cursor.x, cursor.y)
+        sublime.set_timeout(restore_focus, 150)
+
+    def restore_focus():
+        previous_view = snapshot["view"]
+        if previous_view and previous_view.is_valid():
+            snapshot["window"].focus_view(previous_view)
         done.set()
 
     sublime.set_timeout(do_show, 0)
-    if not done.wait(timeout=5.0):
-        return {"error": "timeout"}
+    if not done.wait(timeout=6.0):
+        # Best-effort cleanup even when an earlier UI callback did not run.
+        sublime.set_timeout(restore_ui, 0)
+        return {"error": "timeout waiting for console capture"}
     if result["text"] is not None:
-        return {"text": result["text"], "length": len(result["text"])}
+        return {
+            "text": result["text"],
+            "length": len(result["text"]),
+            "source": "visible_windows",
+            "complete": True,
+        }
     return {"error": result.get("error", "unknown")}
+
+
+def _get_console(params):
+    """Unified console reader with explicit completeness and source metadata."""
+    mode = (params.get("mode", ["auto"])[0] or "auto").lower()
+    tail = params.get("tail", ["200"])[0]
+    if mode == "captured":
+        return _get_console_log({"tail": [tail]})
+    if mode not in ("auto", "visible"):
+        return {"error": "mode must be auto, visible, or captured"}
+    if sys.platform == "win32":
+        visible = _get_console_win(params)
+        if "error" not in visible or mode == "visible":
+            return visible
+        captured = _get_console_log({"tail": [tail]})
+        captured["warning"] = "visible capture failed: {}".format(visible["error"])
+        return captured
+    if mode == "visible":
+        return {"error": "visible console capture is currently supported only on Windows"}
+    captured = _get_console_log({"tail": [tail]})
+    captured["warning"] = "complete visible capture is unavailable on this platform"
+    return captured
 
 
 def _get_symbols(params):
@@ -1405,10 +1499,10 @@ def _find_in_files(body):
         args["replace"] = body["replace"]
         args["preserve_case"] = bool(body.get("preserve_case", False))
     show = bool(body.get("show_panel", True))
+    if not show:
+        return _project_search(body)
     def fn():
         w = sublime.active_window()
-        if not show:
-            w.find_in_files_panel() if hasattr(w, "find_in_files_panel") else None
         w.run_command("show_panel", args)
         return {"ok": True, "panel_open": show, "pattern": pattern,
                 "where": args["where"], "case_sensitive": args["case_sensitive"],
@@ -2228,9 +2322,13 @@ def _edit_file(body):
 
 
 def _get_mcp_tools(params):
-    """Return list of all MCP tools for dynamic discovery by node-proxy."""
+    """Return the focused tool surface, or the full catalog on request."""
     with _mcp_tools_lock:
         snapshot = list(_MCP_TOOLS)
+    surface = (params.get("surface", ["default"])[0] if isinstance(params, dict)
+               else "default")
+    if surface != "all":
+        snapshot = [tool for tool in snapshot if tool[0] in _MCP_DEFAULT_TOOL_NAMES]
     tools = []
     for name, desc, schema, _ in snapshot:
         input_schema = dict(schema) if schema else {}
@@ -2240,6 +2338,22 @@ def _get_mcp_tools(params):
             input_schema["properties"] = {}
         tools.append({"name": name, "description": desc, "inputSchema": input_schema})
     return {"tools": tools}
+
+
+def _health(params):
+    """Dependency-free connection probe used by the CLI doctor."""
+    with _mcp_tools_lock:
+        total = len(_MCP_TOOLS)
+    return {
+        "ok": True,
+        "server": "sublime-mcp",
+        "version": __version__,
+        "http_port": _PORT,
+        "mcp_port": _MCP_PORT,
+        "default_tool_count": len(_MCP_DEFAULT_TOOL_NAMES),
+        "advanced_tool_count": max(0, total - len(_MCP_DEFAULT_TOOL_NAMES)),
+        "total_tool_count": total,
+    }
 
 
 _GET = {
@@ -2256,6 +2370,7 @@ _GET = {
     "/view_chars": _get_view_chars,
     "/view_phantoms": _get_view_phantoms,
     "/output_panel": _get_output_panel,
+    "/console": _get_console,
     "/console_log": _get_console_log,
     "/console_full": _get_console_full,
     "/console_win": _get_console_win,
@@ -2275,6 +2390,7 @@ _GET = {
     "/word_at_cursor": _get_word_at_cursor,
     "/layout": _get_layout,
     "/mcp_tools": _get_mcp_tools,
+    "/health": _health,
 }
 
 _POST = {
@@ -2615,6 +2731,8 @@ def _p(endpoint):
 
 
 _BATCH_MAX_CALLS = 50
+_PROJECT_SEARCH_TIMEOUT_SECONDS = 120.0
+_project_search_lock = threading.Lock()
 
 
 def _batch(args):
@@ -2655,7 +2773,116 @@ def _batch(args):
     return {"results": results}
 
 
+def _discover_tools(args):
+    """Search the complete internal catalog without advertising it up front."""
+    query = (args.get("query") or "").strip().lower()
+    limit = max(1, min(int(args.get("limit", 10)), 25))
+    if not query:
+        return {"error": "query required"}
+    terms = [term for term in re.split(r"[^a-z0-9_]+", query) if term]
+    with _mcp_tools_lock:
+        snapshot = list(_MCP_TOOLS)
+    ranked = []
+    for name, desc, schema, _handler in snapshot:
+        if name in _MCP_DEFAULT_TOOL_NAMES:
+            continue
+        name_text = name.lower()
+        haystack = name_text + " " + (desc or "").lower()
+        score = 0
+        for term in terms:
+            if term == name_text:
+                score += 100
+            elif term in name_text:
+                score += 20
+            if term in haystack:
+                score += 3
+        if score:
+            ranked.append((score, name, desc, schema))
+    ranked.sort(key=lambda item: (-item[0], item[1]))
+    tools = []
+    for _score, name, desc, schema in ranked[:limit]:
+        input_schema = dict(schema) if schema else {}
+        input_schema.setdefault("type", "object")
+        input_schema.setdefault("properties", {})
+        tools.append({"name": name, "description": desc, "inputSchema": input_schema})
+    return {
+        "tools": tools,
+        "usage": "Call a discovered tool through batch, even for one call: "
+                 "batch(calls=[{tool: <name>, args: {...}}]).",
+    }
+
+
+def _project_search(args):
+    """Run ST's native Find in Files engine and return parsed match records."""
+    import time
+
+    pattern = args.get("pattern", "")
+    if not pattern:
+        return {"error": "pattern required"}
+    where = args.get("where", "")
+    regex = bool(args.get("regex", False))
+    case_sensitive = bool(args.get("case_sensitive", False))
+    whole_word = bool(args.get("whole_word", False))
+    limit = max(1, min(int(args.get("limit", 200)), 2000))
+    timeout = max(1.0, min(float(args.get("timeout", 30.0)), _PROJECT_SEARCH_TIMEOUT_SECONDS))
+    show_panel = bool(args.get("show_panel", False))
+
+    if not _project_search_lock.acquire(False):
+        return {"error": "another native project search is already running"}
+    try:
+        def start_search():
+            window = sublime.active_window()
+            if not window:
+                return {"error": "no active window"}
+            panel = window.find_output_panel("find_results")
+            panel.set_read_only(False)
+            panel.run_command("select_all")
+            panel.run_command("right_delete")
+            panel.set_read_only(True)
+            window.run_command("show_panel", {
+                "panel": "find_in_files", "pattern": pattern, "where": where,
+                "case_sensitive": case_sensitive, "regex": regex,
+                "whole_word": whole_word,
+            })
+            # This is the Find button command for the native Find in Files panel.
+            window.run_command("find_all")
+            return {"ok": True}
+
+        started = _on_main(start_search)
+        if started.get("error"):
+            return started
+        deadline = time.time() + timeout
+        content = ""
+        while time.time() < deadline:
+            def read_results():
+                panel = sublime.active_window().find_output_panel("find_results")
+                return panel.substr(sublime.Region(0, panel.size()))
+            content = _on_main(read_results)
+            if search_is_complete(content):
+                break
+            time.sleep(0.05)
+        else:
+            return {"error": "native project search timed out", "timeout": timeout}
+
+        matches = parse_find_results(content, pattern, regex, case_sensitive, limit)
+        summary = content.rstrip().splitlines()[-1] if content.strip() else ""
+        if not show_panel:
+            _on_main(lambda: sublime.active_window().run_command("hide_panel"))
+        return {
+            "engine": "sublime_find_in_files",
+            "pattern": pattern,
+            "where": where,
+            "matches": matches,
+            "returned": len(matches),
+            "truncated": len(matches) >= limit,
+            "summary": summary,
+        }
+    finally:
+        _project_search_lock.release()
+
 _POST["/batch"] = _batch
+_POST["/discover_tools"] = _discover_tools
+_POST["/project_search"] = _project_search
 
 
 def _get_package_mcp_info(body):
@@ -2890,6 +3117,29 @@ _MCP_TOOLS = [
          },
      }, "required": ["calls"]},
      _batch),
+    ("discover_tools",
+     "Search advanced Sublime capabilities hidden from the default tool surface. "
+     "Returns matching names, descriptions, and schemas. Invoke a result through "
+     "batch(calls=[{tool: <name>, args: {...}}]), including for a single call.",
+     {"type": "object", "properties": {
+         "query": {"type": "string", "description": "Capability to find, such as bookmarks, tabs, syntax, or commands."},
+         "limit": {"type": "integer", "default": 10},
+     }, "required": ["query"]},
+     _discover_tools),
+    ("project_search",
+     "Search project files with Sublime Text's native Find in Files engine and return "
+     "structured {path,line,col,text} matches. This is the preferred project search tool.",
+     {"type": "object", "properties": {
+         "pattern": {"type": "string"},
+         "where": {"type": "string", "description": "ST Where expression; empty uses current project folders."},
+         "case_sensitive": {"type": "boolean", "default": False},
+         "regex": {"type": "boolean", "default": False},
+         "whole_word": {"type": "boolean", "default": False},
+         "limit": {"type": "integer", "default": 200},
+         "timeout": {"type": "number", "default": 30},
+         "show_panel": {"type": "boolean", "default": False},
+     }, "required": ["pattern"]},
+     _project_search),
     # ── no-parameter GET tools ────────────────────────────────────────────────
     ("get_active_file",
      "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name.",
@@ -2973,7 +3223,8 @@ _MCP_TOOLS = [
      _g("/view_phantoms")),
     ("get_output_panel",
      "Return the text content of an output panel.\n"
-     "If name is omitted, read the active output panel. Use name='exec' for build output.",
+     "If name is omitted, read the active output panel. Use name='exec' for build output.\n"
+     "Use name='Console' to read Sublime's built-in console through the best available backend.",
      {"type": "object", "properties": {"name": {"type": "string", "default": ""}}},
      _g("/output_panel")),
     ("lookup_symbol",
@@ -3007,19 +3258,30 @@ _MCP_TOOLS = [
          "command": {"type": "string", "default": ""},
      }},
      _g("/menu_items")),
+    ("get_console",
+     "Read Sublime Text's built-in console. mode='auto' prefers a complete visible-console "
+     "capture and falls back to the reload-safe prospective capture; mode='visible' requires "
+     "a complete capture; mode='captured' is non-invasive but contains only messages observed "
+     "since capture began. Results include source and complete metadata.",
+     {"type": "object", "properties": {
+         "mode": {"type": "string", "enum": ["auto", "visible", "captured"], "default": "auto"},
+         "tail": {"type": "integer", "default": 200},
+     }},
+     _g("/console")),
     ("get_console_log",
-     "Return recent Sublime Text console output (plugin log messages and stdout).\n"
-     "tail=N limits to the last N entries. tail=0 returns all captured entries.",
+     "Compatibility tool for reload-safe prospective console capture.\n"
+     "tail=N limits to the last N entries; tail=0 returns all retained entries.\n"
+     "Prefer get_console(mode='captured') for explicit completeness metadata.",
      {"type": "object", "properties": {"tail": {"type": "integer", "default": 100}}},
      _g("/console_log")),
     ("get_console_full",
-     "Return the entire captured ST console buffer with no tail limit.\n"
-     "Includes startup messages, plugin load events, and all errors since ST started.",
+     "Compatibility alias for a complete visible-console capture.\n"
+     "Currently supported on Windows; prefer get_console(mode='visible').",
      {},
      _g("/console_full")),
     ("get_console_win",
-     "Windows-only fallback: captures ST console by clicking the output area via ctypes then Ctrl+A/Ctrl+C.\n"
-     "Use when get_console_full fails. Returns error on non-Windows.",
+     "Windows complete-console backend using reversible UI automation. Restores the previous "
+     "panel, editor focus, pointer position, and text clipboard. Prefer get_console(mode='auto').",
      {},
      _g("/console_win")),
     # ── parameterized POST tools ──────────────────────────────────────────────
@@ -3886,6 +4148,15 @@ _MCP_TOOLS = [
 
 _mcp_tools_lock = threading.Lock()
 _mcp_tools_builtin_names = frozenset(t[0] for t in _MCP_TOOLS)
+_MCP_DEFAULT_TOOL_NAMES = frozenset({
+    "get_help",
+    "batch",
+    "get_active_file",
+    "project_search",
+    "str_replace_based_edit_tool",
+    "save_file",
+    "discover_tools",
+})
 
 # MCP tool-name HTTP aliases for node-proxy dynamic discovery (POST /{tool.name}).
 # Only paths that were not already REST routes — overwriting would break
@@ -4103,6 +4374,8 @@ def _mcp_dispatch(msg):
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "sublime-mcp", "version": __version__},
+                "instructions": "Use get_help first. Prefer project_search for project text search, "
+                                "batch for independent calls, and discover_tools for advanced capabilities.",
             }
         elif method in ("notifications/initialized", "notifications/cancelled"):
             return
@@ -4110,7 +4383,8 @@ def _mcp_dispatch(msg):
             result = {}
         elif method == "tools/list":
             with _mcp_tools_lock:
-                snapshot = list(_MCP_TOOLS)
+                snapshot = [tool for tool in _MCP_TOOLS
+                            if tool[0] in _MCP_DEFAULT_TOOL_NAMES]
             tools = []
             for name, desc, schema, _ in snapshot:
                 input_schema = dict(schema) if schema else {}
@@ -4992,6 +5266,21 @@ class McpServerStatusCommand(sublime_plugin.WindowCommand):
 
     def input(self, args):
         return _McpServerStatusInputHandler()
+
+
+class McpConnectionDoctorCommand(sublime_plugin.WindowCommand):
+    """Show the exact local endpoints and catalog state without external tools."""
+
+    def run(self):
+        report = _health({})
+        report["http_bridge_running"] = _server is not None
+        report["mcp_server_running"] = _mcp_server is not None
+        report["streamable_http_url"] = "http://127.0.0.1:{}/mcp".format(_MCP_PORT)
+        report["legacy_sse_url"] = "http://127.0.0.1:{}/sse".format(_MCP_PORT)
+        view = self.window.new_file()
+        view.set_name("sublime-mcp doctor")
+        view.set_scratch(True)
+        view.run_command("append", {"characters": json.dumps(report, indent=2) + "\n"})
 
 
 class _McpServerStatusInputHandler(sublime_plugin.ListInputHandler):

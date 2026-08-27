@@ -14,6 +14,35 @@ const FALLBACK_TOOLS = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'fallback-tools.json'), 'utf8'),
 ).tools;
 
+const DEFAULT_TOOL_NAMES = new Set([
+  'get_help',
+  'batch',
+  'get_active_file',
+  'project_search',
+  'str_replace_based_edit_tool',
+  'save_file',
+  'discover_tools',
+]);
+const GATEWAY_FALLBACKS = [
+  {
+    name: 'discover_tools',
+    description: 'Search advanced Sublime capabilities. Invoke a result through batch.',
+    inputSchema: { type: 'object', properties: {
+      query: { type: 'string' }, limit: { type: 'integer', default: 10 },
+    }, required: ['query'] },
+  },
+  {
+    name: 'project_search',
+    description: "Search project files with Sublime Text's native Find in Files engine and return structured matches.",
+    inputSchema: { type: 'object', properties: {
+      pattern: { type: 'string' }, where: { type: 'string' },
+      case_sensitive: { type: 'boolean', default: false }, regex: { type: 'boolean', default: false },
+      whole_word: { type: 'boolean', default: false }, limit: { type: 'integer', default: 200 },
+      timeout: { type: 'number', default: 30 }, show_panel: { type: 'boolean', default: false },
+    }, required: ['pattern'] },
+  },
+];
+
 process.stderr.write(`mcp-commander: BASE=${BASE} platform=${process.platform}\n`);
 
 function ok(data) {
@@ -132,14 +161,16 @@ function registerFallbackTools() {
   // exposes the same tool surface the backend actually serves instead of a
   // hand-maintained subset (F10). Every backend tool has a POST /{name}
   // alias, so one uniform call shape works for all of them.
-  for (const tool of FALLBACK_TOOLS) {
+  const byName = new Map(FALLBACK_TOOLS.map(tool => [tool.name, tool]));
+  for (const tool of GATEWAY_FALLBACKS) byName.set(tool.name, tool);
+  for (const tool of [...byName.values()].filter(tool => DEFAULT_TOOL_NAMES.has(tool.name))) {
     server.registerTool(
       tool.name,
       { description: tool.description, inputSchema: jsonSchemaToZod(tool.inputSchema) },
       async (args) => ok(await post('/' + tool.name, args ?? {})),
     );
   }
-  process.stderr.write(`mcp-commander: registered ${FALLBACK_TOOLS.length} generated fallback tools\n`);
+  process.stderr.write('mcp-commander: registered focused fallback tool surface\n');
 }
 
 // ── startup ───────────────────────────────────────────────────────────────────

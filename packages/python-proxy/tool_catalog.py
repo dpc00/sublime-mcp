@@ -316,21 +316,33 @@ TOOLS = [   {   'name': 'add_folder',
                                              'command': {'type': 'string', 'default': ''},
                                              'include_palette': {   'type': 'boolean',
                                                                     'default': True}}}},
+    {   'name': 'get_console',
+        'description': "Read Sublime Text's built-in console. mode='auto' prefers a complete "
+                       "visible-console capture and falls back to the reload-safe prospective "
+                       "capture; mode='visible' requires a complete capture; mode='captured' is "
+                       'non-invasive but contains only messages observed since capture began. '
+                       'Results include source and complete metadata.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'mode': {   'type': 'string',
+                                                        'enum': [   'auto',
+                                                                    'visible',
+                                                                    'captured'],
+                                                        'default': 'auto'},
+                                             'tail': {'type': 'integer', 'default': 200}}}},
     {   'name': 'get_console_full',
-        'description': 'Return the entire captured ST console buffer with no tail limit.\n'
-                       'Includes startup messages, plugin load events, and all errors since ST '
-                       'started.',
+        'description': 'Compatibility alias for a complete visible-console capture.\n'
+                       "Currently supported on Windows; prefer get_console(mode='visible').",
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'get_console_log',
-        'description': 'Return recent Sublime Text console output (plugin log messages and '
-                       'stdout).\n'
-                       'tail=N limits to the last N entries. tail=0 returns all captured entries.',
+        'description': 'Compatibility tool for reload-safe prospective console capture.\n'
+                       'tail=N limits to the last N entries; tail=0 returns all retained entries.\n'
+                       "Prefer get_console(mode='captured') for explicit completeness metadata.",
         'inputSchema': {   'type': 'object',
                            'properties': {'tail': {'type': 'integer', 'default': 100}}}},
     {   'name': 'get_console_win',
-        'description': 'Windows-only fallback: captures ST console by clicking the output area via '
-                       'ctypes then Ctrl+A/Ctrl+C.\n'
-                       'Use when get_console_full fails. Returns error on non-Windows.',
+        'description': 'Windows complete-console backend using reversible UI automation. Restores '
+                       'the previous panel, editor focus, pointer position, and text clipboard. '
+                       "Prefer get_console(mode='auto').",
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'get_cursor_context',
         'description': 'Return `lines` lines above and below the cursor with 1-based line numbers '
@@ -371,7 +383,9 @@ TOOLS = [   {   'name': 'add_folder',
     {   'name': 'get_output_panel',
         'description': 'Return the text content of an output panel.\n'
                        "If name is omitted, read the active output panel. Use name='exec' for "
-                       'build output.',
+                       'build output.\n'
+                       "Use name='Console' to read Sublime's built-in console through the best "
+                       'available backend.',
         'inputSchema': {   'type': 'object',
                            'properties': {'name': {'type': 'string', 'default': ''}}}},
     {   'name': 'get_package_mcp_info',

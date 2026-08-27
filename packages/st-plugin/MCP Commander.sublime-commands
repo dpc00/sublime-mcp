@@ -2,5 +2,9 @@
     {
         "caption": "MCP Commander: Server Status",
         "command": "mcp_server_status"
+    },
+    {
+        "caption": "MCP Commander: Connection Doctor",
+        "command": "mcp_connection_doctor"
     }
 ]

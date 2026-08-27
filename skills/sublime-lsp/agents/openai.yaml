@@ -1,0 +1,13 @@
+interface:
+  display_name: "Sublime LSP"
+  short_description: "Navigate and refactor with Sublime LSP"
+  default_prompt: "Use $sublime-lsp to inspect and navigate this code in Sublime Text."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "lsp-mcp"
+      description: "Sublime Text LSP MCP server"
+      transport: "streamable_http"
+      url: "http://127.0.0.1:9506/mcp"
+policy:
+  allow_implicit_invocation: true

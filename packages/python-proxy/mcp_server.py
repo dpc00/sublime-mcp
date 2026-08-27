@@ -4,11 +4,9 @@ Wraps the HTTP API exposed by sublime_mcp.py (the ST plugin) and
 presents it as MCP tools to Claude Code (or any MCP client).
 
 Tools are built from `tool_catalog.py`, which is generated from the
-backend's `_MCP_TOOLS` by `tools/generate_fallback_catalog.py`. This file
-therefore contains no hand-maintained tool list: it used to carry 72
-hand-written tools against a backend serving 220, which meant 148 tools
-were permanently unreachable through this proxy (F10). Add tools to the
-backend and regenerate; do not hand-write them here.
+backend's `_MCP_TOOLS` by `tools/generate_fallback_catalog.py`. The proxy
+advertises the focused seven-tool surface; advanced backend capabilities are
+found with `discover_tools` and invoked through `batch`.
 
 Requirements: pip install mcp httpx
 Run:          python mcp_server.py
@@ -57,10 +55,44 @@ SLOW_ENDPOINTS = frozenset({
     "/install_package",
     "/search_packages",
     "/find_in_files",
+    "/project_search",
     "/eval_python_latest",
     "/run_build",
 })
 TIMEOUT = DEFAULT_TIMEOUT
+
+DEFAULT_TOOL_NAMES = frozenset({
+    "get_help",
+    "batch",
+    "get_active_file",
+    "project_search",
+    "str_replace_based_edit_tool",
+    "save_file",
+    "discover_tools",
+})
+
+GATEWAY_FALLBACKS = (
+    {
+        "name": "discover_tools",
+        "description": "Search advanced Sublime capabilities. Invoke a result through batch.",
+        "inputSchema": {"type": "object", "properties": {
+            "query": {"type": "string"}, "limit": {"type": "integer", "default": 10},
+        }, "required": ["query"]},
+    },
+    {
+        "name": "project_search",
+        "description": "Search project files with Sublime Text's native Find in Files engine and return structured matches.",
+        "inputSchema": {"type": "object", "properties": {
+            "pattern": {"type": "string"}, "where": {"type": "string"},
+            "case_sensitive": {"type": "boolean", "default": False},
+            "regex": {"type": "boolean", "default": False},
+            "whole_word": {"type": "boolean", "default": False},
+            "limit": {"type": "integer", "default": 200},
+            "timeout": {"type": "number", "default": 30},
+            "show_panel": {"type": "boolean", "default": False},
+        }, "required": ["pattern"]},
+    },
+)
 
 
 def _timeout_for(endpoint: str) -> float:
@@ -173,7 +205,9 @@ def _build_tool(name: str, description: str, schema: dict):
     return call
 
 
-for _tool in TOOLS:
+_focused_tools = {tool["name"]: tool for tool in TOOLS if tool["name"] in DEFAULT_TOOL_NAMES}
+_focused_tools.update({tool["name"]: tool for tool in GATEWAY_FALLBACKS})
+for _tool in _focused_tools.values():
     mcp.add_tool(_build_tool(_tool["name"], _tool["description"], _tool.get("inputSchema")))
 
 
@@ -181,32 +215,6 @@ for _tool in TOOLS:
 # Only for tools that need to post-process the backend response. Everything
 # else comes from the generated catalog above. Each override replaces its
 # generated twin, so registration order does not decide which one wins.
-
-_OVERRIDDEN = ("get_sheet_content",)
-
-for _name in _OVERRIDDEN:
-    mcp.remove_tool(_name)
-
-
-@mcp.tool(name="get_sheet_content")
-def get_sheet_content(index: int):
-    """Return the content of any tab by its sheet index (from get_sheets).
-    Works for text tabs including untitled buffers and Terminus tabs.
-    For image tabs returns the image directly as a renderable image."""
-    result = _get("/sheet_content", index=index)
-    # Backend returns a list of content blocks for a readable image
-    # (see sublime_mcp.py:_get_sheet_content), a dict with no image data
-    # when the image has no path to read, or a dict with "content" for
-    # text sheets. There is no "content_base64" key at any point.
-    if isinstance(result, list):
-        return [
-            _image_content(block["data"], block.get("mimeType", "image/png"))
-            if isinstance(block, dict) and block.get("type") == "image"
-            else block
-            for block in result
-        ]
-    return result
-
 
 def main():
     mcp.run()

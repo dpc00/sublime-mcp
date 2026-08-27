@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sublime Text MCP"
+  short_description: "Code through a running Sublime Text editor"
+  default_prompt: "Use $sublime-mcp to inspect and modify this project through Sublime Text."
