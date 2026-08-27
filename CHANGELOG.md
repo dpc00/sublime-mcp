@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.1
+
+Fixes an OS-level focus-stealing bug in the Windows `get_console`/`get_console_win`
+backend introduced in 1.5.0.
+
+- `get_console_win` now restores the OS foreground window that was active before
+  the capture ran (previously it left keyboard focus on Sublime Text after every
+  call, even when another application had focus beforehand).
+- Cleanup on timeout is now idempotent: a slow capture chain and the timeout
+  fallback can no longer race and restore UI state twice.
+
 ## 1.5.0
 
 Reduces MCP context overhead while keeping the complete Sublime, debugger,
