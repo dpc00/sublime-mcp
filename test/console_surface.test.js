@@ -19,6 +19,10 @@ test('Windows console capture restores user-visible state', async () => {
   assert.match(source, /focus_view\(previous_view\)/);
   assert.match(source, /SetCursorPos\(cursor\.x, cursor\.y\)/);
   assert.match(source, /set_clipboard\(snapshot\["clipboard"\]\)/);
+  assert.match(source, /"foreground": foreground/);
+  assert.match(source, /SetForegroundWindow\(previous_foreground\)/);
+  assert.match(source, /if cleanup\["restore_started"\]:/);
+  assert.match(source, /cleanup\["cancelled"\] = True/);
   assert.match(source, /console copy did not update the clipboard/);
 });
 
