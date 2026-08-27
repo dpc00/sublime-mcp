@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.0
+
+Reduces MCP context overhead while keeping the complete Sublime, debugger,
+and LSP capability catalogs available on demand.
+
+- Each server now advertises a focused seven-tool surface by default, with
+  discovery and batch tools for advanced capabilities.
+- Adds structured native project search, streamable HTTP support, health
+  endpoints, a connection doctor, and installable Codex skills.
+- Adds a unified `get_console` API. Prospective console capture is reload-safe
+  and deduplicated, while the Windows full-history backend now restores the
+  previous panel, editor focus, pointer position, and text clipboard.
+- `get_output_panel(name="Console")` now routes through the working console
+  backend instead of treating the built-in console as a normal output panel.
+- Updates agent guides, generated proxy catalogs, and focused-surface tests.
+
 ## 1.4.6
 
 Removes vestigial Package Control artifacts. This project isn't listed in
