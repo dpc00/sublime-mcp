@@ -13,6 +13,7 @@ export const SLOW_ENDPOINTS = new Set([
   '/install_package',
   '/search_packages',
   '/find_in_files',
+  '/project_search',
   '/eval_python_latest',
   '/run_build',
 ]);

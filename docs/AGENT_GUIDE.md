@@ -6,8 +6,11 @@ Canonical copy for repo readers. `get_help` serves
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.
 
-220 typed tools. Prefer a named tool over `run_command`. `run_command` often
-opens ST UI that steals keyboard focus from the agent chat.
+Seven workflow tools are shown by default; the complete typed catalog remains
+available through `discover_tools` and `batch`. Prefer a named capability over
+`run_command`, which often opens UI that steals focus from the agent chat.
+
+On the first Sublime operation, call `get_help` once.
 
 ST tools use **1-based** line/column (`get_active_file`, `open_file`,
 `goto_line`, `replace_lines`). lsp-mcp uses **0-based**. Subtract 1 when
@@ -83,11 +86,12 @@ get_sheet_content(index=2)         # untitled / scratch / Terminus too
 open_file(path=..., line=42, col=1)
 save_all()
 revert_file()                      # active view only
-find_in_files(pattern=..., where=...)   # ST C++ Find-in-Files (Ctrl+Shift+H)
+project_search(pattern=..., where=...)  # ST Find-in-Files, structured matches
+discover_tools(query="bookmarks")       # find an advanced capability
 get_commands()                     # command ids, scopes, packages, palette captions
 ```
 
-`find_in_files` `where` accepts folder paths, `*.py`, `-*.md`, `${project}`,
+`project_search` `where` accepts folder paths, `*.py`, `-*.md`, `${project}`,
 `${open_files}`, `${folder:Name}`.
 
 ## Do not

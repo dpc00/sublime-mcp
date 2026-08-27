@@ -1,0 +1,13 @@
+interface:
+  display_name: "Sublime Debugger"
+  short_description: "Debug programs through Sublime Text"
+  default_prompt: "Use $sublime-debugger to diagnose this program in Sublime Text."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "debugger-mcp"
+      description: "Sublime Text Debugger MCP server"
+      transport: "streamable_http"
+      url: "http://127.0.0.1:9505/mcp"
+policy:
+  allow_implicit_invocation: true

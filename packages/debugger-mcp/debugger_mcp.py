@@ -8,6 +8,7 @@ import sublime_plugin
 import sys
 import os
 import json
+import re
 import threading
 import uuid as _uuid
 import queue as _queue
@@ -22,6 +23,16 @@ except ImportError:
 
 _MCP_PORT = 9505
 _HTTP_PORT = 9515
+_BATCH_MAX_CALLS = 50
+_DEFAULT_TOOL_NAMES = frozenset({
+    "debugger_get_help",
+    "debugger_batch",
+    "debugger_discover_tools",
+    "debugger_open",
+    "debugger_get_state",
+    "debugger_control",
+    "debugger_toggle_breakpoint",
+})
 
 
 def _load_ports():
@@ -202,6 +213,7 @@ def _mcp_dispatch(msg):
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "debugger-mcp", "version": "1.0.0"},
+                "instructions": "Call debugger_get_help first. Use debugger_batch for multiple or discovered calls, and debugger_discover_tools for advanced DAP capabilities.",
             }
         elif method in ("notifications/initialized", "notifications/cancelled"):
             return
@@ -209,7 +221,7 @@ def _mcp_dispatch(msg):
             result = {}
         elif method == "tools/list":
             with _mcp_tools_lock:
-                snapshot = list(_MCP_TOOLS)
+                snapshot = [tool for tool in _MCP_TOOLS if tool[0] in _DEFAULT_TOOL_NAMES]
             tools = []
             for name, desc, schema, _ in snapshot:
                 input_schema = dict(schema) if schema else {}
@@ -252,9 +264,12 @@ _POST = {}
 
 
 def _get_mcp_tools(params):
-    """Return list of all MCP tools for dynamic discovery by node-proxy."""
+    """Return the focused surface, or the complete catalog on request."""
     with _mcp_tools_lock:
         snapshot = list(_MCP_TOOLS)
+    surface = params.get("surface", ["default"])[0] if isinstance(params, dict) else "default"
+    if surface != "all":
+        snapshot = [tool for tool in snapshot if tool[0] in _DEFAULT_TOOL_NAMES]
     tools = []
     for name, desc, schema, _ in snapshot:
         input_schema = dict(schema) if schema else {}
@@ -266,8 +281,78 @@ def _get_mcp_tools(params):
     return {"tools": tools}
 
 
+def _health(params):
+    with _mcp_tools_lock:
+        total = len(_MCP_TOOLS)
+    return {
+        "ok": True,
+        "server": "debugger-mcp",
+        "mcp_port": _MCP_PORT,
+        "http_port": _HTTP_PORT,
+        "default_tool_count": len(_DEFAULT_TOOL_NAMES),
+        "advanced_tool_count": max(0, total - len(_DEFAULT_TOOL_NAMES)),
+        "total_tool_count": total,
+    }
+
+
+def _batch(body):
+    calls = body.get("calls")
+    if not isinstance(calls, list) or not calls:
+        return {"error": "calls must be a non-empty list of {tool, args}"}
+    if len(calls) > _BATCH_MAX_CALLS:
+        return {"error": "calls exceeds max batch size of {}".format(_BATCH_MAX_CALLS)}
+    with _mcp_tools_lock:
+        tools_by_name = {tool[0]: tool[3] for tool in _MCP_TOOLS}
+    results = []
+    for call in calls:
+        if not isinstance(call, dict):
+            results.append({"error": "each call must be an object with tool/args"})
+            continue
+        name = call.get("tool")
+        if name == "debugger_batch":
+            results.append({"error": "debugger_batch cannot call itself"})
+            continue
+        handler = tools_by_name.get(name)
+        if handler is None:
+            results.append({"error": "unknown tool: {!r}".format(name)})
+            continue
+        try:
+            results.append(handler(call.get("args") or call.get("arguments") or {}))
+        except Exception as error:
+            results.append({"error": str(error)})
+    return {"results": results}
+
+
+def _discover_tools(body):
+    query = (body.get("query") or "").strip().lower()
+    if not query:
+        return {"error": "query required"}
+    limit = max(1, min(int(body.get("limit", 10)), 25))
+    terms = [term for term in re.split(r"[^a-z0-9_]+", query) if term]
+    with _mcp_tools_lock:
+        snapshot = list(_MCP_TOOLS)
+    ranked = []
+    for name, desc, schema, _handler in snapshot:
+        if name in _DEFAULT_TOOL_NAMES:
+            continue
+        haystack = name.lower() + " " + (desc or "").lower()
+        score = sum((20 if term in name.lower() else 0) + (3 if term in haystack else 0)
+                    for term in terms)
+        if score:
+            ranked.append((score, name, desc, schema))
+    ranked.sort(key=lambda item: (-item[0], item[1]))
+    tools = []
+    for _score, name, desc, schema in ranked[:limit]:
+        input_schema = dict(schema) if schema else {}
+        input_schema.setdefault("type", "object")
+        input_schema.setdefault("properties", {})
+        tools.append({"name": name, "description": desc, "inputSchema": input_schema})
+    return {"tools": tools, "usage": "Invoke through debugger_batch, including for one discovered call."}
+
+
 _GET = {
     "/mcp_tools": _get_mcp_tools,
+    "/health": _health,
 }
 
 
@@ -1567,6 +1652,18 @@ for _key, _desc in _DEBUGGER_ST_COMMANDS:
 
 TOOLS = [
     *_DEBUGGER_ST_TOOLS,
+
+    ("debugger_batch",
+     "Run up to 50 debugger-mcp calls in one request. Also invokes advanced tools returned by debugger_discover_tools.",
+     {"type": "object", "properties": {"calls": {"type": "array", "maxItems": 50,
+         "items": {"type": "object", "properties": {"tool": {"type": "string"}, "args": {"type": "object"}}, "required": ["tool"]}}},
+      "required": ["calls"]},
+     _batch),
+
+    ("debugger_discover_tools",
+     "Search advanced debugger capabilities hidden from the default tool surface.",
+     {"type": "object", "properties": {"query": {"type": "string"}, "limit": {"type": "integer", "default": 10}}, "required": ["query"]},
+     _discover_tools),
 
     ("debugger_get_help",
      "Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use debugger-mcp tools correctly.",

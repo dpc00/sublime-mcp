@@ -9,6 +9,7 @@ import sublime_plugin
 import sys
 import os
 import json
+import re
 import threading
 import uuid as _uuid
 import queue as _queue
@@ -24,6 +25,16 @@ except ImportError:
 
 _MCP_PORT = 9506
 _HTTP_PORT = 9516
+_BATCH_MAX_CALLS = 50
+_DEFAULT_TOOL_NAMES = frozenset({
+    "lsp_get_help",
+    "lsp_batch",
+    "lsp_discover_tools",
+    "lsp_get_diagnostics",
+    "lsp_hover_info",
+    "lsp_goto_definition",
+    "lsp_find_references",
+})
 
 
 def _load_ports():
@@ -193,9 +204,12 @@ _POST = {}
 
 
 def _get_mcp_tools(params):
-    """Return list of all MCP tools for dynamic discovery by node-proxy."""
+    """Return the focused surface, or the complete catalog on request."""
     with _mcp_tools_lock:
         snapshot = list(_MCP_TOOLS)
+    surface = params.get("surface", ["default"])[0] if isinstance(params, dict) else "default"
+    if surface != "all":
+        snapshot = [tool for tool in snapshot if tool[0] in _DEFAULT_TOOL_NAMES]
     tools = []
     for name, desc, schema, _ in snapshot:
         input_schema = dict(schema) if schema else {}
@@ -207,8 +221,78 @@ def _get_mcp_tools(params):
     return {"tools": tools}
 
 
+def _health(params):
+    with _mcp_tools_lock:
+        total = len(_MCP_TOOLS)
+    return {
+        "ok": True,
+        "server": "lsp-mcp",
+        "mcp_port": _MCP_PORT,
+        "http_port": _HTTP_PORT,
+        "default_tool_count": len(_DEFAULT_TOOL_NAMES),
+        "advanced_tool_count": max(0, total - len(_DEFAULT_TOOL_NAMES)),
+        "total_tool_count": total,
+    }
+
+
+def _batch(body):
+    calls = body.get("calls")
+    if not isinstance(calls, list) or not calls:
+        return {"error": "calls must be a non-empty list of {tool, args}"}
+    if len(calls) > _BATCH_MAX_CALLS:
+        return {"error": "calls exceeds max batch size of {}".format(_BATCH_MAX_CALLS)}
+    with _mcp_tools_lock:
+        tools_by_name = {tool[0]: tool[3] for tool in _MCP_TOOLS}
+    results = []
+    for call in calls:
+        if not isinstance(call, dict):
+            results.append({"error": "each call must be an object with tool/args"})
+            continue
+        name = call.get("tool")
+        if name == "lsp_batch":
+            results.append({"error": "lsp_batch cannot call itself"})
+            continue
+        handler = tools_by_name.get(name)
+        if handler is None:
+            results.append({"error": "unknown tool: {!r}".format(name)})
+            continue
+        try:
+            results.append(handler(call.get("args") or call.get("arguments") or {}))
+        except Exception as error:
+            results.append({"error": str(error)})
+    return {"results": results}
+
+
+def _discover_tools(body):
+    query = (body.get("query") or "").strip().lower()
+    if not query:
+        return {"error": "query required"}
+    limit = max(1, min(int(body.get("limit", 10)), 25))
+    terms = [term for term in re.split(r"[^a-z0-9_]+", query) if term]
+    with _mcp_tools_lock:
+        snapshot = list(_MCP_TOOLS)
+    ranked = []
+    for name, desc, schema, _handler in snapshot:
+        if name in _DEFAULT_TOOL_NAMES:
+            continue
+        haystack = name.lower() + " " + (desc or "").lower()
+        score = sum((20 if term in name.lower() else 0) + (3 if term in haystack else 0)
+                    for term in terms)
+        if score:
+            ranked.append((score, name, desc, schema))
+    ranked.sort(key=lambda item: (-item[0], item[1]))
+    tools = []
+    for _score, name, desc, schema in ranked[:limit]:
+        input_schema = dict(schema) if schema else {}
+        input_schema.setdefault("type", "object")
+        input_schema.setdefault("properties", {})
+        tools.append({"name": name, "description": desc, "inputSchema": input_schema})
+    return {"tools": tools, "usage": "Invoke through lsp_batch, including for one discovered call."}
+
+
 _GET = {
     "/mcp_tools": _get_mcp_tools,
+    "/health": _health,
 }
 
 
@@ -302,6 +386,7 @@ def _mcp_dispatch(msg):
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "lsp-mcp", "version": "1.0.0"},
+                "instructions": "Call lsp_get_help first. Use lsp_batch for multiple or discovered calls, and lsp_discover_tools for advanced language-server capabilities.",
             }
         elif method in ("notifications/initialized", "notifications/cancelled"):
             return
@@ -309,7 +394,7 @@ def _mcp_dispatch(msg):
             result = {}
         elif method == "tools/list":
             with _mcp_tools_lock:
-                snapshot = list(_MCP_TOOLS)
+                snapshot = [tool for tool in _MCP_TOOLS if tool[0] in _DEFAULT_TOOL_NAMES]
             tools = []
             for name, desc, schema, _ in snapshot:
                 input_schema = dict(schema) if schema else {}
@@ -1539,6 +1624,18 @@ def _lsp_did_close(body):
 
 TOOLS = [
     *_LSP_ST_TOOLS,
+
+    ("lsp_batch",
+     "Run up to 50 lsp-mcp calls in one request. Also invokes advanced tools returned by lsp_discover_tools.",
+     {"type": "object", "properties": {"calls": {"type": "array", "maxItems": 50,
+         "items": {"type": "object", "properties": {"tool": {"type": "string"}, "args": {"type": "object"}}, "required": ["tool"]}}},
+      "required": ["calls"]},
+     _batch),
+
+    ("lsp_discover_tools",
+     "Search advanced LSP capabilities hidden from the default tool surface.",
+     {"type": "object", "properties": {"query": {"type": "string"}, "limit": {"type": "integer", "default": 10}}, "required": ["query"]},
+     _discover_tools),
 
     ("lsp_get_help",
      "Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use lsp-mcp tools correctly.",

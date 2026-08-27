@@ -3,11 +3,18 @@
 Call `lsp_get_help` if you are unsure how to navigate, apply an edit, or
 read diagnostics.
 
-Wraps Sublime Text's **LSP** package. 123 MCP tools. MCP SSE on port 9506;
+Wraps Sublime Text's **LSP** package. Seven tools are advertised by default;
+125 are available through discovery and batch. MCP SSE on port 9506;
 HTTP bridge on 9516 (`GET /mcp_tools` for the live catalog). Override via
 `lsp-mcp.sublime-settings` (`"mcp_port"` / `"http_port"`).
 
 ## Two tool families
+
+The focused surface is `lsp_get_help`, `lsp_batch`, `lsp_discover_tools`,
+`lsp_get_diagnostics`, `lsp_hover_info`, `lsp_goto_definition`, and
+`lsp_find_references`. Search for every other capability with
+`lsp_discover_tools(query=...)`, then invoke its exact name through
+`lsp_batch(calls=[{"tool": ..., "args": {...}}])`.
 
 1. **Hand-written LSP request wrappers** — explicit `line`/`column`/`file_path`,
    structured JSON. Prefer these when you need data back:
@@ -58,4 +65,5 @@ are **1-based**. Convert before crossing servers (`lsp_line = st_line - 1`).
 
 ## Full tool list
 
-`tools/list` (MCP) or `GET /mcp_tools` on port 9516.
+Use `lsp_discover_tools`; `tools/list` with `surface="all"` and
+`GET /mcp_tools?surface=all` expose the raw catalog for diagnostics.

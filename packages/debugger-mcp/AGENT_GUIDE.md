@@ -3,7 +3,8 @@
 Call `debugger_get_help` if you are unsure how to launch a session, set
 breakpoints, or read stack/variable state.
 
-Wraps Sublime Text's **Debugger** package (DAP). 102 MCP tools. MCP SSE on
+Wraps Sublime Text's **Debugger** package (DAP). Seven tools are advertised by
+default; 104 are available through discovery and batch. MCP SSE on
 port 9505; HTTP bridge on 9515 (`GET /mcp_tools` for the live catalog). Override
 via `debugger-mcp.sublime-settings` (`"mcp_port"` / `"http_port"`).
 
@@ -14,6 +15,12 @@ installed/enabled, or its UI has never been opened in this window, you get
 `{"error": "Debugger package not loaded."}`. Call `debugger_open` first.
 
 ## Two tool families
+
+The focused surface is `debugger_get_help`, `debugger_batch`,
+`debugger_discover_tools`, `debugger_open`, `debugger_get_state`,
+`debugger_control`, and `debugger_toggle_breakpoint`. Search for every other
+capability with `debugger_discover_tools(query=...)`, then invoke its exact
+name through `debugger_batch(calls=[{"tool": ..., "args": {...}}])`.
 
 1. **Hand-written DAP wrappers** — typed args, structured JSON. Prefer these:
    `debugger_get_state`, `debugger_control`, `debugger_toggle_breakpoint`,
@@ -76,5 +83,6 @@ supports reverse execution (most Python/Node adapters do not).
 
 ## Full tool list
 
-`tools/list` (MCP) or `GET /mcp_tools` on port 9515. Do not rely on a static
-enumeration.
+Use `debugger_discover_tools`; `tools/list` with `surface="all"` and
+`GET /mcp_tools?surface=all` expose the raw catalog for diagnostics. Do not rely
+on a static enumeration.

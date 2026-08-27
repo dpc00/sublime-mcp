@@ -14,10 +14,13 @@ Two optional companion plugins extend this:
 
 ## Toolset
 
-220 typed sublime-mcp tools cover ST's built-in text/window/application
-commands plus read-only state getters, a `batch` tool (max 50 calls per
-request), and `eval_python`. debugger-mcp adds 102 `debugger_*` tools;
-lsp-mcp adds 123 `lsp_*` tools.
+Seven workflow tools are advertised by default. `discover_tools` searches the
+complete internal catalog of 222 typed Sublime capabilities, and `batch` invokes
+discovered capabilities without flooding the model's initial tool context.
+debugger-mcp and lsp-mcp use the same focused pattern: each advertises seven
+workflow tools by default, with `debugger_discover_tools` / `lsp_discover_tools`
+and prefixed batch tools providing access to the complete catalogs (104 and
+125 tools respectively).
 
 Agent how-to: [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) (also served live by
 `get_help`). Workflow across all three MCPs: [docs/agents.md](docs/agents.md).
@@ -25,7 +28,8 @@ Release history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Ports
 
-Each plugin serves **MCP SSE** (direct clients) and a **plain HTTP bridge**.
+Each plugin serves **MCP streamable HTTP** at `/mcp`, legacy **MCP SSE** at
+`/sse`, and a **plain HTTP bridge**.
 The bundled Node/Python proxies use sublime-mcp's HTTP bridge only. Defaults:
 
 | Plugin        | MCP SSE                         | HTTP bridge                     | Settings file                        |
@@ -111,7 +115,37 @@ pip install .
 sublime-mcp
 ```
 
-Or point an MCP client with SSE transport at the SSE URL (Windows example):
+For Codex, use its native streamable-HTTP configuration; no `mcp-remote`
+wrapper is required:
+
+```toml
+[mcp_servers.sublime-mcp]
+type = "http"
+url = "http://127.0.0.1:9502/mcp"
+
+[mcp_servers.debugger-mcp]
+type = "http"
+url = "http://127.0.0.1:9505/mcp"
+
+[mcp_servers.lsp-mcp]
+type = "http"
+url = "http://127.0.0.1:9506/mcp"
+```
+
+Restart or open a new Codex session after changing MCP configuration. Verify
+the entire path before debugging agent behavior:
+
+```bash
+npx sublime-mcp doctor
+npx sublime-mcp doctor --all
+```
+
+The first command checks sublime-mcp. `--all` also checks debugger-mcp and
+lsp-mcp. The report separately checks each HTTP bridge, MCP handshake, and
+focused tool catalog. From Sublime's Command Palette,
+`MCP Commander: Connection Doctor` shows the main server-side state.
+
+Other MCP clients may use the legacy SSE URL (Windows example):
 
 ```json
 {
@@ -124,3 +158,10 @@ Or point an MCP client with SSE transport at the SSE URL (Windows example):
 Each plugin's MCP server starts automatically when ST loads it. To stop or
 restart sublime-mcp's, run "MCP Commander: Server Status" from the Command
 Palette. Check View > Show Console for startup confirmation.
+
+## Agent skill
+
+Installable Codex skills are in `skills/sublime-mcp`,
+`skills/sublime-debugger`, and `skills/sublime-lsp`. Copy the desired
+directories to your Codex skills directory or install them through your normal
+skill workflow.

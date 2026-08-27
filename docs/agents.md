@@ -15,9 +15,9 @@ Independent ST plugins. Connect to the subset you need.
 
 | MCP            | Plugin dir                 | MCP SSE                         | HTTP bridge                     | Tools                          |
 | -------------- | -------------------------- | ------------------------------- | ------------------------------- | ------------------------------ |
-| **sublime-mcp**  | `packages/st-plugin`     | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | 220, no prefix                 |
-| **debugger-mcp** | `packages/debugger-mcp`  | 9505                            | 9515                            | 102, `debugger_*`              |
-| **lsp-mcp**      | `packages/lsp-mcp`       | 9506                            | 9516                            | 123, `lsp_*`                   |
+| **sublime-mcp**  | `packages/st-plugin`     | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | 7 default, 215 discoverable    |
+| **debugger-mcp** | `packages/debugger-mcp`  | 9505                            | 9515                            | 7 default / 104 total          |
+| **lsp-mcp**      | `packages/lsp-mcp`       | 9506                            | 9516                            | 7 default / 125 total          |
 
 Ports are configured per-plugin via `<name>.sublime-settings` (`"mcp_port"` /
 `"http_port"`), overridable in `Packages/User/`. The proxy → HTTP bridge URL
