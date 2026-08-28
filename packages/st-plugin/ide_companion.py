@@ -25,6 +25,26 @@ MAX_RECENT_FILES = 10
 MAX_SELECTED_TEXT_BYTES = 16 * 1024
 MAX_REQUEST_BODY_BYTES = 64 * 1024 * 1024
 
+
+def detect_line_ending(data):
+    """Return the dominant newline sequence in UTF-8 file bytes."""
+    crlf = data.count(b"\r\n")
+    lf = data.count(b"\n") - crlf
+    cr = data.count(b"\r") - crlf
+    if crlf >= lf and crlf >= cr and crlf:
+        return "\r\n"
+    if lf >= cr and lf:
+        return "\n"
+    if cr:
+        return "\r"
+    return os.linesep
+
+
+def preserve_line_endings(text, line_ending):
+    """Normalize proposed text to the source file's newline convention."""
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    return normalized if line_ending == "\n" else normalized.replace("\n", line_ending)
+
 COMPANION_TOOLS = (
     {
         "name": "openDiff",
