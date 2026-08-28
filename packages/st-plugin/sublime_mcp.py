@@ -90,6 +90,8 @@ try:
         companion_dispatch,
         create_gemini_discovery_file,
         create_qwen_discovery_file,
+        detect_line_ending,
+        preserve_line_endings,
         remove_discovery_file,
     )
 except ImportError:
@@ -100,6 +102,8 @@ except ImportError:
         companion_dispatch,
         create_gemini_discovery_file,
         create_qwen_discovery_file,
+        detect_line_ending,
+        preserve_line_endings,
         remove_discovery_file,
     )
 
@@ -4740,10 +4744,17 @@ def _ide_open_diff(arguments):
         original_content = _on_main(
             lambda: original_view.substr(sublime.Region(0, original_view.size()))
         )
+        line_ending = {
+            "Windows": "\r\n",
+            "Unix": "\n",
+            "CR": "\r",
+        }.get(_on_main(original_view.line_endings), os.linesep)
     else:
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                original_content = f.read()
+            with open(file_path, "rb") as f:
+                original_bytes = f.read()
+            line_ending = detect_line_ending(original_bytes)
+            original_content = original_bytes.decode("utf-8")
         except Exception as e:
             return _ide_tool_error("Could not read file: {}".format(e))
 
@@ -4775,6 +4786,7 @@ def _ide_open_diff(arguments):
             "review": review,
             "original": original_view,
             "original_content": original_content,
+            "line_ending": line_ending,
         }
         return {"content": []}
 
@@ -5124,8 +5136,11 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
             )
         else:
             try:
-                with open(file_path, "w", encoding="utf-8") as f:
-                    f.write(final_content)
+                preserved_content = preserve_line_endings(
+                    final_content, state["line_ending"]
+                )
+                with open(file_path, "wb") as f:
+                    f.write(preserved_content.encode("utf-8"))
             except Exception as e:
                 sublime.error_message(
                     "Failed to save {}: {}".format(file_path, e)
