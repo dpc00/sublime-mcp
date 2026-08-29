@@ -273,6 +273,26 @@
       }
     },
     {
+      "name": "discover_tools",
+      "description": "Search advanced Sublime capabilities hidden from the default tool surface. Returns matching names, descriptions, and schemas. Invoke a result through batch(calls=[{tool: <name>, args: {...}}]), including for a single call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Capability to find, such as bookmarks, tabs, syntax, or commands."
+          },
+          "limit": {
+            "type": "integer",
+            "default": 10
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
       "name": "duplicate_line",
       "description": "Duplicate the current line(s) in the active file.",
       "inputSchema": {
@@ -589,6 +609,38 @@
       }
     },
     {
+      "name": "focus_sheet",
+      "description": "Move input focus to one sheet by global index or stable sheet ID without changing the selected sheet set.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "id": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "focus_to_left",
+      "description": "Move input focus to the selected sheet on the left.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "focus_to_right",
+      "description": "Move input focus to the selected sheet on the right.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
       "name": "fold_lines",
       "description": "Fold (collapse) lines begin through end (1-based) in the active file.",
       "inputSchema": {
@@ -874,6 +926,19 @@
       }
     },
     {
+      "name": "get_selected_sheets",
+      "description": "Return the currently multi-selected sheets, optionally limited to one group, with stable IDs and group positions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    {
       "name": "get_selection",
       "description": "Return the current selection(s): text and begin/end line+col for each.",
       "inputSchema": {
@@ -916,8 +981,24 @@
       }
     },
     {
+      "name": "get_sheet_index",
+      "description": "Return a sheet's current group and index within that group. Identify it by global index or stable sheet ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "id": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
       "name": "get_sheets",
-      "description": "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\nReturns index, type (TextSheet/ImageSheet), path, name, is_dirty for each.\nUse index with get_sheet_content to read a specific tab.",
+      "description": "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\nReturns identity, group position, selection/focus state, type, path, name, and dirty state.\nUse index with get_sheet_content to read a specific tab.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -1199,6 +1280,46 @@
       "inputSchema": {
         "type": "object",
         "properties": {}
+      }
+    },
+    {
+      "name": "move_sheets_to_group",
+      "description": "Move one or more sheets together to a group and optional insertion position, preserving native multi-selection when requested.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "indices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 1
+          },
+          "group": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "insertion_index": {
+            "type": "integer",
+            "minimum": -1,
+            "default": -1
+          },
+          "select": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "group"
+        ]
       }
     },
     {
@@ -1564,6 +1685,49 @@
       }
     },
     {
+      "name": "project_search",
+      "description": "Search project files with Sublime Text's native Find in Files engine and return structured {path,line,col,text} matches. This is the preferred project search tool.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string"
+          },
+          "where": {
+            "type": "string",
+            "description": "ST Where expression; empty uses current project folders."
+          },
+          "case_sensitive": {
+            "type": "boolean",
+            "default": false
+          },
+          "regex": {
+            "type": "boolean",
+            "default": false
+          },
+          "whole_word": {
+            "type": "boolean",
+            "default": false
+          },
+          "limit": {
+            "type": "integer",
+            "default": 200
+          },
+          "timeout": {
+            "type": "number",
+            "default": 30
+          },
+          "show_panel": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "pattern"
+        ]
+      }
+    },
+    {
       "name": "prompt_goto_line",
       "description": "Open the Goto Line prompt (WindowCommand).",
       "inputSchema": {
@@ -1904,6 +2068,37 @@
       }
     },
     {
+      "name": "select_sheets",
+      "description": "Change native tab multi-selection across the window. Identify sheets by global indices or stable sheet IDs; optionally choose the focused sheet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "indices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 1
+          },
+          "focus_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "focus_id": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
       "name": "select_theme",
       "description": "Open the theme picker (WindowCommand).",
       "inputSchema": {
@@ -1912,8 +2107,24 @@
       }
     },
     {
+      "name": "select_to_left",
+      "description": "Add the sheet left of the focused sheet to the tab multi-selection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
       "name": "select_to_mark",
       "description": "Select the text between the cursor and the previously set mark (TextCommand).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "select_to_right",
+      "description": "Add the sheet right of the focused sheet to the tab multi-selection.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -2029,6 +2240,34 @@
         "required": [
           "key",
           "value"
+        ]
+      }
+    },
+    {
+      "name": "set_sheet_index",
+      "description": "Move one sheet to a group and position using Sublime's set_sheet_index API.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "id": {
+            "type": "integer"
+          },
+          "group": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sheet_index": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "group",
+          "sheet_index"
         ]
       }
     },
@@ -2422,6 +2661,30 @@
     {
       "name": "unindent",
       "description": "Unindent the current selection(s) by one indentation level (Shift+Tab when there is a selection).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "unselect_others",
+      "description": "Collapse tab multi-selection to the focused sheet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "unselect_to_left",
+      "description": "Remove sheets left of the focused sheet from the tab multi-selection.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "unselect_to_right",
+      "description": "Remove sheets right of the focused sheet from the tab multi-selection.",
       "inputSchema": {
         "type": "object",
         "properties": {}

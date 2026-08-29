@@ -75,7 +75,7 @@ except ImportError:
 # Single source of truth for the version this plugin advertises over MCP.
 # Keep in step with packages/node-proxy/package.json and
 # packages/python-proxy/pyproject.toml; tests/proof/test_release_dependency_pins.py enforces it.
-__version__ = "1.5.1"
+__version__ = "1.6.0"
 
 try:
     from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
@@ -418,6 +418,15 @@ def _get_open_files(params):
 def _get_sheets(params):
     def fn():
         w = sublime.active_window()
+        selected_sheets = [
+            s
+            for group in range(w.num_groups())
+            for s in w.selected_sheets_in_group(group)
+        ]
+        selected_ids = {s.id() for s in selected_sheets}
+        active_sheet = w.active_sheet()
+        active_sheet_id = active_sheet.id() if active_sheet else None
+        active_group = w.active_group()
         out = []
         for i, s in enumerate(w.sheets()):
             kind = type(s).__name__
@@ -435,9 +444,201 @@ def _get_sheets(params):
                     "path": path,
                     "name": v.name() if v else None,
                     "is_dirty": v.is_dirty() if v else False,
+                    "group": s.group(),
+                    "index_in_group": w.get_sheet_index(s)[1],
+                    "is_selected": s.id() in selected_ids,
+                    "is_focused": s.id() == active_sheet_id,
+                    "is_active_group": s.group() == active_group,
                 }
             )
-        return {"sheets": out}
+        return {
+            "sheets": out,
+            "selected_sheet_ids": [s.id() for s in selected_sheets],
+            "active_sheet_id": active_sheet_id,
+            "active_group": active_group,
+        }
+
+    return _on_main(fn)
+
+
+def _sheet_summary(w, s):
+    v = s.view()
+    path = None
+    try:
+        path = s.file_name()
+    except Exception:
+        pass
+    group, index_in_group = w.get_sheet_index(s)
+    return {
+        "id": s.id(),
+        "type": type(s).__name__,
+        "path": path,
+        "name": v.name() if v else None,
+        "is_dirty": v.is_dirty() if v else False,
+        "group": group,
+        "index_in_group": index_in_group,
+    }
+
+
+def _get_selected_sheets(params):
+    group_value = params.get("group", [None])[0]
+    group = int(group_value) if group_value is not None else None
+
+    def fn():
+        w = sublime.active_window()
+        if group is not None:
+            if group < 0 or group >= w.num_groups():
+                return {"error": "group {} out of range (have {})".format(group, w.num_groups())}
+            sheets = w.selected_sheets_in_group(group)
+        else:
+            sheets = [
+                s
+                for group_index in range(w.num_groups())
+                for s in w.selected_sheets_in_group(group_index)
+            ]
+        active_sheet = w.active_sheet()
+        return {
+            "sheets": [_sheet_summary(w, s) for s in sheets],
+            "active_sheet_id": active_sheet.id() if active_sheet else None,
+            "active_group": w.active_group(),
+        }
+
+    return _on_main(fn)
+
+
+def _resolve_sheet_refs(w, body, require_one=False):
+    indices = body.get("indices")
+    ids = body.get("ids")
+    if indices is None and body.get("index") is not None:
+        indices = [body.get("index")]
+    if ids is None and body.get("id") is not None:
+        ids = [body.get("id")]
+    if indices is None and ids is None:
+        return None, "provide index/indices or id/ids"
+
+    all_sheets = w.sheets()
+    by_id = {s.id(): s for s in all_sheets}
+    resolved = []
+    seen = set()
+    for raw_index in indices or []:
+        index = int(raw_index)
+        if index < 0 or index >= len(all_sheets):
+            return None, "index {} out of range (have {} sheets)".format(index, len(all_sheets))
+        sheet = all_sheets[index]
+        if sheet.id() not in seen:
+            resolved.append(sheet)
+            seen.add(sheet.id())
+    for raw_id in ids or []:
+        sheet_id = int(raw_id)
+        sheet = by_id.get(sheet_id)
+        if sheet is None:
+            return None, "sheet id {} not found".format(sheet_id)
+        if sheet.id() not in seen:
+            resolved.append(sheet)
+            seen.add(sheet.id())
+    if require_one and len(resolved) != 1:
+        return None, "exactly one sheet must be specified"
+    return resolved, None
+
+
+def _select_sheets(body):
+    def fn():
+        w = sublime.active_window()
+        sheets, error = _resolve_sheet_refs(w, body)
+        if error:
+            return {"error": error}
+        if not sheets:
+            return {"error": "at least one sheet must be specified"}
+        w.select_sheets(sheets)
+        focus_id = body.get("focus_id")
+        focus_index = body.get("focus_index")
+        if focus_id is not None or focus_index is not None:
+            focus_body = {"id": focus_id} if focus_id is not None else {"index": focus_index}
+            focused, focus_error = _resolve_sheet_refs(w, focus_body, require_one=True)
+            if focus_error:
+                return {"error": focus_error}
+            if focused[0].id() not in {s.id() for s in sheets}:
+                return {"error": "focused sheet must be included in the selection"}
+            w.focus_sheet(focused[0])
+        selected = [
+            s
+            for group in range(w.num_groups())
+            for s in w.selected_sheets_in_group(group)
+        ]
+        return {"ok": True, "sheets": [_sheet_summary(w, s) for s in selected]}
+
+    return _on_main(fn)
+
+
+def _focus_sheet(body):
+    def fn():
+        w = sublime.active_window()
+        sheets, error = _resolve_sheet_refs(w, body, require_one=True)
+        if error:
+            return {"error": error}
+        w.focus_sheet(sheets[0])
+        return {"ok": True, "sheet": _sheet_summary(w, sheets[0])}
+
+    return _on_main(fn)
+
+
+def _get_sheet_index(params):
+    body = {k: values[0] for k, values in params.items()}
+
+    def fn():
+        w = sublime.active_window()
+        sheets, error = _resolve_sheet_refs(w, body, require_one=True)
+        if error:
+            return {"error": error}
+        return {"sheet": _sheet_summary(w, sheets[0])}
+
+    return _on_main(fn)
+
+
+def _set_sheet_index(body):
+    group = body.get("group")
+    sheet_index = body.get("sheet_index")
+    if group is None or sheet_index is None:
+        return {"error": "group and sheet_index are required"}
+
+    def fn():
+        w = sublime.active_window()
+        sheets, error = _resolve_sheet_refs(w, body, require_one=True)
+        if error:
+            return {"error": error}
+        group_value = int(group)
+        sheet_index_value = int(sheet_index)
+        if group_value < 0 or group_value >= w.num_groups():
+            return {"error": "group {} out of range (have {})".format(group_value, w.num_groups())}
+        if sheet_index_value < 0 or sheet_index_value > len(w.sheets_in_group(group_value)):
+            return {"error": "sheet_index {} out of range for group {}".format(sheet_index_value, group_value)}
+        w.set_sheet_index(sheets[0], group_value, sheet_index_value)
+        return {"ok": True, "sheet": _sheet_summary(w, sheets[0])}
+
+    return _on_main(fn)
+
+
+def _move_sheets_to_group(body):
+    group = body.get("group")
+    if group is None:
+        return {"error": "group required"}
+    insertion_index = int(body.get("insertion_index", -1))
+    select = body.get("select", True)
+
+    def fn():
+        w = sublime.active_window()
+        sheets, error = _resolve_sheet_refs(w, body)
+        if error:
+            return {"error": error}
+        if not sheets:
+            return {"error": "at least one sheet must be specified"}
+        group_value = int(group)
+        if group_value < 0 or group_value >= w.num_groups():
+            return {"error": "group {} out of range (have {})".format(group_value, w.num_groups())}
+        if insertion_index < -1 or insertion_index > len(w.sheets_in_group(group_value)):
+            return {"error": "insertion_index {} out of range for group {}".format(insertion_index, group_value)}
+        w.move_sheets_to_group(sheets, group_value, insertion_index, bool(select))
+        return {"ok": True, "sheets": [_sheet_summary(w, s) for s in sheets]}
 
     return _on_main(fn)
 
@@ -2390,6 +2591,8 @@ _GET = {
     "/cursor_context": _get_cursor_context,
     "/open_files": _get_open_files,
     "/sheets": _get_sheets,
+    "/selected_sheets": _get_selected_sheets,
+    "/sheet_index": _get_sheet_index,
     "/sheet_content": _get_sheet_content,
     "/project_folders": _get_project_folders,
     "/file_content": _get_file_content,
@@ -2458,6 +2661,17 @@ _POST = {
     "/undo": _undo,
     "/redo": _redo,
     "/duplicate_line": _duplicate_line,
+    "/select_sheets": _select_sheets,
+    "/focus_sheet": _focus_sheet,
+    "/set_sheet_index": _set_sheet_index,
+    "/move_sheets_to_group": _move_sheets_to_group,
+    "/unselect_others": _wc("unselect_others"),
+    "/unselect_to_left": _wc("unselect_to_left"),
+    "/unselect_to_right": _wc("unselect_to_right"),
+    "/select_to_left": _wc("select_to_left"),
+    "/select_to_right": _wc("select_to_right"),
+    "/focus_to_left": _wc("focus_to_left"),
+    "/focus_to_right": _wc("focus_to_right"),
     # ── Phase B batch 1: selection / edit / view ops ────────────────────────
     "/new_file": _wc("new_file"),
     "/new_view": _wc("new_file"),
@@ -3180,9 +3394,20 @@ _MCP_TOOLS = [
      {}, _g("/open_files")),
     ("get_sheets",
      "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\n"
-     "Returns index, type (TextSheet/ImageSheet), path, name, is_dirty for each.\n"
+     "Returns identity, group position, selection/focus state, type, path, name, and dirty state.\n"
      "Use index with get_sheet_content to read a specific tab.",
      {}, _g("/sheets")),
+    ("get_selected_sheets",
+     "Return the currently multi-selected sheets, optionally limited to one group, with stable IDs and group positions.",
+     {"type": "object", "properties": {"group": {"type": "integer", "minimum": 0}}},
+     _g("/selected_sheets")),
+    ("get_sheet_index",
+     "Return a sheet's current group and index within that group. Identify it by global index or stable sheet ID.",
+     {"type": "object", "properties": {
+         "index": {"type": "integer", "minimum": 0},
+         "id": {"type": "integer"},
+     }},
+     _g("/sheet_index")),
     ("get_project_folders", "Return the project's root folder paths.", {}, _g("/project_folders")),
     ("get_symbols", "Return all symbols (functions, classes, etc.) in the active file with line numbers.", {}, _g("/symbols")),
     ("get_project_data", "Return the raw .sublime-project JSON data for the current project.", {}, _g("/project_data")),
@@ -3202,6 +3427,13 @@ _MCP_TOOLS = [
     ("redo", "Redo the last undone edit in the active file.", {}, _p("/redo")),
     ("duplicate_line", "Duplicate the current line(s) in the active file.", {}, _p("/duplicate_line")),
     ("toggle_sidebar", "Show or hide the Sublime Text sidebar.", {}, _p("/toggle_sidebar")),
+    ("unselect_others", "Collapse tab multi-selection to the focused sheet.", {}, _p("/unselect_others")),
+    ("unselect_to_left", "Remove sheets left of the focused sheet from the tab multi-selection.", {}, _p("/unselect_to_left")),
+    ("unselect_to_right", "Remove sheets right of the focused sheet from the tab multi-selection.", {}, _p("/unselect_to_right")),
+    ("select_to_left", "Add the sheet left of the focused sheet to the tab multi-selection.", {}, _p("/select_to_left")),
+    ("select_to_right", "Add the sheet right of the focused sheet to the tab multi-selection.", {}, _p("/select_to_right")),
+    ("focus_to_left", "Move input focus to the selected sheet on the left.", {}, _p("/focus_to_left")),
+    ("focus_to_right", "Move input focus to the selected sheet on the right.", {}, _p("/focus_to_right")),
     # ── parameterized GET tools ───────────────────────────────────────────────
     ("get_cursor_context",
      "Return `lines` lines above and below the cursor with 1-based line numbers prepended.",
@@ -3332,6 +3564,41 @@ _MCP_TOOLS = [
          "index": {"type": "integer", "default": -1},
      }, "required": ["text"]},
      _p("/send_to_view")),
+    ("select_sheets",
+     "Change native tab multi-selection across the window. Identify sheets by global indices or stable sheet IDs; optionally choose the focused sheet.",
+     {"type": "object", "properties": {
+         "indices": {"type": "array", "items": {"type": "integer", "minimum": 0}, "minItems": 1},
+         "ids": {"type": "array", "items": {"type": "integer"}, "minItems": 1},
+         "focus_index": {"type": "integer", "minimum": 0},
+         "focus_id": {"type": "integer"},
+     }},
+     _p("/select_sheets")),
+    ("focus_sheet",
+     "Move input focus to one sheet by global index or stable sheet ID without changing the selected sheet set.",
+     {"type": "object", "properties": {
+         "index": {"type": "integer", "minimum": 0},
+         "id": {"type": "integer"},
+     }},
+     _p("/focus_sheet")),
+    ("set_sheet_index",
+     "Move one sheet to a group and position using Sublime's set_sheet_index API.",
+     {"type": "object", "properties": {
+         "index": {"type": "integer", "minimum": 0},
+         "id": {"type": "integer"},
+         "group": {"type": "integer", "minimum": 0},
+         "sheet_index": {"type": "integer", "minimum": 0},
+     }, "required": ["group", "sheet_index"]},
+     _p("/set_sheet_index")),
+    ("move_sheets_to_group",
+     "Move one or more sheets together to a group and optional insertion position, preserving native multi-selection when requested.",
+     {"type": "object", "properties": {
+         "indices": {"type": "array", "items": {"type": "integer", "minimum": 0}, "minItems": 1},
+         "ids": {"type": "array", "items": {"type": "integer"}, "minItems": 1},
+         "group": {"type": "integer", "minimum": 0},
+         "insertion_index": {"type": "integer", "minimum": -1, "default": -1},
+         "select": {"type": "boolean", "default": True},
+     }, "required": ["group"]},
+     _p("/move_sheets_to_group")),
     ("open_file",
      "Open a file in Sublime Text, optionally jumping to a specific line and column.",
      {"type": "object", "properties": {

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.6.0
+
+Adds first-class support for Sublime Text's native tab multi-select and sheet
+APIs.
+
+- `get_sheets` now reports stable sheet IDs, group positions, selected state,
+  focused state, and the active group.
+- Adds dedicated tools for querying selected sheets, selecting or focusing
+  sheets by ID/index, reordering sheets, and moving sheet collections between
+  groups.
+- Exposes Sublime's seven native directional tab-selection and focus commands.
+- Correctly aggregates selected sheets across all editor groups while retaining
+  optional per-group queries.
+- Updates the Node and Python proxy catalogs, agent guides, catalog generator,
+  and regression coverage for the expanded 236-tool surface.
+
 ## 1.5.1
 
 Fixes an OS-level focus-stealing bug in the Windows `get_console`/`get_console_win`

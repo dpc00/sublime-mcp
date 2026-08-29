@@ -81,7 +81,11 @@ error; bare expressions produce no output. In scope: `sublime`, `window`,
 get_active_file()                  # path, full content, 1-based line/col, is_dirty, syntax
 get_cursor_context(lines=10)       # ±N lines, numbered
 get_selection()                    # highlighted text
-get_sheets()                       # every tab: index, type, path, name, is_dirty
+get_sheets()                       # every tab: stable id, group/index, selection/focus, path/name
+get_selected_sheets(group=0)      # native tab multi-selection, optionally by group
+select_sheets(ids=[...])           # select tabs together; indices=[...] also works
+focus_sheet(id=...)                # focus one sheet without replacing the selected set
+move_sheets_to_group(ids=[...], group=0)  # move a selected tab collection together
 get_sheet_content(index=2)         # untitled / scratch / Terminus too
 open_file(path=..., line=42, col=1)
 save_all()
