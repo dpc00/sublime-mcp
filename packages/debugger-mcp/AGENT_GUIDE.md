@@ -64,6 +64,75 @@ lsp-mcp).
 9. debugger_stop  or  debugger_terminate
 ```
 
+## Debugging Sublime Text plugins
+
+Prefer Debugger's `sublime` adapter over attaching debugpy to the live Sublime
+Text process. The adapter launches a separate `Sublime Text (Debug)` instance
+with its own data directory. A breakpoint in plugin code can suspend that
+instance without freezing the editor window that hosts debugger-mcp and the AI
+client.
+
+First confirm the adapter and project configuration are visible:
+
+```
+debugger_open
+debugger_discover_tools(query="adapters configurations")
+debugger_batch(calls=[
+  {"tool": "debugger_get_adapters", "args": {}},
+  {"tool": "debugger_get_configurations", "args": {}}
+])
+```
+
+`debugger_get_adapters` should contain `{"name": "sublime"}`. If it does not,
+the user must install that adapter through Sublime Debugger. Do not open the
+adapter installation UI or download an adapter without the user's consent.
+
+Add a configuration to the project's `.sublime-project` file:
+
+```json
+{
+  "folders": [{ "path": "." }],
+  "debugger_configurations": [
+    {
+      "name": "Plugin (isolated Sublime)",
+      "type": "sublime",
+      "request": "launch",
+      "entry": "PackageName.plugin_module",
+      "args": ["-n", "${project_path}/Project.sublime-project"],
+      "linked_packages": [
+        "${project_path}",
+        "${packages}/User/Preferences.sublime-settings"
+      ]
+    }
+  ]
+}
+```
+
+Important details:
+
+- `linked_packages` is required. Linking `${project_path}` makes the repository
+  available as a package named after its directory.
+- `entry` is the importable plugin module, for example
+  `GhostShell.ai_terminal`. It enables Debugger's reload-on-save support and is
+  optional if reload support is not wanted.
+- Link only the User files the test instance actually needs. Linking all of
+  `Packages/User` can make the supposedly isolated environment noisy and hard
+  to reproduce.
+- Opening a `.sublime-project` that contains the configuration is necessary;
+  merely creating the file does not add it to an already-open different
+  project.
+- Starting the configuration visibly launches another Sublime instance. Treat
+  that as a user-visible action and obtain consent when the user did not
+  explicitly request a launch.
+- Avoid attaching to or pausing the production Sublime plugin host unless the
+  user specifically accepts the risk of freezing that editor and disrupting
+  its MCP connections.
+
+After opening the project, use the normal workflow above with
+`configuration_name="Plugin (isolated Sublime)"`. Set breakpoints against the
+source file in the linked repository; the isolated package is a symlink to the
+same files.
+
 ## Breakpoints and variables
 
 - `debugger_toggle_breakpoint(file_path, line)` — add/remove one source
