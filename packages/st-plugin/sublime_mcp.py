@@ -5020,7 +5020,7 @@ def _ide_open_diff(arguments):
         right.settings().set("ide_companion_diff_path", file_path)
         right.set_status(
             "ide_companion_diff",
-            "IDE Companion review — Ctrl+Enter to Accept, Esc to Reject",
+            "IDE Companion review — Ctrl+Shift+Enter to Accept, Esc to Reject",
         )
 
         review_window.set_view_index(left, 0, 0)

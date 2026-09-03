@@ -7,7 +7,7 @@
         ]
     },
     {
-        "keys": ["super+enter"],
+        "keys": ["super+shift+enter"],
         "command": "accept_ide_companion_diff",
         "context": [
             { "key": "setting.ide_companion_diff_path" }
