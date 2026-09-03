@@ -1,0 +1,16 @@
+[
+    {
+        "keys": ["escape"],
+        "command": "reject_ide_companion_diff",
+        "context": [
+            { "key": "setting.ide_companion_diff_path" }
+        ]
+    },
+    {
+        "keys": ["super+enter"],
+        "command": "accept_ide_companion_diff",
+        "context": [
+            { "key": "setting.ide_companion_diff_path" }
+        ]
+    }
+]
