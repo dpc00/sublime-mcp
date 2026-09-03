@@ -4909,25 +4909,36 @@ def _highlight_diff_panes(left_view, right_view, original_content, new_content):
                 region = right_view.full_line(right_view.text_point(row, 0))
                 (right_changed_regions if tag == "replace" else added_regions).append(region)
 
+    # An explicit annotation_color is required, not just a scope name —
+    # some color schemes don't define a fill for region.redish/greenish/
+    # bluish, which silently renders no visible highlight at all.
     if removed_regions:
         left_view.add_regions(
             "ide_diff_removed", removed_regions, "region.redish", "",
             sublime.DRAW_NO_OUTLINE,
+            annotations=[""] * len(removed_regions),
+            annotation_color="#f92672",
         )
     if left_changed_regions:
         left_view.add_regions(
             "ide_diff_changed", left_changed_regions, "region.bluish", "",
             sublime.DRAW_NO_OUTLINE,
+            annotations=[""] * len(left_changed_regions),
+            annotation_color="#66d9ef",
         )
     if added_regions:
         right_view.add_regions(
             "ide_diff_added", added_regions, "region.greenish", "",
             sublime.DRAW_NO_OUTLINE,
+            annotations=[""] * len(added_regions),
+            annotation_color="#a6e22e",
         )
     if right_changed_regions:
         right_view.add_regions(
             "ide_diff_changed", right_changed_regions, "region.bluish", "",
             sublime.DRAW_NO_OUTLINE,
+            annotations=[""] * len(right_changed_regions),
+            annotation_color="#66d9ef",
         )
 
 
@@ -4960,7 +4971,13 @@ def _ide_open_diff(arguments):
             with open(file_path, "rb") as f:
                 original_bytes = f.read()
             line_ending = detect_line_ending(original_bytes)
-            original_content = original_bytes.decode("utf-8")
+            # Match view.substr()'s convention (used in the branch above,
+            # when the file is already open): always \n, never a literal
+            # \r in the content. Sublime views never show \r as a character;
+            # only preserve_line_endings() re-applies it, on write-back.
+            original_content = (
+                original_bytes.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
+            )
         except Exception as e:
             return _ide_tool_error("Could not read file: {}".format(e))
 
