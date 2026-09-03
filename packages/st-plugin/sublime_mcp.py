@@ -4819,21 +4819,6 @@ def _ide_tool_error(message):
     }
 
 
-def _ide_review_group(window):
-    """Prefer a non-active group already used for disk-backed source files."""
-    active_group = window.active_group()
-    choices = []
-    for group in range(window.num_groups()):
-        if group == active_group:
-            continue
-        file_views = 0
-        for candidate in window.views_in_group(group):
-            if candidate.file_name():
-                file_views += 1
-        choices.append((file_views, -group, group))
-    return max(choices)[2] if choices else active_group
-
-
 def _line_diff_ops(a, b):
     """Hand-rolled line-level LCS diff (Wagner-Fischer DP + backtrace).
 
@@ -4899,99 +4884,51 @@ def _line_diff_ops(a, b):
     return ops
 
 
-def _removed_lines_html(lines):
-    rows = []
-    for line in lines:
-        escaped = html.escape(line) if line else "&nbsp;"
-        rows.append(
-            '<div style="color:#f92672;text-decoration:line-through;'
-            'white-space:pre;font-family:monospace;font-size:0.95em;">{}</div>'.format(escaped)
-        )
-    return (
-        '<body style="margin:0;padding:2px 6px 2px 24px;background-color:#2b1414;'
-        'border-left:3px solid #f92672;">' + "".join(rows) + "</body>"
-    )
+def _highlight_diff_panes(left_view, right_view, original_content, new_content):
+    """Highlight the diff across two real panes instead of one merged buffer.
 
-
-def _render_diff_markup(review, original_content, new_content, file_path):
-    """Highlight the diff directly in the single review view.
-
-    Added/changed lines get a colored region (annotation-style, matching
-    McpStrReplaceCommand/McpInsertTextCommand's existing conventions).
-    Removed lines have no text left to highlight, so they get an inline
-    block phantom showing the struck-through content at the point they used
-    to occupy — otherwise a deletion is invisible in a single-buffer view.
+    Each pane shows its own actual content (left = original, right =
+    proposed) — no phantom overlays, no struck-through inline copies. A
+    deletion is visible as a highlighted line in the left pane; there is
+    nothing to fake in the right pane for it.
     """
     old_lines = original_content.splitlines()
     new_lines = new_content.splitlines()
     ops = _line_diff_ops(old_lines, new_lines)
 
-    def row_region(row):
-        return review.full_line(review.text_point(row, 0))
-
-    added_regions, added_annotations = [], []
-    changed_regions, changed_annotations = [], []
-    removed_count = 0
+    removed_regions, left_changed_regions = [], []
+    added_regions, right_changed_regions = [], []
 
     for tag, i1, i2, j1, j2 in ops:
+        if tag in ("delete", "replace"):
+            for row in range(i1, i2):
+                region = left_view.full_line(left_view.text_point(row, 0))
+                (left_changed_regions if tag == "replace" else removed_regions).append(region)
         if tag in ("insert", "replace"):
             for row in range(j1, j2):
-                region = row_region(row)
-                if tag == "insert":
-                    added_regions.append(region)
-                    added_annotations.append("")
-                else:
-                    changed_regions.append(region)
-                    changed_annotations.append("")
-        if tag in ("delete", "replace") and i2 > i1:
-            removed_count += 1
-            anchor_pt = review.text_point(j1, 0) if j1 < len(new_lines) else review.size()
-            review.add_phantom(
-                "ide_diff_removed_{}".format(removed_count),
-                sublime.Region(anchor_pt, anchor_pt),
-                _removed_lines_html(old_lines[i1:i2]),
-                sublime.LAYOUT_BLOCK,
-            )
+                region = right_view.full_line(right_view.text_point(row, 0))
+                (right_changed_regions if tag == "replace" else added_regions).append(region)
 
+    if removed_regions:
+        left_view.add_regions(
+            "ide_diff_removed", removed_regions, "region.redish", "",
+            sublime.DRAW_NO_OUTLINE,
+        )
+    if left_changed_regions:
+        left_view.add_regions(
+            "ide_diff_changed", left_changed_regions, "region.bluish", "",
+            sublime.DRAW_NO_OUTLINE,
+        )
     if added_regions:
-        review.add_regions(
+        right_view.add_regions(
             "ide_diff_added", added_regions, "region.greenish", "",
-            sublime.DRAW_NO_OUTLINE, annotations=added_annotations,
-            annotation_color="#a6e22e",
+            sublime.DRAW_NO_OUTLINE,
         )
-    if changed_regions:
-        review.add_regions(
-            "ide_diff_changed", changed_regions, "region.bluish", "",
-            sublime.DRAW_NO_OUTLINE, annotations=changed_annotations,
-            annotation_color="#66d9ef",
+    if right_changed_regions:
+        right_view.add_regions(
+            "ide_diff_changed", right_changed_regions, "region.bluish", "",
+            sublime.DRAW_NO_OUTLINE,
         )
-
-    def on_navigate(href):
-        window = review.window()
-        if not window:
-            return
-        window.focus_view(review)
-        if href == "accept":
-            window.run_command("accept_ide_companion_diff")
-        elif href == "reject":
-            window.run_command("reject_ide_companion_diff")
-
-    banner_html = (
-        '<body style="margin:0;padding:6px 12px;background-color:#1e1e1e;'
-        'border-bottom:1px solid #f92672;font-family:sans-serif;font-size:0.95em;'
-        'color:#f8f8f2;">'
-        '<b>Reviewing:</b> {name} &nbsp;&nbsp; '
-        '<a href="accept" style="color:#a6e22e;font-weight:bold;text-decoration:none;">Accept</a>'
-        ' <span style="color:#75715e;font-size:0.85em;">(Ctrl+Enter)</span>'
-        ' &nbsp; '
-        '<a href="reject" style="color:#f92672;font-weight:bold;text-decoration:none;">Reject</a>'
-        ' <span style="color:#75715e;font-size:0.85em;">(Esc)</span>'
-        '</body>'
-    ).format(name=html.escape(os.path.basename(file_path)))
-    review.add_phantom(
-        "ide_diff_banner", sublime.Region(0, 0), banner_html,
-        sublime.LAYOUT_BLOCK, on_navigate=on_navigate,
-    )
 
 
 def _ide_open_diff(arguments):
@@ -5028,31 +4965,58 @@ def _ide_open_diff(arguments):
             return _ide_tool_error("Could not read file: {}".format(e))
 
     def open_review():
-        window = (original_view.window() if original_view else None) or sublime.active_window()
-        group = _ide_review_group(window)
-        review = window.new_file()
-        review.set_name("Diff Review: " + os.path.basename(file_path))
-        review.set_scratch(True)
+        # A dedicated new window, not a group split in the caller's current
+        # window — this review can be triggered while that window is doing
+        # something else (e.g. hosting a terminal), and must not touch its
+        # existing layout/focus to get its own two-pane compare view.
+        sublime.active_window().run_command("new_window")
+        review_window = sublime.active_window()
+        review_window.set_layout({
+            "cols": [0.0, 0.5, 1.0],
+            "rows": [0.0, 1.0],
+            "cells": [[0, 0, 1, 1], [1, 0, 2, 1]],
+        })
+
+        base_name = os.path.basename(file_path)
         syntax = sublime.find_syntax_for_file(file_path)
+
+        left = review_window.new_file()
+        left.set_name("Original: " + base_name)
+        left.set_scratch(True)
         if syntax:
-            review.assign_syntax(syntax)
-        review.set_reference_document(original_content)
-        review.run_command(
+            left.assign_syntax(syntax)
+        left.run_command(
             "mcp_replace_region",
-            {"begin": 0, "end": review.size(), "text": new_content},
+            {"begin": 0, "end": left.size(), "text": original_content},
         )
-        review.settings().set("ide_companion_diff_path", file_path)
-        review.set_status(
+        left.set_read_only(True)
+
+        right = review_window.new_file()
+        right.set_name("Proposed: " + base_name)
+        right.set_scratch(True)
+        if syntax:
+            right.assign_syntax(syntax)
+        right.run_command(
+            "mcp_replace_region",
+            {"begin": 0, "end": right.size(), "text": new_content},
+        )
+        right.settings().set("ide_companion_diff_path", file_path)
+        right.set_status(
             "ide_companion_diff",
-            "IDE Companion review — Ctrl+Enter to Accept, Esc to Reject "
-            "(or use the banner links / Command Palette)",
+            "IDE Companion review — Ctrl+Enter to Accept, Esc to Reject",
         )
-        if review.sheet() and group != window.active_group():
-            window.move_sheets_to_group([review.sheet()], group, select=True)
-        _render_diff_markup(review, original_content, new_content, file_path)
+
+        review_window.set_view_index(left, 0, 0)
+        review_window.set_view_index(right, 1, 0)
+        review_window.focus_view(right)
+
+        _highlight_diff_panes(left, right, original_content, new_content)
+
         _ide_diffs[key] = {
             "file_path": file_path,
-            "review": review,
+            "review": right,
+            "left_view": left,
+            "review_window": review_window,
             "original": original_view,
             "original_content": original_content,
             "line_ending": line_ending,
@@ -5062,6 +5026,18 @@ def _ide_open_diff(arguments):
     return _on_main(open_review)
 
 
+def _close_review_window(state, skip_view_id=None):
+    """Close both panes and the dedicated review window for a diff state."""
+    for view in (state.get("review"), state.get("left_view")):
+        if view and view.is_valid() and view.id() != skip_view_id:
+            view.settings().erase("ide_companion_diff_path")
+            view.set_scratch(True)
+            view.close()
+    window = state.get("review_window")
+    if window and window.is_valid():
+        window.run_command("close_window")
+
+
 def _close_ide_diff(file_path):
     key = os.path.normcase(os.path.abspath(os.path.normpath(file_path)))
     state = _ide_diffs.pop(key, None)
@@ -5069,8 +5045,7 @@ def _close_ide_diff(file_path):
         return None, _ide_tool_error("No diff review is open for: " + file_path)
     review = state["review"]
     final_content = review.substr(sublime.Region(0, review.size()))
-    review.set_scratch(True)
-    review.close()
+    _close_review_window(state)
     return final_content, None
 
 
@@ -5173,18 +5148,14 @@ def _claude_close_tab(arguments):
         for key, state in list(_ide_diffs.items()):
             if state.get("claude_tab_name") == tab_name:
                 state["claude_result"] = [{"type": "text", "text": "TAB_CLOSED"}]
-                review = state["review"]
                 _ide_diffs.pop(key, None)
                 if state.get("claude_event"):
                     state["claude_event"].set()
-                if review and review.is_valid():
-                    # Erase the marker before close so on_close's diff_path
-                    # check no-ops: this is a Claude tab-close, not a Gemini
-                    # reject, and must not broadcast ide/diffRejected to
-                    # every other companion subscriber.
-                    review.settings().erase("ide_companion_diff_path")
-                    review.set_scratch(True)
-                    review.close()
+                # Erase the marker before close so on_close's diff_path
+                # check no-ops: this is a Claude tab-close, not a Gemini
+                # reject, and must not broadcast ide/diffRejected to
+                # every other companion subscriber.
+                _close_review_window(state)
                 return {"content": [{"type": "text", "text": "TAB_CLOSED"}]}
         return _ide_tool_error("Tab not found: " + str(tab_name))
 
@@ -5210,11 +5181,7 @@ def _discard_ide_diffs_after_disconnect():
             if event:
                 state["claude_result"] = [{"type": "text", "text": "DIFF_REJECTED"}]
                 event.set()
-            review = state["review"]
-            if review and review.is_valid():
-                review.settings().erase("ide_companion_diff_path")
-                review.set_scratch(True)
-                review.close()
+            _close_review_window(state)
 
     sublime.set_timeout(discard, 0)
 
@@ -5381,6 +5348,9 @@ class IdeCompanionContextListener(sublime_plugin.EventListener):
                     _ide_companion_server.notify(
                         "ide/diffRejected", {"filePath": state["file_path"]}
                     )
+                # This view is already mid-close; only clean up its sibling
+                # pane and the shared review window.
+                _close_review_window(state, skip_view_id=view.id())
         _ide_context_tracker.forget(view.file_name())
         _schedule_ide_context_update()
 
@@ -5431,10 +5401,11 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
             ]
             state["claude_event"].set()
         _ide_diffs.pop(key, None)
-        review.settings().erase("ide_companion_diff_path")
-        review.set_scratch(True)
-        review.close()
-        self.window.focus_view(original)
+        _close_review_window(state)
+        if original and original.is_valid():
+            original_window = original.window()
+            if original_window:
+                original_window.focus_view(original)
         # Gemini-protocol hub notify only for Gemini-owned reviews.
         if _ide_companion_server and not claude_owned:
             _ide_companion_server.notify(
@@ -5461,9 +5432,7 @@ class RejectIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
         if claude_owned:
             state["claude_result"] = [{"type": "text", "text": "DIFF_REJECTED"}]
             state["claude_event"].set()
-        review.settings().erase("ide_companion_diff_path")
-        review.set_scratch(True)
-        review.close()
+        _close_review_window(state)
         if _ide_companion_server and not claude_owned:
             _ide_companion_server.notify(
                 "ide/diffRejected", {"filePath": state["file_path"]}
