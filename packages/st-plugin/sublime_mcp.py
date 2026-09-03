@@ -4982,8 +4982,10 @@ def _render_diff_markup(review, original_content, new_content, file_path):
         'color:#f8f8f2;">'
         '<b>Reviewing:</b> {name} &nbsp;&nbsp; '
         '<a href="accept" style="color:#a6e22e;font-weight:bold;text-decoration:none;">Accept</a>'
+        ' <span style="color:#75715e;font-size:0.85em;">(Ctrl+Enter)</span>'
         ' &nbsp; '
         '<a href="reject" style="color:#f92672;font-weight:bold;text-decoration:none;">Reject</a>'
+        ' <span style="color:#75715e;font-size:0.85em;">(Esc)</span>'
         '</body>'
     ).format(name=html.escape(os.path.basename(file_path)))
     review.add_phantom(
@@ -5042,8 +5044,8 @@ def _ide_open_diff(arguments):
         review.settings().set("ide_companion_diff_path", file_path)
         review.set_status(
             "ide_companion_diff",
-            "IDE Companion review — Accept/Reject via the banner links, "
-            "or the Accept IDE Companion Diff / Reject IDE Companion Diff commands",
+            "IDE Companion review — Ctrl+Enter to Accept, Esc to Reject "
+            "(or use the banner links / Command Palette)",
         )
         if review.sheet() and group != window.active_group():
             window.move_sheets_to_group([review.sheet()], group, select=True)
@@ -5415,9 +5417,17 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
                 return
         claude_owned = bool(state.get("claude_event"))
         if claude_owned:
+            # Sublime buffers are always \n internally (view.substr never
+            # returns \r\n), but the file itself gets saved with its real
+            # line ending below/on next save. Report the same bytes back to
+            # Claude so it doesn't see a false "file changed externally"
+            # diff purely from CRLF normalization.
             state["claude_result"] = [
                 {"type": "text", "text": "FILE_SAVED"},
-                {"type": "text", "text": final_content},
+                {
+                    "type": "text",
+                    "text": preserve_line_endings(final_content, state["line_ending"]),
+                },
             ]
             state["claude_event"].set()
         _ide_diffs.pop(key, None)
