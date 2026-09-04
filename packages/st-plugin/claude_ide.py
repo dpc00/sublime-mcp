@@ -56,6 +56,40 @@ def claude_discovery_directory(config_directory=None):
     return os.path.join(root, "ide")
 
 
+def _pid_alive(pid):
+    """Best-effort liveness check; assume alive if we can't tell either way."""
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return True
+    if os.name == "nt":
+        # os.kill(pid, 0) does not work as a liveness probe on Windows --
+        # verified empirically to raise the same OSError for both a live
+        # and a dead pid. OpenProcess is the actual correct check here.
+        import ctypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        handle = ctypes.windll.kernel32.OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION, False, pid
+        )
+        if handle:
+            ctypes.windll.kernel32.CloseHandle(handle)
+            return True
+        return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Alive, just not ours to signal.
+        return True
+    except OSError:
+        # Ambiguous -- default to "alive" so a transient error can never
+        # delete a live session's lock file.
+        return True
+
+
 def create_claude_discovery_file(
     port,
     workspace_paths,
@@ -64,7 +98,15 @@ def create_claude_discovery_file(
     directory=None,
     ide_name="Sublime Text",
 ):
-    """Atomically publish Claude Code's ``<PORT>.lock`` discovery record."""
+    """Atomically publish Claude Code's ``<PORT>.lock`` discovery record.
+
+    Also prunes any *other* lock file in the directory whose pid is no
+    longer running. Sublime doesn't reliably call plugin_unloaded() on a
+    full application quit (only on an explicit plugin reload), so the
+    normal shutdown-time cleanup in _stop_ide_companion() often never
+    runs -- this self-heals that gap on the next startup instead of
+    accumulating dead lock files that make /ide show duplicate entries.
+    """
     target_dir = directory or claude_discovery_directory()
     os.makedirs(target_dir, exist_ok=True)
     for name in os.listdir(target_dir):
@@ -74,7 +116,8 @@ def create_claude_discovery_file(
         try:
             with open(candidate, "r", encoding="utf-8") as stream:
                 existing = json.load(stream)
-            if int(existing.get("pid", -1)) == int(pid):
+            existing_pid = int(existing.get("pid", -1))
+            if existing_pid == int(pid) or not _pid_alive(existing_pid):
                 os.remove(candidate)
         except (OSError, ValueError, TypeError, json.JSONDecodeError):
             pass
