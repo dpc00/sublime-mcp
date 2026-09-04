@@ -1,0 +1,10 @@
+[
+    {
+        "caption": "Accept IDE Companion Diff",
+        "command": "accept_ide_companion_diff"
+    },
+    {
+        "caption": "Reject IDE Companion Diff",
+        "command": "reject_ide_companion_diff"
+    }
+]

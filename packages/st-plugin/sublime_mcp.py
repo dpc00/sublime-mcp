@@ -5466,6 +5466,8 @@ class RejectIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
         view = self.window.active_view()
         return bool(view and view.settings().get("ide_companion_diff_path"))
 
+    is_visible = is_enabled
+
 
 # ── helper text commands ──────────────────────────────────────────────────────
 
