@@ -26,6 +26,7 @@ dist/
 node_modules/
 out.*
 package-lock.json
+.session-baton.json
 sublime_mcp.egg-info/
 tests/
 venv/
