@@ -392,6 +392,32 @@ def _get_cursor_context(params):
     return _on_main(fn)
 
 
+def _get_ide_companion_status(params):
+    """Ground truth for whether Claude Code's `/ide` is actually connected.
+
+    Added because there was no way to check this from the agent side --
+    a whole session's worth of Edit-tool calls happened while /ide was
+    never connected, and the only way to notice was the user running /ide
+    manually much later. subscriber_count > 0 means a client (e.g. Claude
+    Code's IDE integration) is actively subscribed to the companion's SSE
+    notification stream right now, not just that the server is listening.
+    """
+
+    def fn():
+        server = _ide_companion_server
+        if not server:
+            return {"running": False, "port": None, "subscriber_count": 0, "connected": False}
+        count = len(server._notifications._queues)
+        return {
+            "running": True,
+            "port": server.port,
+            "subscriber_count": count,
+            "connected": count > 0,
+        }
+
+    return _on_main(fn)
+
+
 def _get_open_files(params):
     def fn():
         import os
@@ -1598,13 +1624,20 @@ def _run_command(body):
     cmd = body.get("command")
     args = body.get("args") or {}
     scope = body.get("scope", "window")
+    name = body.get("name", "")
+    index = int(body.get("index", -1))
     if not cmd:
         return {"error": "command required"}
 
     def fn():
         w = sublime.active_window()
         if scope in ("text", "view"):
-            v = w.active_view()
+            if name or index >= 0:
+                v, err = _resolve_view(w, name, index)
+                if err:
+                    return err
+            else:
+                v = w.active_view()
             if v:
                 v.run_command(cmd, args)
         elif scope == "application":
@@ -3635,11 +3668,17 @@ _MCP_TOOLS = [
      }, "required": ["begin", "end", "text"]},
      _p("/replace_lines")),
     ("run_command",
-     "Run any Sublime Text command. scope='window' (default) or 'view'.",
+     "Run any Sublime Text command. scope='window' (default) or 'view'.\n"
+     "For scope='view'/'text', optionally target a specific tab with name "
+     "(partial, case-insensitive) or index (0-based, from get_open_files) "
+     "instead of whatever tab happens to be globally focused -- important "
+     "when another agent/session may be sharing this Sublime instance.",
      {"type": "object", "properties": {
          "command": {"type": "string"},
          "args": {"type": "object"},
          "scope": {"type": "string", "default": "window"},
+         "name": {"type": "string", "default": ""},
+         "index": {"type": "integer", "default": -1},
      }, "required": ["command"]},
      _p("/run_command")),
     ("run_build",
@@ -5029,14 +5068,21 @@ class _ReviewScrollSyncer:
         sublime.set_timeout(self._tick, delay)
 
 
-def _add_accept_reject_banner(right_view):
-    """Clickable Accept/Reject links pinned at the top of the Proposed pane.
+def _add_accept_reject_banner(left_view, right_view):
+    """Clickable action banners pinned at the top of each pane.
 
-    A phantom, like the alignment spacers -- pure rendering, never part of
-    view.substr()'s output, so it can never leak into what Accept ships to
-    disk/Claude. Restores the one thing the original single-buffer design
-    had that keybindings/context-menu alone don't: an obvious, in-tab,
-    clickable UI element that needs no memorized shortcut at all.
+    Phantoms, like the alignment spacers -- pure rendering, never part of
+    view.substr()'s output, so neither can ever leak into what Accept ships
+    to disk/Claude. Restores the one thing the original single-buffer
+    design had that keybindings/context-menu alone don't: an obvious,
+    in-tab, clickable UI element that needs no memorized shortcut at all.
+
+    One banner per pane, not one banner on the right alone -- besides being
+    ambiguous about which file a bare "Accept"/"Reject" acts on, a banner
+    on only one side shifts that pane's lines down by its height with
+    nothing matching on the other, undoing _add_alignment_spacers' work.
+    Matching banner heights (same padding/border/font-size on both) keeps
+    both panes' line numbers aligned.
     """
 
     def on_navigate(href):
@@ -5049,19 +5095,24 @@ def _add_accept_reject_banner(right_view):
         elif href == "reject":
             window.run_command("reject_ide_companion_diff")
 
-    banner_html = (
-        '<body style="margin:0;padding:6px 12px;background-color:#1e1e1e;'
-        'border-bottom:1px solid #f92672;font-family:sans-serif;font-size:0.95em;'
-        'color:#f8f8f2;">'
-        '<a href="accept" style="color:#a6e22e;font-weight:bold;text-decoration:none;">Accept</a>'
-        ' <span style="color:#75715e;font-size:0.85em;">(Ctrl+Shift+Enter or Ctrl+S)</span>'
-        ' &nbsp;&nbsp; '
-        '<a href="reject" style="color:#f92672;font-weight:bold;text-decoration:none;">Reject</a>'
-        ' <span style="color:#75715e;font-size:0.85em;">(Esc)</span>'
-        '</body>'
+    def banner_html(label, href, color):
+        return (
+            '<body style="margin:0;padding:6px 12px;background-color:#1e1e1e;'
+            'border-bottom:1px solid #f92672;font-family:sans-serif;font-size:0.95em;'
+            'color:#f8f8f2;">'
+            '<a href="{href}" style="color:{color};font-weight:bold;'
+            'text-decoration:none;">{label}</a>'
+            '</body>'
+        ).format(href=href, color=color, label=label)
+
+    left_view.add_phantom(
+        "ide_diff_banner", sublime.Region(0, 0),
+        banner_html("Keep Original (Esc)", "reject", "#f92672"),
+        sublime.LAYOUT_BLOCK, on_navigate=on_navigate,
     )
     right_view.add_phantom(
-        "ide_diff_banner", sublime.Region(0, 0), banner_html,
+        "ide_diff_banner", sublime.Region(0, 0),
+        banner_html("Adopt New (Ctrl+Shift+Enter or Ctrl+S)", "accept", "#a6e22e"),
         sublime.LAYOUT_BLOCK, on_navigate=on_navigate,
     )
 
@@ -5189,7 +5240,7 @@ def _ide_open_diff(arguments):
 
         _highlight_diff_panes(left, right, original_content, new_content)
         _ReviewScrollSyncer(review_window, left, right)
-        _add_accept_reject_banner(right)
+        _add_accept_reject_banner(left, right)
 
         _ide_diffs[key] = {
             "file_path": file_path,
