@@ -5080,25 +5080,54 @@ def _ide_open_diff(arguments):
     # Only reuse an ALREADY-open tab for the original file — never open one.
     # Opening it here is exactly what produced the confusing two-tab review
     # (the file tab plus the "Diff:..." tab) with no clue what was proposed.
-    original_view = _on_main(lambda: sublime.active_window().find_open_file(file_path))
+    #
+    # find_open_file() can return a view whose async load from disk hasn't
+    # finished yet (e.g. opened moments earlier by the same caller). A loading
+    # view's substr() silently returns "" — that produced a completely blank
+    # Original pane with no error. Prefer a fully-loaded buffer across every
+    # window so unsaved edits win; if the only hit is still loading, keep the
+    # view for Accept write-back but read the Original pane content from disk
+    # (a loading view cannot have user edits yet, so disk matches the buffer).
+    def _find_original_view():
+        loading = None
+        for w in sublime.windows():
+            v = w.find_open_file(file_path)
+            if not v:
+                continue
+            if not v.is_loading():
+                return v
+            if loading is None:
+                loading = v
+        return loading
+
+    original_view = _on_main(_find_original_view)
+    original_content = None
+    line_ending = None
     if original_view:
-        original_content = _on_main(
-            lambda: original_view.substr(sublime.Region(0, original_view.size()))
-        )
-        line_ending = {
-            "Windows": "\r\n",
-            "Unix": "\n",
-            "CR": "\r",
-        }.get(_on_main(original_view.line_endings), os.linesep)
-    else:
+        def _content_from_loaded_view():
+            if original_view.is_loading():
+                return None
+            content = original_view.substr(sublime.Region(0, original_view.size()))
+            ending = {
+                "Windows": "\r\n",
+                "Unix": "\n",
+                "CR": "\r",
+            }.get(original_view.line_endings(), os.linesep)
+            return content, ending
+
+        loaded = _on_main(_content_from_loaded_view)
+        if loaded is not None:
+            original_content, line_ending = loaded
+
+    if original_content is None:
         try:
             with open(file_path, "rb") as f:
                 original_bytes = f.read()
             line_ending = detect_line_ending(original_bytes)
-            # Match view.substr()'s convention (used in the branch above,
-            # when the file is already open): always \n, never a literal
-            # \r in the content. Sublime views never show \r as a character;
-            # only preserve_line_endings() re-applies it, on write-back.
+            # Match view.substr()'s convention (used when the open buffer is
+            # already loaded above): always \n, never a literal \r in the
+            # content. Sublime views never show \r as a character; only
+            # preserve_line_endings() re-applies it, on write-back.
             original_content = (
                 original_bytes.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
             )
