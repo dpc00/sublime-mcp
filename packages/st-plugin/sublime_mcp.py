@@ -4994,6 +4994,7 @@ def _ide_open_diff(arguments):
             "cells": [[0, 0, 1, 1], [1, 0, 2, 1]],
         })
         review_window.set_sidebar_visible(False)
+        review_window.set_menu_visible(False)
 
         base_name = os.path.basename(file_path)
         syntax = sublime.find_syntax_for_file(file_path)
