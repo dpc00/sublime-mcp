@@ -1,4 +1,5 @@
 """sublime_mcp.py — MCP Commander: Sublime Text plugin with built-in MCP server.
+# test-marker: verifying large-file diff rendering fix, safe to remove (v5).
 
 Exposes the Sublime Text API to AI assistants (Claude Code, etc.) via the
 Model Context Protocol.  The plugin runs two local HTTP servers on load:
@@ -53,6 +54,7 @@ Install: via Package Control, or copy this file to Packages/User/ manually.
 """
 
 import contextlib
+import difflib
 import html
 import io
 import json
@@ -4861,14 +4863,17 @@ def _ide_tool_error(message):
 def _line_diff_ops(a, b):
     """Hand-rolled line-level LCS diff (Wagner-Fischer DP + backtrace).
 
-    No external diff library — matches difflib.SequenceMatcher.get_opcodes()'s
-    shape (tag, i1, i2, j1, j2) so callers don't care how it was computed.
-    Guarded against O(n*m) blowup on huge files: falls back to a single
-    'equal'/'replace' block above the size cap rather than hanging.
+    Matches difflib.SequenceMatcher.get_opcodes()'s shape (tag, i1, i2, j1,
+    j2) so callers don't care how it was computed. The DP below is O(n*m)
+    and hangs on huge files, so above a size cap we fall back to
+    difflib.SequenceMatcher (near-linear via autojunk) instead of faking a
+    single whole-file 'replace' block -- that fake block used to make every
+    line in both panes render as changed on any file over ~2000 lines,
+    which is what real diffs on files this size actually looked like.
     """
     n, m = len(a), len(b)
     if n * m > 4_000_000:
-        return [('equal', 0, n, 0, m)] if a == b else [('replace', 0, n, 0, m)]
+        return difflib.SequenceMatcher(None, a, b, autojunk=True).get_opcodes()
 
     dp = [[0] * (m + 1) for _ in range(n + 1)]
     for i in range(n - 1, -1, -1):
@@ -4948,37 +4953,60 @@ def _highlight_diff_panes(left_view, right_view, original_content, new_content):
                 region = right_view.full_line(right_view.text_point(row, 0))
                 (right_changed_regions if tag == "replace" else added_regions).append(region)
 
-    # An explicit annotation_color is required, not just a scope name —
-    # some color schemes don't define a fill for region.redish/greenish/
-    # bluish, which silently renders no visible highlight at all.
+    # region.redish/greenish/bluish are Sublime's generic bookmark-marker
+    # scopes -- many color schemes only give them a border, not a fill, so
+    # the highlight silently rendered invisible. markup.deleted/inserted/
+    # changed are the canonical unified-diff scopes every reasonable color
+    # scheme fills solid (they're what .diff/.patch syntax highlighting
+    # uses), so they're guaranteed visible regardless of theme.
     if removed_regions:
         left_view.add_regions(
-            "ide_diff_removed", removed_regions, "region.redish", "",
+            "ide_diff_removed", removed_regions, "markup.deleted", "",
             sublime.DRAW_NO_OUTLINE,
             annotations=[""] * len(removed_regions),
             annotation_color="#f92672",
         )
     if left_changed_regions:
         left_view.add_regions(
-            "ide_diff_changed", left_changed_regions, "region.bluish", "",
+            "ide_diff_changed", left_changed_regions, "markup.changed", "",
             sublime.DRAW_NO_OUTLINE,
             annotations=[""] * len(left_changed_regions),
             annotation_color="#66d9ef",
         )
     if added_regions:
         right_view.add_regions(
-            "ide_diff_added", added_regions, "region.greenish", "",
+            "ide_diff_added", added_regions, "markup.inserted", "",
             sublime.DRAW_NO_OUTLINE,
             annotations=[""] * len(added_regions),
             annotation_color="#a6e22e",
         )
     if right_changed_regions:
         right_view.add_regions(
-            "ide_diff_changed", right_changed_regions, "region.bluish", "",
+            "ide_diff_changed", right_changed_regions, "markup.changed", "",
             sublime.DRAW_NO_OUTLINE,
             annotations=[""] * len(right_changed_regions),
             annotation_color="#66d9ef",
         )
+
+    # Per-hunk marker rows, stored now so a future next-diff/prev-diff
+    # command (not implemented yet) has something to walk without
+    # recomputing the diff. Also used below to jump to the first hunk on
+    # open, since nothing auto-scrolled there before.
+    left_markers, right_markers = [], []
+    first_left_row = first_right_row = None
+    for tag, i1, i2, j1, j2 in ops:
+        if tag == "equal":
+            continue
+        left_markers.append(left_view.text_point(i1, 0))
+        right_markers.append(right_view.text_point(j1, 0))
+        if first_left_row is None:
+            first_left_row, first_right_row = i1, j1
+    left_view.settings().set("ide_diff_markers", left_markers)
+    right_view.settings().set("ide_diff_markers", right_markers)
+
+    if first_left_row is not None:
+        left_view.show_at_center(left_view.text_point(first_left_row, 0))
+        right_view.show_at_center(right_view.text_point(first_right_row, 0))
 
     _add_alignment_spacers(left_view, right_view, ops)
 
@@ -5212,6 +5240,13 @@ def _ide_open_diff(arguments):
             "mcp_replace_region",
             {"begin": 0, "end": left.size(), "text": original_content},
         )
+        # Replacing a whole fresh buffer's content can leave the entire
+        # inserted text selected (Sublime extends the pre-edit selection
+        # to cover the edit) -- that full-buffer selection highlight looks
+        # identical to "everything changed" and was masking the real diff
+        # regions underneath. Collapse it before the panes are shown.
+        left.sel().clear()
+        left.sel().add(sublime.Region(0))
         left.set_read_only(True)
 
         right = review_window.new_file()
@@ -5223,6 +5258,8 @@ def _ide_open_diff(arguments):
             "mcp_replace_region",
             {"begin": 0, "end": right.size(), "text": new_content},
         )
+        right.sel().clear()
+        right.sel().add(sublime.Region(0))
         right.settings().set("ide_companion_diff_path", file_path)
         # Keymap "context" clauses default to operand:true (an equality
         # check against boolean True) when none is given -- matching
@@ -5603,6 +5640,18 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
                 "mcp_replace_region",
                 {"begin": 0, "end": original.size(), "text": final_content},
             )
+            # mcp_replace_region only lands the edit in the in-memory
+            # buffer. Without an explicit save here, the file on disk keeps
+            # its pre-edit bytes even though we are about to tell Claude
+            # Code FILE_SAVED below -- that lie is exactly what produces
+            # "File content has changed since it was last read" on Claude's
+            # next tool call against this file. Save now, and re-read the
+            # buffer afterward in case ST's own save pipeline (e.g.
+            # trim_trailing_white_space_on_save) altered what we just wrote,
+            # so the bytes reported back match what actually landed on disk.
+            if original.file_name():
+                original.run_command("save")
+                final_content = original.substr(sublime.Region(0, original.size()))
         else:
             try:
                 preserved_content = preserve_line_endings(
