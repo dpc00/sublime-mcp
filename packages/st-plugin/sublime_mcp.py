@@ -4942,6 +4942,45 @@ def _highlight_diff_panes(left_view, right_view, original_content, new_content):
         )
 
 
+class _ReviewScrollSyncer:
+    """Mirror viewport_position() between the two review panes.
+
+    Adapted from kaste's Compare-Side-By-Side (MIT). Polls rather than
+    hooking on_selection_modified/on_activated because Sublime has no
+    scroll-changed event; stops on its own once the window is gone, so
+    it needs no explicit teardown wired into the close paths.
+    """
+
+    def __init__(self, window, left_view, right_view):
+        self._window = window
+        self._left = left_view
+        self._right = right_view
+        self._last_left = None
+        self._last_right = None
+        self._tick()
+
+    def _tick(self):
+        if not self._window.is_valid():
+            return
+        if not (self._left.is_valid() and self._right.is_valid()):
+            return
+        left_pos = self._left.viewport_position()
+        right_pos = self._right.viewport_position()
+        if left_pos != self._last_left:
+            self._last_left = left_pos
+            self._last_right = left_pos
+            self._right.set_viewport_position(left_pos, False)
+        elif right_pos != self._last_right:
+            self._last_right = right_pos
+            self._last_left = right_pos
+            self._left.set_viewport_position(right_pos, False)
+        is_focused = self._window.id() == (
+            sublime.active_window().id() if sublime.active_window() else None
+        )
+        delay = 16 if is_focused else 50
+        sublime.set_timeout(self._tick, delay)
+
+
 def _ide_open_diff(arguments):
     file_path = os.path.abspath(os.path.normpath(arguments.get("filePath", "")))
     new_content = arguments.get("newContent")
@@ -5035,6 +5074,7 @@ def _ide_open_diff(arguments):
         review_window.focus_view(right)
 
         _highlight_diff_panes(left, right, original_content, new_content)
+        _ReviewScrollSyncer(review_window, left, right)
 
         _ide_diffs[key] = {
             "file_path": file_path,
