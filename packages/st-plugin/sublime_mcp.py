@@ -4941,6 +4941,54 @@ def _highlight_diff_panes(left_view, right_view, original_content, new_content):
             annotation_color="#66d9ef",
         )
 
+    _add_alignment_spacers(left_view, right_view, ops)
+
+
+def _spacer_phantom_html(n):
+    rows = '<div style="white-space:pre;">&nbsp;</div>' * n
+    return '<body style="margin:0;padding:0;">' + rows + '</body>'
+
+
+def _add_alignment_spacers(left_view, right_view, ops):
+    """Visual-only vertical spacing so matched lines line up between panes.
+
+    Uses block phantoms, not inserted blank lines -- the right pane's
+    exact text is what Accept ships back to disk/Claude, so alignment
+    padding must never become real buffer content.
+    """
+    left_row_count = left_view.rowcol(left_view.size())[0] + 1
+    right_row_count = right_view.rowcol(right_view.size())[0] + 1
+    spacer_count = 0
+    for tag, i1, i2, j1, j2 in ops:
+        left_n, right_n = i2 - i1, j2 - j1
+        if left_n == right_n:
+            continue
+        spacer_count += 1
+        if left_n < right_n:
+            anchor = (
+                left_view.text_point(i2, 0)
+                if i2 < left_row_count
+                else left_view.size()
+            )
+            left_view.add_phantom(
+                "ide_diff_spacer_{}".format(spacer_count),
+                sublime.Region(anchor, anchor),
+                _spacer_phantom_html(right_n - left_n),
+                sublime.LAYOUT_BLOCK,
+            )
+        else:
+            anchor = (
+                right_view.text_point(j2, 0)
+                if j2 < right_row_count
+                else right_view.size()
+            )
+            right_view.add_phantom(
+                "ide_diff_spacer_{}".format(spacer_count),
+                sublime.Region(anchor, anchor),
+                _spacer_phantom_html(left_n - right_n),
+                sublime.LAYOUT_BLOCK,
+            )
+
 
 class _ReviewScrollSyncer:
     """Mirror viewport_position() between the two review panes.
