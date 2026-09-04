@@ -7,6 +7,13 @@
         ]
     },
     {
+        "keys": ["ctrl+s"],
+        "command": "accept_ide_companion_diff",
+        "context": [
+            { "key": "setting.is_ide_companion_review" }
+        ]
+    },
+    {
         "keys": ["ctrl+shift+enter"],
         "command": "accept_ide_companion_diff",
         "context": [
