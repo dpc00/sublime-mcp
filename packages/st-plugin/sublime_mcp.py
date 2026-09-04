@@ -5029,6 +5029,43 @@ class _ReviewScrollSyncer:
         sublime.set_timeout(self._tick, delay)
 
 
+def _add_accept_reject_banner(right_view):
+    """Clickable Accept/Reject links pinned at the top of the Proposed pane.
+
+    A phantom, like the alignment spacers -- pure rendering, never part of
+    view.substr()'s output, so it can never leak into what Accept ships to
+    disk/Claude. Restores the one thing the original single-buffer design
+    had that keybindings/context-menu alone don't: an obvious, in-tab,
+    clickable UI element that needs no memorized shortcut at all.
+    """
+
+    def on_navigate(href):
+        window = right_view.window()
+        if not window:
+            return
+        window.focus_view(right_view)
+        if href == "accept":
+            window.run_command("accept_ide_companion_diff")
+        elif href == "reject":
+            window.run_command("reject_ide_companion_diff")
+
+    banner_html = (
+        '<body style="margin:0;padding:6px 12px;background-color:#1e1e1e;'
+        'border-bottom:1px solid #f92672;font-family:sans-serif;font-size:0.95em;'
+        'color:#f8f8f2;">'
+        '<a href="accept" style="color:#a6e22e;font-weight:bold;text-decoration:none;">Accept</a>'
+        ' <span style="color:#75715e;font-size:0.85em;">(Ctrl+Shift+Enter or Ctrl+S)</span>'
+        ' &nbsp;&nbsp; '
+        '<a href="reject" style="color:#f92672;font-weight:bold;text-decoration:none;">Reject</a>'
+        ' <span style="color:#75715e;font-size:0.85em;">(Esc)</span>'
+        '</body>'
+    )
+    right_view.add_phantom(
+        "ide_diff_banner", sublime.Region(0, 0), banner_html,
+        sublime.LAYOUT_BLOCK, on_navigate=on_navigate,
+    )
+
+
 def _ide_open_diff(arguments):
     file_path = os.path.abspath(os.path.normpath(arguments.get("filePath", "")))
     new_content = arguments.get("newContent")
@@ -5123,6 +5160,7 @@ def _ide_open_diff(arguments):
 
         _highlight_diff_panes(left, right, original_content, new_content)
         _ReviewScrollSyncer(review_window, left, right)
+        _add_accept_reject_banner(right)
 
         _ide_diffs[key] = {
             "file_path": file_path,
