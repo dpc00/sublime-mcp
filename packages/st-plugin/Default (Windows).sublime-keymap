@@ -3,14 +3,14 @@
         "keys": ["escape"],
         "command": "reject_ide_companion_diff",
         "context": [
-            { "key": "setting.ide_companion_diff_path" }
+            { "key": "setting.is_ide_companion_review" }
         ]
     },
     {
         "keys": ["ctrl+shift+enter"],
         "command": "accept_ide_companion_diff",
         "context": [
-            { "key": "setting.ide_companion_diff_path" }
+            { "key": "setting.is_ide_companion_review" }
         ]
     }
 ]

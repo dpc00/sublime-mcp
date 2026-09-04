@@ -5018,6 +5018,11 @@ def _ide_open_diff(arguments):
             {"begin": 0, "end": right.size(), "text": new_content},
         )
         right.settings().set("ide_companion_diff_path", file_path)
+        # Keymap "context" clauses default to operand:true (an equality
+        # check against boolean True) when none is given -- matching
+        # against the string file path above always silently fails, so
+        # the Accept/Reject keybindings need their own boolean flag.
+        right.settings().set("is_ide_companion_review", True)
         right.set_status(
             "ide_companion_diff",
             "IDE Companion review — Ctrl+Shift+Enter to Accept, Esc to Reject",
