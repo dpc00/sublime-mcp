@@ -603,7 +603,15 @@ def _handler_class(
 
 
 class IdeCompanionServer:
-    """Authenticated loopback MCP server bound to a dynamic port."""
+    """Authenticated loopback MCP server bound to a fixed port by default.
+
+    A fixed port (like sublime_mcp.py's own _PORT/_MCP_PORT) means the
+    discovery lock file doesn't move to a new address on every plugin
+    reload -- Claude Code's /ide auto-connect only runs once at CLI
+    startup and never re-polls, so a stable port is what gives a
+    reconnect (typing /ide again) a chance of landing on the same server.
+    Pass port=0 to fall back to the old OS-assigned-port behavior.
+    """
 
     def __init__(
         self,
@@ -612,12 +620,14 @@ class IdeCompanionServer:
         legacy_dispatcher=None,
         on_subscribe=None,
         on_last_disconnect=None,
+        port=0,
     ):
         self.dispatcher = dispatcher
         self.legacy_dispatcher = legacy_dispatcher
         self.auth_token = auth_token or secrets.token_urlsafe(32)
         self.on_subscribe = on_subscribe
         self.on_last_disconnect = on_last_disconnect
+        self.requested_port = port
         self._notifications = _NotificationHub()
         self._server = None
         self._thread = None
@@ -630,7 +640,7 @@ class IdeCompanionServer:
         if self._server:
             return self.port
         self._server = _ThreadingHTTPServer(
-            ("127.0.0.1", 0),
+            ("127.0.0.1", self.requested_port),
             _handler_class(
                 self.auth_token,
                 self.dispatcher,

@@ -2920,16 +2920,27 @@ import queue as _queue
 import uuid as _uuid
 
 _MCP_PORT = 9502 if sys.platform == "win32" else 9503
+_IDE_PORT = 9504 if sys.platform == "win32" else 9505
 _mcp_sessions = {}  # session_id -> queue.Queue
 
 
 def _load_ports():
-    global _PORT, _MCP_PORT
+    global _PORT, _MCP_PORT, _IDE_PORT
     settings = sublime.load_settings("sublime-mcp.sublime-settings")
     default_mcp_port = 9502 if sys.platform == "win32" else 9503
     default_http_port = 9500 if sys.platform == "win32" else 9501
+    default_ide_port = 9504 if sys.platform == "win32" else 9505
     _MCP_PORT = int(settings.get("mcp_port", default_mcp_port))
     _PORT = int(settings.get("http_port", default_http_port))
+    # Fixed like _PORT/_MCP_PORT above, not OS-assigned (0) -- a stable port
+    # means /ide's discovery lock file doesn't change on every plugin reload,
+    # so Claude Code's one-shot /ide auto-connect (it never re-polls after
+    # the first connect) has a chance of finding the same address again
+    # instead of needing a manual /ide every time. Two concurrent Sublime
+    # windows/instances will contend for this one port -- the second's bind
+    # fails and is logged, same tradeoff _start_servers() already accepts
+    # for _PORT/_MCP_PORT above; override via the 'ide_port' setting.
+    _IDE_PORT = int(settings.get("ide_port", default_ide_port))
 
 _EXTENSION_TEMPLATE = """\
 Place this file in Packages/<YourPackage>/<yourpackage>_mcp_tools.py.
@@ -5467,12 +5478,31 @@ def _start_ide_companion():
         legacy_dispatcher=_claude_ide_dispatch,
         on_subscribe=_schedule_ide_context_update,
         on_last_disconnect=_discard_ide_diffs_after_disconnect,
+        port=_IDE_PORT,
     )
     discovery_file = None
     qwen_discovery_file = None
     claude_discovery_file = None
     try:
-        port = companion.start()
+        try:
+            port = companion.start()
+        except OSError as e:
+            # The fixed port exists precisely so /ide's address stays stable
+            # across reloads -- but something else already owning that one
+            # port (confirmed live 2026-09-05: an unrelated stray process)
+            # must never mean no IDE Companion at all, which would be worse
+            # than the old always-dynamic behavior. Fall back to an
+            # OS-assigned port rather than fail outright.
+            print("sublime-mcp: fixed IDE Companion port {} unavailable ({}); "
+                  "falling back to a dynamic port".format(_IDE_PORT, e))
+            companion = IdeCompanionServer(
+                _ide_companion_dispatch,
+                legacy_dispatcher=_claude_ide_dispatch,
+                on_subscribe=_schedule_ide_context_update,
+                on_last_disconnect=_discard_ide_diffs_after_disconnect,
+                port=0,
+            )
+            port = companion.start()
         discovery_file = create_gemini_discovery_file(
             pid=os.getpid(),
             port=port,
@@ -5632,6 +5662,34 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
         state = _ide_diffs.get(key)
         if not state:
             return
+        # Guard against a stale review: if the file on disk changed since
+        # this review opened (another process, another agent, an autosave,
+        # a linter -- anything), silently overwriting with `final_content`
+        # would clobber that change and then report a false FILE_SAVED to
+        # Claude below -- that lie is what actually produces the confusing
+        # "file content has changed since it was last read" error, one step
+        # removed, on Claude's NEXT unrelated call against this file. Check
+        # now, before any write, and refuse with a clear, immediate message
+        # instead of a silent clobber + delayed mystery error.
+        try:
+            with open(file_path, "rb") as f:
+                current_disk_bytes = f.read()
+            current_disk_content = (
+                current_disk_bytes.decode("utf-8")
+                .replace("\r\n", "\n")
+                .replace("\r", "\n")
+            )
+        except Exception:
+            current_disk_content = None
+        if current_disk_content is not None and current_disk_content != state["original_content"]:
+            sublime.error_message(
+                "Ai IDE Companion: {} changed on disk since this review "
+                "opened. Refusing to accept -- reopen the review to see "
+                "the current file, or reject and retry.".format(
+                    os.path.basename(file_path)
+                )
+            )
+            return
         final_content = review.substr(sublime.Region(0, review.size()))
         original = state["original"]
         if original and original.is_valid():
@@ -5643,15 +5701,9 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
             # mcp_replace_region only lands the edit in the in-memory
             # buffer. Without an explicit save here, the file on disk keeps
             # its pre-edit bytes even though we are about to tell Claude
-            # Code FILE_SAVED below -- that lie is exactly what produces
-            # "File content has changed since it was last read" on Claude's
-            # next tool call against this file. Save now, and re-read the
-            # buffer afterward in case ST's own save pipeline (e.g.
-            # trim_trailing_white_space_on_save) altered what we just wrote,
-            # so the bytes reported back match what actually landed on disk.
+            # Code FILE_SAVED below.
             if original.file_name():
                 original.run_command("save")
-                final_content = original.substr(sublime.Region(0, original.size()))
         else:
             try:
                 preserved_content = preserve_line_endings(
@@ -5664,19 +5716,28 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
                     "Failed to save {}: {}".format(file_path, e)
                 )
                 return
+        # Re-read the literal bytes now on disk -- the single source of
+        # truth for what gets reported to Claude below. Reconstructing the
+        # report instead from state["line_ending"] (captured once, when
+        # this review first opened) or from view.substr() (Sublime's
+        # internal \n-only buffer model, which never reflects what its own
+        # save pipeline -- e.g. trim_trailing_white_space_on_save -- or a
+        # since-changed view line-ending setting actually wrote) can
+        # silently diverge from the real disk content. A false FILE_SAVED
+        # whose reported bytes don't match disk is exactly what produces
+        # "File content has changed since it was last read" on Claude's
+        # NEXT unrelated call against this file -- one step removed from
+        # this Accept, which is why it looked unrelated.
+        try:
+            with open(file_path, "rb") as f:
+                reported_content = f.read().decode("utf-8")
+        except Exception:
+            reported_content = final_content
         claude_owned = bool(state.get("claude_event"))
         if claude_owned:
-            # Sublime buffers are always \n internally (view.substr never
-            # returns \r\n), but the file itself gets saved with its real
-            # line ending below/on next save. Report the same bytes back to
-            # Claude so it doesn't see a false "file changed externally"
-            # diff purely from CRLF normalization.
             state["claude_result"] = [
                 {"type": "text", "text": "FILE_SAVED"},
-                {
-                    "type": "text",
-                    "text": preserve_line_endings(final_content, state["line_ending"]),
-                },
+                {"type": "text", "text": reported_content},
             ]
             state["claude_event"].set()
         _ide_diffs.pop(key, None)
@@ -5871,3 +5932,8 @@ class _McpServerStatusInputHandler(sublime_plugin.ListInputHandler):
                 details="Both servers are currently stopped",
                 annotation="○ stopped",
             )]
+
+
+# 2026-09-06: test edit made via the edit-sublime-mcp procedure -- a
+# direct disk write (Bash/Edit tool), not through sublime-mcp's own
+# live-edit tools, to verify a comment-only change to this file.
