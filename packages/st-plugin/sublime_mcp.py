@@ -5033,6 +5033,24 @@ def _add_alignment_spacers(left_view, right_view, ops):
     Uses block phantoms, not inserted blank lines -- the right pane's
     exact text is what Accept ships back to disk/Claude, so alignment
     padding must never become real buffer content.
+
+    Anchored to the row BEFORE the hunk (i2-1 / j2-1), not the row at/after
+    it (i2 / j2) -- a sublime.LAYOUT_BLOCK phantom always renders BELOW the
+    line containing its anchor point (confirmed empirically via eval_python:
+    add_phantom at text_point(row, 0) shifted row+1's layout position down;
+    row and row-1 were untouched). Anchoring at i2 -- the first row of the
+    equal content resuming AFTER the hunk -- therefore put the padding
+    AFTER that row instead of before it. Invisible for a multi-row replace
+    (the padding still lands somewhere inside the following equal block),
+    but glaringly wrong for a pure insertion (i1 == i2): the padding landed
+    one row too late, after the very next unchanged line instead of before
+    it -- reported live as an inserted block looking like it was being
+    added into/after a trailing `if __name__ == "__main__":` guard instead
+    of above it.
+
+    Known limitation: an insertion/replace at the very start of the file
+    (i1 == 0 or j1 == 0) has no preceding row to anchor below, so that one
+    edge case still pads after row 0 instead of before it.
     """
     left_row_count = left_view.rowcol(left_view.size())[0] + 1
     right_row_count = right_view.rowcol(right_view.size())[0] + 1
@@ -5043,11 +5061,13 @@ def _add_alignment_spacers(left_view, right_view, ops):
             continue
         spacer_count += 1
         if left_n < right_n:
-            anchor = (
-                left_view.text_point(i2, 0)
-                if i2 < left_row_count
-                else left_view.size()
-            )
+            anchor_row = i2 - 1
+            if anchor_row < 0:
+                anchor = left_view.text_point(0, 0)
+            elif anchor_row < left_row_count:
+                anchor = left_view.text_point(anchor_row, 0)
+            else:
+                anchor = left_view.size()
             left_view.add_phantom(
                 "ide_diff_spacer_{}".format(spacer_count),
                 sublime.Region(anchor, anchor),
@@ -5055,11 +5075,13 @@ def _add_alignment_spacers(left_view, right_view, ops):
                 sublime.LAYOUT_BLOCK,
             )
         else:
-            anchor = (
-                right_view.text_point(j2, 0)
-                if j2 < right_row_count
-                else right_view.size()
-            )
+            anchor_row = j2 - 1
+            if anchor_row < 0:
+                anchor = right_view.text_point(0, 0)
+            elif anchor_row < right_row_count:
+                anchor = right_view.text_point(anchor_row, 0)
+            else:
+                anchor = right_view.size()
             right_view.add_phantom(
                 "ide_diff_spacer_{}".format(spacer_count),
                 sublime.Region(anchor, anchor),
