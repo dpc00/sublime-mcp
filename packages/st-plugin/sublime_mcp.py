@@ -63,6 +63,7 @@ import re
 import sys
 import threading
 import time
+import traceback
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from urllib.parse import parse_qs, unquote, urlparse
@@ -120,27 +121,116 @@ _PORT = 9500 if sys.platform == "win32" else 9501
 
 # ── main-thread dispatch ──────────────────────────────────────────────────────
 
-# Suppresses IdeCompanionContextListener's on_activated/on_load/on_post_save/
-# on_selection_modified from publishing "the user did X" to Claude Code while
-# an MCP tool call is (or was just) touching the view/window state on its
-# behalf -- ST's event callbacks fire identically whether a human clicked a
-# tab or an eval_python/open_file/diff-review call did it, so without this
-# an agent's own tool call gets echoed back to Claude Code as a genuine user
-# action (observed: open_file("nope.py") from a tool call produced a system
-# reminder claiming the user had opened that file).
+# Suppresses IdeCompanionContextListener from publishing "the user did X" to
+# Claude Code for changes an MCP tool call made itself -- ST's event
+# callbacks fire identically whether a human clicked a tab or a tool call
+# did it, so without this an agent's own action gets echoed back to Claude
+# Code as genuine user activity (observed: open_file("nope.py") from a tool
+# call produced a system reminder claiming the user had opened that file).
 #
-# A timestamp, not a boolean cleared right after fn() returns, because
-# window.open_file() and friends return immediately with a still-loading
-# view -- on_load fires later, asynchronously, well after fn() is done. 1s
-# comfortably covers that async gap for ordinary files. Trade-off: a real
-# user action landing in ST within that same second, while unrelated to the
-# triggering tool call, is also swallowed -- accepted because misattributing
-# agent actions to the user is the worse failure mode of the two.
-_suppress_ide_notify_until = [0.0]
+# Two exact mechanisms, no timers/guessing:
+#  - on_activated/on_selection_modified/on_post_save fire SYNCHRONOUSLY, as
+#    part of whatever call caused them, and ST's main thread only ever runs
+#    one thing at a time -- so a plain reentrancy depth around fn() is an
+#    exact "was this call's own doing" check with no window where a real
+#    concurrent user action could be mistaken for one.
+#  - on_load is the one asynchronous case: window.open_file() returns a
+#    still-loading view, and on_load fires later once the read from disk
+#    finishes. That view object exists immediately though, so the two call
+#    sites that read a file from disk (_open_file, _ensure_view) tag it with
+#    a setting the moment they get it back; on_load checks and clears that
+#    setting on the specific view, per call, no global bookkeeping.
+_mcp_dispatch_depth = [0]
+
+_MCP_SELF_OPENED_KEY = "mcp_self_opened"
 
 
-def _ide_notify_suppressed():
-    return time.time() < _suppress_ide_notify_until[0]
+def _mark_self_opened(view):
+    if view:
+        view.settings().set(_MCP_SELF_OPENED_KEY, True)
+
+
+def _consume_self_opened(view):
+    if view.settings().get(_MCP_SELF_OPENED_KEY):
+        view.settings().erase(_MCP_SELF_OPENED_KEY)
+        return True
+    return False
+
+
+# ── diagnostics ────────────────────────────────────────────────────────────────
+#
+# Everything here answers questions this plugin gave no way to answer from
+# the outside: is the main thread actually stuck (heartbeat), what was it
+# doing when a call timed out (in-flight dispatch label + live stack dump,
+# capturable from any thread via sys._current_frames() without needing the
+# wedged thread's cooperation), and is the on_activated/on_load suppression
+# above actually firing the way it's supposed to (per-event counters).
+# Nothing here uses a ring buffer of its own -- lifecycle prints (diff
+# open/accept/reject/close, slow/timed-out dispatches) go through plain
+# print(), which _install_console_capture() already routes into the
+# existing /console_log tool, so there is exactly one log to check instead
+# of two.
+
+_SLOW_DISPATCH_SECONDS = 0.5  # print() calls slower than this, not every call
+
+_diag_started_at = time.time()
+
+_heartbeat_state = {"count": 0, "last_ts": 0.0}
+_HEARTBEAT_INTERVAL_MS = 200
+
+
+def _heartbeat_tick():
+    _heartbeat_state["count"] += 1
+    _heartbeat_state["last_ts"] = time.time()
+    sublime.set_timeout(_heartbeat_tick, _HEARTBEAT_INTERVAL_MS)
+
+
+def _start_heartbeat():
+    if _heartbeat_state["count"] == 0:
+        _heartbeat_tick()
+
+
+_listener_event_counts = {
+    "on_activated": [0, 0],       # [total, suppressed]
+    "on_load": [0, 0],
+    "on_post_save": [0, 0],
+    "on_selection_modified": [0, 0],
+    "on_close": [0, 0],
+}
+
+
+def _count_listener_event(name, suppressed):
+    counts = _listener_event_counts[name]
+    counts[0] += 1
+    if suppressed:
+        counts[1] += 1
+
+
+def _main_thread_stack():
+    """A live stack trace of ST's main thread, callable from any thread.
+
+    sys._current_frames() reads every thread's current frame directly from
+    the interpreter, so this works even while the main thread is wedged --
+    unlike everything else in this file, it does not need _on_main() (and
+    therefore does not need the main thread's cooperation) to answer "what
+    is it doing right now".
+    """
+    frame = sys._current_frames().get(threading.main_thread().ident)
+    if frame is None:
+        return "main thread frame unavailable (main_thread ident={})".format(
+            threading.main_thread().ident
+        )
+    return "".join(traceback.format_stack(frame))
+
+
+_in_flight_dispatch = {"label": None, "started": None}
+
+
+def _dispatch_label(fn):
+    code = getattr(fn, "__code__", None)
+    if not code:
+        return getattr(fn, "__name__", repr(fn))
+    return "{}:{}".format(os.path.basename(code.co_filename), code.co_firstlineno)
 
 
 def _on_main(fn):
@@ -155,16 +245,32 @@ def _on_main(fn):
     If already on the main thread (e.g. called from plugin_loaded or eval_python),
     fn() is invoked directly to avoid deadlock.
     """
-    _suppress_ide_notify_until[0] = time.time() + 1.0
+    label = _dispatch_label(fn)
+
+    def _dispatch():
+        _mcp_dispatch_depth[0] += 1
+        _in_flight_dispatch["label"] = label
+        _in_flight_dispatch["started"] = time.time()
+        start = time.time()
+        try:
+            return fn()
+        finally:
+            elapsed = time.time() - start
+            if elapsed > _SLOW_DISPATCH_SECONDS:
+                print("[sublime-mcp] slow dispatch {} took {:.2f}s".format(label, elapsed))
+            _mcp_dispatch_depth[0] -= 1
+            _in_flight_dispatch["label"] = None
+            _in_flight_dispatch["started"] = None
+
     if threading.current_thread() is threading.main_thread():
-        return fn()
+        return _dispatch()
     result = [None]
     exc = [None]
     done = threading.Event()
 
     def _run():
         try:
-            result[0] = fn()
+            result[0] = _dispatch()
         except Exception as e:
             exc[0] = e
         finally:
@@ -172,6 +278,10 @@ def _on_main(fn):
 
     sublime.set_timeout(_run, 0)
     if not done.wait(5.0):
+        print(
+            "[sublime-mcp] _on_main TIMEOUT after 5s dispatching {}\nmain thread stack:\n{}"
+            .format(label, _main_thread_stack())
+        )
         raise TimeoutError("main-thread timeout after 5s")
     if exc[0]:
         raise exc[0]
@@ -1549,7 +1659,7 @@ def _open_file(body):
         w = sublime.active_window()
         flags = sublime.ENCODED_POSITION if (line or col) else sublime.NewFileFlags.NONE
         fname = "{}:{}:{}".format(path, line, col) if (line or col) else path
-        w.open_file(fname, flags)
+        _mark_self_opened(w.open_file(fname, flags))
         return {"ok": True}
 
     return _on_main(fn)
@@ -2452,7 +2562,9 @@ def _ensure_view(path):
             return v, None
         if not os.path.isfile(path):
             return None, {"error": "file not found: {}".format(path)}
-        return w.open_file(path), None
+        opened = w.open_file(path)
+        _mark_self_opened(opened)
+        return opened, None
 
     v, err = _on_main(_open)
     if err:
@@ -2644,6 +2756,61 @@ def _health(params):
     }
 
 
+def _main_thread_stack_tool(params):
+    return {"stack": _main_thread_stack()}
+
+
+def _diagnostics(params):
+    """One-call snapshot to tell 'main thread wedged' from 'slow' from 'fine'.
+
+    Deliberately does not go through _on_main: reads plain module-level
+    state (ints/dicts, safe enough for a diagnostic snapshot under the GIL)
+    and sys._current_frames() directly, so it still answers when the main
+    thread itself is the thing under suspicion.
+    """
+    _install_console_capture()
+    now = time.time()
+    heartbeat_age = (
+        now - _heartbeat_state["last_ts"] if _heartbeat_state["last_ts"] else None
+    )
+    in_flight = None
+    if _in_flight_dispatch["label"]:
+        in_flight = {
+            "label": _in_flight_dispatch["label"],
+            "running_for_seconds": round(now - _in_flight_dispatch["started"], 3),
+        }
+    console = _console_state or {}
+    return {
+        "uptime_seconds": round(now - _diag_started_at, 1),
+        "heartbeat": {
+            "ticks": _heartbeat_state["count"],
+            "seconds_since_last_tick": (
+                round(heartbeat_age, 3) if heartbeat_age is not None else None
+            ),
+            "expected_interval_ms": _HEARTBEAT_INTERVAL_MS,
+            # A couple of missed ticks can be a busy main thread; several
+            # seconds of silence is the "alive, listening, unresponsive"
+            # wedge pattern seen this session -- worth flagging outright
+            # rather than making the caller do that arithmetic.
+            "likely_wedged": heartbeat_age is not None and heartbeat_age > 2.0,
+        },
+        "dispatch": {
+            "depth": _mcp_dispatch_depth[0],
+            "in_flight": in_flight,
+        },
+        "ide_companion_diffs_open": list(_ide_diffs.keys()),
+        "listener_event_counts": {
+            name: {"total": counts[0], "suppressed": counts[1]}
+            for name, counts in _listener_event_counts.items()
+        },
+        "console_capture": {
+            "entries_buffered": len(console.get("entries", [])),
+            "dropped": console.get("dropped", 0),
+        },
+        "main_thread_stack": _main_thread_stack(),
+    }
+
+
 _GET = {
     "/active_file": _get_active_file,
     "/selection": _get_selection,
@@ -2681,6 +2848,8 @@ _GET = {
     "/layout": _get_layout,
     "/mcp_tools": _get_mcp_tools,
     "/health": _health,
+    "/diagnostics": _diagnostics,
+    "/main_thread_stack": _main_thread_stack_tool,
 }
 
 _POST = {
@@ -4515,6 +4684,23 @@ _MCP_TOOLS = [
     ("transformer",
      "Apply a transformer (case conversion, encoding, etc.) to the current selection (TextCommand). A general-purpose text-transform base command.",
      {"type": "object", "properties": {}}, _p("/transformer")),
+    ("diagnostics",
+     "One-call plugin health snapshot: main-thread heartbeat freshness (and a "
+     "likely_wedged flag), the currently in-flight _on_main dispatch (if any) "
+     "with its label and running time, open IDE-companion diff reviews, "
+     "on_activated/on_load/on_post_save/on_selection_modified/on_close event "
+     "counts (total vs. suppressed as agent-caused), console-capture buffer "
+     "size, and a live main-thread stack trace. Answers 'wedged vs slow vs "
+     "fine' without needing the main thread's cooperation -- use this before "
+     "assuming a timeout means the server is dead.",
+     {"type": "object", "properties": {}}, _g("/diagnostics")),
+    ("main_thread_stack",
+     "Return ST's main thread's current Python stack trace right now, read "
+     "directly via sys._current_frames() from whichever thread handles this "
+     "request. Works even while the main thread is wedged, since it needs no "
+     "cooperation from it -- use this to see exactly what a stuck call is "
+     "doing instead of guessing from symptoms.",
+     {"type": "object", "properties": {}}, _g("/main_thread_stack")),
 ]
 
 _mcp_tools_lock = threading.Lock()
@@ -5345,6 +5531,7 @@ def _ide_open_diff(arguments):
             "original_content": original_content,
             "line_ending": line_ending,
         }
+        print("[sublime-mcp] diff review opened: {}".format(file_path))
         return {"content": []}
 
     return _on_main(open_review)
@@ -5650,6 +5837,7 @@ def _stop_servers():
 
 def plugin_loaded():
     _start_servers()
+    _start_heartbeat()
 
 
 def plugin_unloaded():
@@ -5660,25 +5848,33 @@ class IdeCompanionContextListener(sublime_plugin.EventListener):
     """Publish disk-backed editor context without changing the active view."""
 
     def on_activated(self, view):
-        if _ide_notify_suppressed():
+        suppressed = _mcp_dispatch_depth[0] > 0
+        _count_listener_event("on_activated", suppressed)
+        if suppressed:
             return
         _ide_context_tracker.touch(view.file_name())
         _schedule_ide_context_update()
 
     def on_load(self, view):
-        if _ide_notify_suppressed():
+        suppressed = _consume_self_opened(view)
+        _count_listener_event("on_load", suppressed)
+        if suppressed:
             return
         _ide_context_tracker.touch(view.file_name())
         _schedule_ide_context_update()
 
     def on_post_save(self, view):
-        if _ide_notify_suppressed():
+        suppressed = _mcp_dispatch_depth[0] > 0
+        _count_listener_event("on_post_save", suppressed)
+        if suppressed:
             return
         _ide_context_tracker.touch(view.file_name())
         _schedule_ide_context_update()
 
     def on_selection_modified(self, view):
-        if _ide_notify_suppressed():
+        suppressed = _mcp_dispatch_depth[0] > 0
+        _count_listener_event("on_selection_modified", suppressed)
+        if suppressed:
             return
         if view == sublime.active_window().active_view():
             _schedule_ide_context_update()
@@ -5689,6 +5885,7 @@ class IdeCompanionContextListener(sublime_plugin.EventListener):
             key = os.path.normcase(os.path.abspath(os.path.normpath(diff_path)))
             state = _ide_diffs.pop(key, None)
             if state:
+                print("[sublime-mcp] diff review closed by tab-close (reject): {}".format(diff_path))
                 # Claude-owned reviews terminate via claude_result/event only.
                 # Do not broadcast Gemini-shaped ide/diffRejected on the shared
                 # hub — that crosses into every other companion subscriber.
@@ -5702,8 +5899,10 @@ class IdeCompanionContextListener(sublime_plugin.EventListener):
                 # This view is already mid-close; only clean up its sibling
                 # pane and the shared review window.
                 _close_review_window(state, skip_view_id=view.id())
+        suppressed = _mcp_dispatch_depth[0] > 0
+        _count_listener_event("on_close", suppressed)
         _ide_context_tracker.forget(view.file_name())
-        if not _ide_notify_suppressed():
+        if not suppressed:
             _schedule_ide_context_update()
 
 
@@ -5796,6 +5995,7 @@ class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
             ]
             state["claude_event"].set()
         _ide_diffs.pop(key, None)
+        print("[sublime-mcp] diff review accepted: {}".format(file_path))
         _close_review_window(state)
         if original and original.is_valid():
             original_window = original.window()
@@ -5823,6 +6023,7 @@ class RejectIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
         state = _ide_diffs.pop(key, None)
         if not state:
             return
+        print("[sublime-mcp] diff review rejected: {}".format(file_path))
         claude_owned = bool(state.get("claude_event"))
         if claude_owned:
             state["claude_result"] = [{"type": "text", "text": "DIFF_REJECTED"}]
