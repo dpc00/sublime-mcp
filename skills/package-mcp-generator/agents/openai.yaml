@@ -1,0 +1,13 @@
+interface:
+  display_name: "Package MCP Generator"
+  short_description: "Generate a standalone MCP server for any installed Sublime Text package"
+  default_prompt: "Use $package-mcp-generator to make <package> controllable by an agent."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sublime-mcp"
+      description: "Sublime Text MCP server (used for get_package_mcp_info, source reading, and writing the generated plugin)"
+      transport: "streamable_http"
+      url: "http://127.0.0.1:9502/mcp"
+policy:
+  allow_implicit_invocation: false
