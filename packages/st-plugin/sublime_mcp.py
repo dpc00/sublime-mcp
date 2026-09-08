@@ -62,6 +62,7 @@ import os
 import re
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from urllib.parse import parse_qs, unquote, urlparse
@@ -119,6 +120,28 @@ _PORT = 9500 if sys.platform == "win32" else 9501
 
 # ── main-thread dispatch ──────────────────────────────────────────────────────
 
+# Suppresses IdeCompanionContextListener's on_activated/on_load/on_post_save/
+# on_selection_modified from publishing "the user did X" to Claude Code while
+# an MCP tool call is (or was just) touching the view/window state on its
+# behalf -- ST's event callbacks fire identically whether a human clicked a
+# tab or an eval_python/open_file/diff-review call did it, so without this
+# an agent's own tool call gets echoed back to Claude Code as a genuine user
+# action (observed: open_file("nope.py") from a tool call produced a system
+# reminder claiming the user had opened that file).
+#
+# A timestamp, not a boolean cleared right after fn() returns, because
+# window.open_file() and friends return immediately with a still-loading
+# view -- on_load fires later, asynchronously, well after fn() is done. 1s
+# comfortably covers that async gap for ordinary files. Trade-off: a real
+# user action landing in ST within that same second, while unrelated to the
+# triggering tool call, is also swallowed -- accepted because misattributing
+# agent actions to the user is the worse failure mode of the two.
+_suppress_ide_notify_until = [0.0]
+
+
+def _ide_notify_suppressed():
+    return time.time() < _suppress_ide_notify_until[0]
+
 
 def _on_main(fn):
     """Run fn() on ST's main thread and return its result (or re-raise its exception).
@@ -132,6 +155,7 @@ def _on_main(fn):
     If already on the main thread (e.g. called from plugin_loaded or eval_python),
     fn() is invoked directly to avoid deadlock.
     """
+    _suppress_ide_notify_until[0] = time.time() + 1.0
     if threading.current_thread() is threading.main_thread():
         return fn()
     result = [None]
@@ -5130,20 +5154,19 @@ class _ReviewScrollSyncer:
 
 
 def _add_accept_reject_banner(left_view, right_view):
-    """Clickable action banners pinned at the top of each pane.
+    """Clickable action annotations pinned to line 1 of each pane.
 
-    Phantoms, like the alignment spacers -- pure rendering, never part of
-    view.substr()'s output, so neither can ever leak into what Accept ships
-    to disk/Claude. Restores the one thing the original single-buffer
-    design had that keybindings/context-menu alone don't: an obvious,
-    in-tab, clickable UI element that needs no memorized shortcut at all.
+    A sublime.LAYOUT_BLOCK phantom always renders BELOW the line containing
+    its anchor (see _add_alignment_spacers) -- anchored at row 0 that put
+    the banner between line 1 and line 2 instead of on line 1, looking like
+    the Accept/Reject controls belonged to the second line. Row 0 has no
+    row above it to anchor a block phantom below, so no anchor point makes
+    a block phantom land ON line 1.
 
-    One banner per pane, not one banner on the right alone -- besides being
-    ambiguous about which file a bare "Accept"/"Reject" acts on, a banner
-    on only one side shifts that pane's lines down by its height with
-    nothing matching on the other, undoing _add_alignment_spacers' work.
-    Matching banner heights (same padding/border/font-size on both) keeps
-    both panes' line numbers aligned.
+    An annotation (add_regions' annotations=, the same mechanism used above
+    for the diff-hunk markers) renders docked to its region's own line
+    instead of pushing a block below it -- pinning the control to line 1
+    without touching line height or buffer content on either pane.
     """
 
     def on_navigate(href):
@@ -5158,23 +5181,24 @@ def _add_accept_reject_banner(left_view, right_view):
 
     def banner_html(label, href, color):
         return (
-            '<body style="margin:0;padding:6px 12px;background-color:#1e1e1e;'
-            'border-bottom:1px solid #f92672;font-family:sans-serif;font-size:0.95em;'
-            'color:#f8f8f2;">'
+            '<body style="margin:0;padding:2px 8px;background-color:#1e1e1e;'
+            'border:1px solid {color};font-family:sans-serif;font-size:0.95em;">'
             '<a href="{href}" style="color:{color};font-weight:bold;'
             'text-decoration:none;">{label}</a>'
             '</body>'
         ).format(href=href, color=color, label=label)
 
-    left_view.add_phantom(
-        "ide_diff_banner", sublime.Region(0, 0),
-        banner_html("Keep Original (Esc)", "reject", "#f92672"),
-        sublime.LAYOUT_BLOCK, on_navigate=on_navigate,
+    no_draw = sublime.DRAW_NO_FILL | sublime.DRAW_NO_OUTLINE
+
+    left_view.add_regions(
+        "ide_diff_banner", [left_view.full_line(0)], "", "", no_draw,
+        annotations=[banner_html("Keep Original (Esc)", "reject", "#f92672")],
+        annotation_color="#f92672", on_navigate=on_navigate,
     )
-    right_view.add_phantom(
-        "ide_diff_banner", sublime.Region(0, 0),
-        banner_html("Adopt New (Ctrl+Shift+Enter or Ctrl+S)", "accept", "#a6e22e"),
-        sublime.LAYOUT_BLOCK, on_navigate=on_navigate,
+    right_view.add_regions(
+        "ide_diff_banner", [right_view.full_line(0)], "", "", no_draw,
+        annotations=[banner_html("Adopt New (Ctrl+Shift+Enter or Ctrl+S)", "accept", "#a6e22e")],
+        annotation_color="#a6e22e", on_navigate=on_navigate,
     )
 
 
@@ -5636,18 +5660,26 @@ class IdeCompanionContextListener(sublime_plugin.EventListener):
     """Publish disk-backed editor context without changing the active view."""
 
     def on_activated(self, view):
+        if _ide_notify_suppressed():
+            return
         _ide_context_tracker.touch(view.file_name())
         _schedule_ide_context_update()
 
     def on_load(self, view):
+        if _ide_notify_suppressed():
+            return
         _ide_context_tracker.touch(view.file_name())
         _schedule_ide_context_update()
 
     def on_post_save(self, view):
+        if _ide_notify_suppressed():
+            return
         _ide_context_tracker.touch(view.file_name())
         _schedule_ide_context_update()
 
     def on_selection_modified(self, view):
+        if _ide_notify_suppressed():
+            return
         if view == sublime.active_window().active_view():
             _schedule_ide_context_update()
 
@@ -5671,7 +5703,8 @@ class IdeCompanionContextListener(sublime_plugin.EventListener):
                 # pane and the shared review window.
                 _close_review_window(state, skip_view_id=view.id())
         _ide_context_tracker.forget(view.file_name())
-        _schedule_ide_context_update()
+        if not _ide_notify_suppressed():
+            _schedule_ide_context_update()
 
 
 class AcceptIdeCompanionDiffCommand(sublime_plugin.WindowCommand):
