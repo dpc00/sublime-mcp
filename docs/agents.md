@@ -1,34 +1,43 @@
 # sublime-mcp — Agent Context
 
-MCP servers that expose a running Sublime Text 4 instance to AI agents.
+MCP server that exposes a running Sublime Text 4 instance to AI agents.
 
 ## Critical assumption
 
 Plugin edits in this repo are **not live** in Sublime Text until the files
-are in ST's `Packages/` directory (this repo is usually a symlink target).
+are in ST's `Packages/` directory (this repo is usually a symlink target,
+and as of 2026-09-08 is symlinked at the repo root, not a subfolder).
 If something isn't working, check that the plugin loaded before debugging
 the code.
 
-## The three MCPs
+## debugger-mcp and lsp-mcp were removed (2026-09-08)
 
-Independent ST plugins. Connect to the subset you need.
+Both were dedicated MCP servers built on the assumption that controlling an
+installed Sublime package requires its own server. That's usually not true:
+`get_package_mcp_info` (in this plugin) plus `eval_python`/`run_command`
+covers it directly for any client that already has that generic access.
+Everything below that references `lsp_*` / `debugger_*` tools describes
+capability that now needs to be reached that way instead — see
+`~/.claude/skills/lsp-control/SKILL.md` and
+`~/.claude/skills/debugger-control/SKILL.md` for the real, verified code
+(session lookup, the async bridges, coordinate conventions) in place of
+those old typed tools. `skills/package-skill-generator` documents how to
+produce an equivalent skill for any other package.
 
-| MCP            | Plugin dir                 | MCP SSE                         | HTTP bridge                     | Tools                          |
-| -------------- | -------------------------- | ------------------------------- | ------------------------------- | ------------------------------ |
-| **sublime-mcp**  | `packages/st-plugin`     | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | 7 default, 215 discoverable    |
-| **debugger-mcp** | `packages/debugger-mcp`  | 9505                            | 9515                            | 7 default / 104 total          |
-| **lsp-mcp**      | `packages/lsp-mcp`       | 9506                            | 9516                            | 7 default / 125 total          |
+## sublime-mcp itself
 
-Ports are configured per-plugin via `<name>.sublime-settings` (`"mcp_port"` /
+| MCP            | Plugin dir | MCP SSE                         | HTTP bridge                     | Tools                          |
+| -------------- | ---------- | -------------------------------- | -------------------------------- | ------------------------------ |
+| **sublime-mcp**  | repo root | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | 7 default, 238 discoverable    |
+
+Ports are configured via `sublime-mcp.sublime-settings` (`"mcp_port"` /
 `"http_port"`), overridable in `Packages/User/`. The proxy → HTTP bridge URL
 is the one remaining env var: `SUBLIME_MCP_BASE`.
 
-Guides (also served by `get_help` / `debugger_get_help` / `lsp_get_help`):
-`packages/st-plugin/AGENT_GUIDE.md`, `packages/debugger-mcp/AGENT_GUIDE.md`,
-`packages/lsp-mcp/AGENT_GUIDE.md`.
+Guide (also served by `get_help`): `AGENT_GUIDE.md` (repo root).
 
-**Coordinates:** sublime-mcp and `debugger_toggle_breakpoint` are **1-based**.
-lsp-mcp hand-written wrappers are **0-based**. Convert when crossing
+**Coordinates:** sublime-mcp tools are **1-based**. LSP requests (per the
+lsp-control skill) are **0-based** — convert when crossing
 (`lsp_line = st_line - 1`).
 
 ## Connecting
@@ -45,28 +54,23 @@ Defaults to `http://127.0.0.1:9500` on Windows, `:9501` on macOS/Linux. If
 the proxy runs in WSL against Windows ST, set
 `SUBLIME_MCP_BASE=http://127.0.0.1:9500` (or the Windows host IP).
 
-The bundled proxies do **not** speak to debugger-mcp or lsp-mcp. Point an
-SSE client at those ports separately.
-
 ### Option B — MCP SSE directly
 
 ```json
 {
   "mcpServers": {
-    "sublime-mcp":  { "type": "sse", "url": "http://127.0.0.1:9502/sse" },
-    "debugger-mcp": { "type": "sse", "url": "http://127.0.0.1:9505/sse" },
-    "lsp-mcp":      { "type": "sse", "url": "http://127.0.0.1:9506/sse" }
+    "sublime-mcp":  { "type": "sse", "url": "http://127.0.0.1:9502/sse" }
   }
 }
 ```
 
-Use `:9503` for sublime-mcp SSE on macOS/Linux. HTTP bridges also serve
+Use `:9503` for sublime-mcp SSE on macOS/Linux. HTTP bridge also serves
 `GET /mcp_tools`.
 
-## How to use the three together
+## Workflow
 
-Workflow is *orient → navigate → edit → verify → (debug) → confirm*. Each
-MCP owns one leg.
+Orient → navigate → edit → verify. LSP/debugger legs below go through the
+skills noted above, not dedicated tool names.
 
 | You want…                                      | Use               | Tool |
 | ---------------------------------------------- | ----------------- | ---- |

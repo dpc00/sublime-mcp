@@ -1,7 +1,7 @@
 # Agent Guide for sublime-mcp (MCP Commander)
 
 Canonical copy for repo readers. `get_help` serves
-`packages/st-plugin/AGENT_GUIDE.md` — keep these two files in sync.
+`AGENT_GUIDE.md` (repo root) — keep these two files in sync.
 
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.

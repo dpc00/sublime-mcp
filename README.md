@@ -5,40 +5,31 @@ instance: run registered ST commands, read/write views and selections, inspect
 tabs and project state, and `eval_python` in Sublime's plugin host for anything
 the typed tools don't cover.
 
-Two optional companion plugins extend this:
-
-- **debugger-mcp** — Debugger package DAP tools (breakpoints, stepping,
-  variables, call stacks) over MCP
-- **lsp-mcp** — LSP tools (definition, references, diagnostics, rename, hover)
-  over MCP
+Controlling another installed Sublime package (a debugger, a language server,
+anything else) doesn't need its own dedicated MCP server — `get_package_mcp_info`
+plus `eval_python`/`run_command` covers it directly. See `skills/package-skill-generator`
+to turn a one-time investigation into a small, reusable skill file instead.
 
 ## Toolset
 
 Seven workflow tools are advertised by default. `discover_tools` searches the
-complete internal catalog of 222 typed Sublime capabilities, and `batch` invokes
+complete internal catalog of 238 typed Sublime capabilities, and `batch` invokes
 discovered capabilities without flooding the model's initial tool context.
-debugger-mcp and lsp-mcp use the same focused pattern: each advertises seven
-workflow tools by default, with `debugger_discover_tools` / `lsp_discover_tools`
-and prefixed batch tools providing access to the complete catalogs (104 and
-125 tools respectively).
 
-Agent how-to: [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md) (also served live by
-`get_help`). Workflow across all three MCPs: [docs/agents.md](docs/agents.md).
-Release history: [CHANGELOG.md](CHANGELOG.md).
+Agent how-to: [AGENT_GUIDE.md](AGENT_GUIDE.md) (also served live by
+`get_help`). Release history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Ports
 
-Each plugin serves **MCP streamable HTTP** at `/mcp`, legacy **MCP SSE** at
+sublime-mcp serves **MCP streamable HTTP** at `/mcp`, legacy **MCP SSE** at
 `/sse`, and a **plain HTTP bridge**.
 The bundled Node/Python proxies use sublime-mcp's HTTP bridge only. Defaults:
 
 | Plugin        | MCP SSE                         | HTTP bridge                     | Settings file                        |
 | ------------- | ------------------------------- | ------------------------------- | ------------------------------------- |
 | sublime-mcp   | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | `sublime-mcp.sublime-settings`        |
-| debugger-mcp  | 9505                            | 9515                            | `debugger-mcp.sublime-settings`       |
-| lsp-mcp       | 9506                            | 9516                            | `lsp-mcp.sublime-settings`            |
 
-Each settings file takes `"mcp_port"` and `"http_port"` keys; edit your copy
+The settings file takes `"mcp_port"` and `"http_port"` keys; edit your copy
 under `Packages/User/` (Preferences > Package Settings) to override the
 defaults above — no env vars needed.
 
@@ -57,47 +48,26 @@ cd sublime-mcp
 
 ### 2. Install the Sublime Text plugin
 
-Symlink `packages/st-plugin` into ST's `Packages/` directory as `sublime-mcp`.
+The repo root **is** the package. Symlink it into ST's `Packages/` directory as `sublime-mcp`.
 
 **Windows (Command Prompt):**
 ```cmd
-mklink /J "%APPDATA%\Sublime Text\Packages\sublime-mcp" "C:\path\to\sublime-mcp\packages\st-plugin"
+mklink /J "%APPDATA%\Sublime Text\Packages\sublime-mcp" "C:\path\to\sublime-mcp"
 ```
 
 **macOS:**
 ```bash
-ln -s "$(pwd)/packages/st-plugin" "$HOME/Library/Application Support/Sublime Text/Packages/sublime-mcp"
+ln -s "$(pwd)" "$HOME/Library/Application Support/Sublime Text/Packages/sublime-mcp"
 ```
 
 **Linux:**
 ```bash
-ln -s "$(pwd)/packages/st-plugin" "$HOME/.config/sublime-text/Packages/sublime-mcp"
+ln -s "$(pwd)" "$HOME/.config/sublime-text/Packages/sublime-mcp"
 ```
 
-### 3. Optional companion plugins
-
-Same pattern: symlink `packages/debugger-mcp` and/or `packages/lsp-mcp` into
-`Packages/` under those names.
-
-**Windows:**
-```cmd
-mklink /J "%APPDATA%\Sublime Text\Packages\debugger-mcp" "C:\path\to\sublime-mcp\packages\debugger-mcp"
-mklink /J "%APPDATA%\Sublime Text\Packages\lsp-mcp" "C:\path\to\sublime-mcp\packages\lsp-mcp"
-```
-
-**macOS:**
-```bash
-ln -s "$(pwd)/packages/debugger-mcp" "$HOME/Library/Application Support/Sublime Text/Packages/debugger-mcp"
-ln -s "$(pwd)/packages/lsp-mcp" "$HOME/Library/Application Support/Sublime Text/Packages/lsp-mcp"
-```
-
-**Linux:**
-```bash
-ln -s "$(pwd)/packages/debugger-mcp" "$HOME/.config/sublime-text/Packages/debugger-mcp"
-ln -s "$(pwd)/packages/lsp-mcp" "$HOME/.config/sublime-text/Packages/lsp-mcp"
-```
-
-Restart Sublime Text after linking so the plugins load.
+Restart Sublime Text after linking so the plugin loads. (Once published to
+Package Control, installing is just `Package Control: Install Package` —
+no symlink needed.)
 
 ### 4. Configure your agent
 

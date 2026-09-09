@@ -1,4 +1,4 @@
-"""GENERATED FILE - do not edit. Produced by tools/generate_fallback_catalog.py from packages/st-plugin/sublime_mcp.py::_MCP_TOOLS. Regenerate after changing the backend tool catalog."""
+"""GENERATED FILE - do not edit. Produced by tools/generate_fallback_catalog.py from sublime_mcp.py::_MCP_TOOLS. Regenerate after changing the backend tool catalog."""
 
 TOOLS = [   {   'name': 'add_folder',
         'description': 'Add a folder to the current project.',
@@ -138,6 +138,16 @@ TOOLS = [   {   'name': 'add_folder',
     {   'name': 'detect_indentation',
         'description': "Auto-detect the file's indentation style (tabs vs spaces, width) and set "
                        "the view's indent settings accordingly.",
+        'inputSchema': {'type': 'object', 'properties': {}}},
+    {   'name': 'diagnostics',
+        'description': 'One-call plugin health snapshot: main-thread heartbeat freshness (and a '
+                       'likely_wedged flag), the currently in-flight _on_main dispatch (if any) '
+                       'with its label and running time, open IDE-companion diff reviews, '
+                       'on_activated/on_load/on_post_save/on_selection_modified/on_close event '
+                       'counts (total vs. suppressed as agent-caused), console-capture buffer '
+                       "size, and a live main-thread stack trace. Answers 'wedged vs slow vs fine' "
+                       "without needing the main thread's cooperation -- use this before assuming "
+                       'a timeout means the server is dead.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'discover_tools',
         'description': 'Search advanced Sublime capabilities hidden from the default tool surface. '
@@ -410,12 +420,31 @@ TOOLS = [   {   'name': 'add_folder',
         'inputSchema': {   'type': 'object',
                            'properties': {'name': {'type': 'string', 'default': ''}}}},
     {   'name': 'get_package_mcp_info',
-        'description': 'Return everything needed to write an MCP extension for an installed '
-                       'Package Control package.\n'
-                       'Returns: path, output_file, commands (with captions and args), '
-                       'settings_keys, python_files, extension_template.\n'
-                       'Write the extension to output_file following extension_template; ST loads '
-                       'it automatically.',
+        'description': 'Discover what an installed Sublime package can do, then just control it '
+                       'directly --\n'
+                       'no separate MCP server needed. Primary workflow: call this for the package '
+                       'name, Read\n'
+                       "the files it lists under python_files to find the package's real "
+                       'command-dispatch table\n'
+                       "and settings (this tool's own commands/settings_keys are a starting point, "
+                       'not the full\n'
+                       'picture -- a package that routes many actions through one command with an '
+                       "'action' arg,\n"
+                       'for example, only shows up here as that one wrapper command), then call '
+                       'the real thing\n'
+                       'with run_command or eval_python. That loop -- discover, read source, call '
+                       'directly -- is\n'
+                       'almost always enough on its own.\n'
+                       'Returns: path, commands (with captions and args), settings_keys, '
+                       'python_files, plus\n'
+                       'output_file/extension_template for the rarer case where a standing, '
+                       'independently-\n'
+                       'reachable MCP server is actually needed (e.g. a client with no '
+                       'eval_python-equivalent of\n'
+                       'its own) -- write the extension to output_file following '
+                       'extension_template and ST loads\n'
+                       'it automatically; see the package-mcp-generator skill for that heavier '
+                       'path.',
         'inputSchema': {   'type': 'object',
                            'properties': {'package': {'type': 'string'}},
                            'required': ['package']}},
@@ -575,6 +604,13 @@ TOOLS = [   {   'name': 'add_folder',
                            'required': ['symbol']}},
     {   'name': 'lower_case',
         'description': 'Convert the current selection(s) to lower case.',
+        'inputSchema': {'type': 'object', 'properties': {}}},
+    {   'name': 'main_thread_stack',
+        'description': "Return ST's main thread's current Python stack trace right now, read "
+                       'directly via sys._current_frames() from whichever thread handles this '
+                       'request. Works even while the main thread is wedged, since it needs no '
+                       'cooperation from it -- use this to see exactly what a stuck call is doing '
+                       'instead of guessing from symptoms.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'move_line_down',
         'description': 'Move the current line(s) down by one line.',
@@ -848,11 +884,17 @@ TOOLS = [   {   'name': 'add_folder',
                                              'shell_cmd': {'type': 'string'},
                                              'working_dir': {'type': 'string', 'default': ''}}}},
     {   'name': 'run_command',
-        'description': "Run any Sublime Text command. scope='window' (default) or 'view'.",
+        'description': "Run any Sublime Text command. scope='window' (default) or 'view'.\n"
+                       "For scope='view'/'text', optionally target a specific tab with name "
+                       '(partial, case-insensitive) or index (0-based, from get_open_files) '
+                       'instead of whatever tab happens to be globally focused -- important when '
+                       'another agent/session may be sharing this Sublime instance.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'command': {'type': 'string'},
                                              'args': {'type': 'object'},
-                                             'scope': {'type': 'string', 'default': 'window'}},
+                                             'scope': {'type': 'string', 'default': 'window'},
+                                             'name': {'type': 'string', 'default': ''},
+                                             'index': {'type': 'integer', 'default': -1}},
                            'required': ['command']}},
     {   'name': 'run_macro',
         'description': 'Play back the most recently recorded macro at the cursor.',
