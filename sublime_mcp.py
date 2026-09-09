@@ -78,8 +78,9 @@ except ImportError:
 
 # Single source of truth for the version this plugin advertises over MCP.
 # Keep in step with packages/node-proxy/package.json and
-# packages/python-proxy/pyproject.toml; tests/proof/test_release_dependency_pins.py enforces it.
-__version__ = "1.6.0"
+# packages/python-proxy/pyproject.toml (no automated test enforces this;
+# check by hand on release).
+__version__ = "1.7.0"
 
 try:
     from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
