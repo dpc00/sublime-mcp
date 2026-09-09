@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const pluginUrl = new URL('../packages/st-plugin/sublime_mcp.py', import.meta.url);
+const pluginUrl = new URL('../sublime_mcp.py', import.meta.url);
 const catalogUrl = new URL('../packages/node-proxy/fallback-tools.json', import.meta.url);
 
 test('console capture is reload-safe and does not wrap stdout', async () => {

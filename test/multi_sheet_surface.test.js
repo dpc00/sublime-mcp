@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const sourceUrl = new URL('../packages/st-plugin/sublime_mcp.py', import.meta.url);
+const sourceUrl = new URL('../sublime_mcp.py', import.meta.url);
 const fallbackUrl = new URL('../packages/node-proxy/fallback-tools.json', import.meta.url);
 const pythonCatalogUrl = new URL('../packages/python-proxy/tool_catalog.py', import.meta.url);
 

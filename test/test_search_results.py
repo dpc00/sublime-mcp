@@ -3,7 +3,7 @@ import pathlib
 import unittest
 
 
-MODULE_PATH = pathlib.Path(__file__).parents[1] / "packages" / "st-plugin" / "search_results.py"
+MODULE_PATH = pathlib.Path(__file__).parents[1] / "search_results.py"
 SPEC = importlib.util.spec_from_file_location("search_results", MODULE_PATH)
 SEARCH_RESULTS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SEARCH_RESULTS)

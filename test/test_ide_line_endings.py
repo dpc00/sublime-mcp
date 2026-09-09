@@ -3,7 +3,7 @@ import pathlib
 import unittest
 
 
-MODULE_PATH = pathlib.Path(__file__).parents[1] / "packages" / "st-plugin" / "ide_companion.py"
+MODULE_PATH = pathlib.Path(__file__).parents[1] / "ide_companion.py"
 SPEC = importlib.util.spec_from_file_location("ide_companion", MODULE_PATH)
 IDE_COMPANION = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(IDE_COMPANION)

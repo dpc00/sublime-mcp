@@ -7,12 +7,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "packages" / "st-plugin" / "sublime_mcp.py"
+SOURCE = ROOT / "sublime_mcp.py"
 NODE_OUTPUT = ROOT / "packages" / "node-proxy" / "fallback-tools.json"
 PYTHON_OUTPUT = ROOT / "packages" / "python-proxy" / "tool_catalog.py"
 COMMENT = (
     "GENERATED FILE - do not edit. Produced by tools/generate_fallback_catalog.py "
-    "from packages/st-plugin/sublime_mcp.py::_MCP_TOOLS. Regenerate after changing "
+    "from sublime_mcp.py::_MCP_TOOLS. Regenerate after changing "
     "the backend tool catalog."
 )
 
