@@ -1,0 +1,14 @@
+/.claude export-ignore
+/.github export-ignore
+/.npmignore export-ignore
+/.pytest_cache export-ignore
+/.tmp-npm-cache export-ignore
+/MCP*Response.md export-ignore
+/dist export-ignore
+/packages export-ignore
+/requirements.txt export-ignore
+/skills export-ignore
+/sonnet.txt export-ignore
+/sublime_mcp.egg-info export-ignore
+/test export-ignore
+/tools export-ignore

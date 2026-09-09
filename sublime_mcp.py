@@ -77,10 +77,10 @@ except ImportError:
     from search_results import parse_find_results, search_is_complete
 
 # Single source of truth for the version this plugin advertises over MCP.
-# Keep in step with packages/node-proxy/package.json and
-# packages/python-proxy/pyproject.toml (no automated test enforces this;
-# check by hand on release).
-__version__ = "1.7.0"
+# Keep in step with packages/node-proxy/package.json,
+# packages/python-proxy/pyproject.toml, and server.json (no automated
+# test enforces this; check by hand on release).
+__version__ = "1.7.1"
 
 try:
     from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization

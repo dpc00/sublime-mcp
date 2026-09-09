@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.1
+
+Adds `.gitattributes` (`export-ignore`) so a Package Control install ships
+only the actual Sublime Text plugin, not the whole dev repo (tests, tools,
+skills, proxy package sources, `.claude/`). Bumps the (previously stale)
+MCP Registry manifest's version to match.
+
 ## 1.7.0
 
 Removes debugger-mcp and lsp-mcp; the repo is now a single, flat Sublime Text
