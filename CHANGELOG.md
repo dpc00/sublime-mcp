@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.7.0
+
+Removes debugger-mcp and lsp-mcp; the repo is now a single, flat Sublime Text
+package instead of a multi-package nested layout.
+
+- Removed `packages/debugger-mcp` and `packages/lsp-mcp`. Both were built on
+  the assumption that controlling an installed package needs its own MCP
+  server — `get_package_mcp_info` plus `eval_python`/`run_command` covers it
+  directly, and their hard-won internals knowledge (async bridges, object
+  graphs, real dispatch tables) is preserved as reusable skill files instead
+  of frozen into standing servers. `skills/package-skill-generator` documents
+  how to produce an equivalent skill for any other installed package.
+- Flattened `packages/st-plugin/*` to the repo root, so the repo root is now
+  directly the Package Control package — no more nested multi-package
+  structure to translate at release time.
+- Reframed `get_package_mcp_info`'s description around direct use (discover,
+  read source, call directly) rather than only "write an MCP extension."
+- Fixed the diff-review Accept/Reject banner rendering one line below its
+  anchor (`add_phantom`/`LAYOUT_BLOCK` replaced with `add_regions`/annotations).
+- Fixed IDE-companion listeners misattributing the agent's own tool-driven
+  actions to the human user; added `diagnostics`/`main_thread_stack` tools
+  (heartbeat, dispatch depth, listener event counts) for live introspection.
+- Regenerated the Node/Python proxy fallback catalogs (238 tools).
+
 ## 1.6.0
 
 Adds first-class support for Sublime Text's native tab multi-select and sheet
