@@ -1,5 +1,7 @@
 # sublime-mcp
 
+mcp-name: io.github.dpc00/sublime-mcp
+
 Python MCP proxy for the [sublime-mcp](https://github.com/dpc00/sublime-mcp)
 Sublime Text package.
 

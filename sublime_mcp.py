@@ -80,7 +80,7 @@ except ImportError:
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.7.1"
+__version__ = "1.7.2"
 
 try:
     from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization

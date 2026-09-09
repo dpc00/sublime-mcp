@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.2
+
+Adds the `mcp-name: io.github.dpc00/sublime-mcp` marker required by the
+MCP Registry to verify PyPI package ownership before publishing.
+
 ## 1.7.1
 
 Adds `.gitattributes` (`export-ignore`) so a Package Control install ships
