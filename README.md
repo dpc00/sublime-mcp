@@ -39,14 +39,19 @@ proxies talk to sublime-mcp's **HTTP bridge**, not SSE; override with
 
 ## Installation
 
-### 1. Clone
+### 1. Install the Sublime Text plugin
+
+**Package Control (recommended once available):** run `Package Control:
+Install Package` and search for **MCP Commander**. This package is
+[submitted to Package Control](https://github.com/sublimehq/package_control_channel/pull/9554)
+and awaiting merge — until it lands, use the manual path below.
+
+**Manual (also the path for developing sublime-mcp itself):**
 
 ```bash
 git clone https://github.com/dpc00/sublime-mcp.git
 cd sublime-mcp
 ```
-
-### 2. Install the Sublime Text plugin
 
 The repo root **is** the package. Symlink it into ST's `Packages/` directory as `sublime-mcp`.
 
@@ -65,11 +70,9 @@ ln -s "$(pwd)" "$HOME/Library/Application Support/Sublime Text/Packages/sublime-
 ln -s "$(pwd)" "$HOME/.config/sublime-text/Packages/sublime-mcp"
 ```
 
-Restart Sublime Text after linking so the plugin loads. (Once published to
-Package Control, installing is just `Package Control: Install Package` —
-no symlink needed.)
+Restart Sublime Text after linking so the plugin loads.
 
-### 4. Configure your agent
+### 2. Configure your agent
 
 **Node:**
 ```bash
@@ -92,14 +95,6 @@ wrapper is required:
 [mcp_servers.sublime-mcp]
 type = "http"
 url = "http://127.0.0.1:9502/mcp"
-
-[mcp_servers.debugger-mcp]
-type = "http"
-url = "http://127.0.0.1:9505/mcp"
-
-[mcp_servers.lsp-mcp]
-type = "http"
-url = "http://127.0.0.1:9506/mcp"
 ```
 
 Restart or open a new Codex session after changing MCP configuration. Verify
@@ -107,13 +102,13 @@ the entire path before debugging agent behavior:
 
 ```bash
 npx sublime-mcp doctor
-npx sublime-mcp doctor --all
 ```
 
-The first command checks sublime-mcp. `--all` also checks debugger-mcp and
-lsp-mcp. The report separately checks each HTTP bridge, MCP handshake, and
-focused tool catalog. From Sublime's Command Palette,
-`MCP Commander: Connection Doctor` shows the main server-side state.
+The report checks the HTTP bridge, MCP handshake, and focused tool catalog.
+From Sublime's Command Palette, `MCP Commander: Connection Doctor` shows the
+main server-side state. (Controlling a debugger or language server doesn't
+need its own MCP server or `doctor` check — see "Toolset" above and
+`skills/package-skill-generator`.)
 
 Other MCP clients may use the legacy SSE URL (Windows example):
 

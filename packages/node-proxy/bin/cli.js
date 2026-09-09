@@ -49,14 +49,7 @@ async function doctor() {
   const isWindows = process.platform === 'win32';
   const httpBase = process.env.SUBLIME_MCP_BASE ?? `http://127.0.0.1:${isWindows ? 9500 : 9501}`;
   const mcpUrl = process.env.SUBLIME_MCP_URL ?? `http://127.0.0.1:${isWindows ? 9502 : 9503}/mcp`;
-  const main = await probe('sublime-mcp', httpBase, mcpUrl);
-  const includeAll = process.argv.includes('--all');
-  const companions = includeAll ? await Promise.all([
-    probe('debugger-mcp', 'http://127.0.0.1:9515', 'http://127.0.0.1:9505/mcp'),
-    probe('lsp-mcp', 'http://127.0.0.1:9516', 'http://127.0.0.1:9506/mcp'),
-  ]) : [];
-  const report = { ...main, companions };
-  report.ok = main.ok && companions.every(item => item.ok);
+  const report = await probe('sublime-mcp', httpBase, mcpUrl);
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   process.exitCode = report.ok ? 0 : 1;
 }
@@ -66,6 +59,6 @@ if (command === 'doctor') {
 } else if (command === 'serve') {
   await import('../index.js');
 } else {
-  process.stderr.write('Usage: sublime-mcp [serve|doctor [--all]]\n');
+  process.stderr.write('Usage: sublime-mcp [serve|doctor]\n');
   process.exitCode = 2;
 }

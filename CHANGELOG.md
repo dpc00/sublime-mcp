@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.7.5
+
+Removes dead `debugger-mcp`/`lsp-mcp` probing code from the Node proxy's
+`doctor --all` path (`packages/node-proxy/bin/cli.js`) — those were
+separate standing MCP servers removed in 1.7.0 when the repo flattened
+to a single package; the CLI kept probing their old ports (9505/9506)
+regardless. `doctor` now only checks sublime-mcp itself; the `--all`
+flag is gone.
+
+Also brings the README's install instructions up to date: Package
+Control (search "MCP Commander") is now documented as the primary
+install path, pending merge of the channel submission
+([sublimehq/package_control_channel#9554](https://github.com/sublimehq/package_control_channel/pull/9554));
+the manual clone+symlink steps are demoted to "for development." Removed
+the stale Codex config example referencing the long-removed
+`debugger-mcp`/`lsp-mcp` servers.
+
 ## 1.7.4
 
 Fixes view-name matching (`run_command`'s `name` param and
