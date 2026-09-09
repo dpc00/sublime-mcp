@@ -1,9 +1,20 @@
 ---
 name: package-mcp-generator
-description: Generate a standalone MCP server plugin that lets an AI agent control an installed Sublime Text package (e.g. an arbitrary Package Control package that isn't already MCP-enabled). Use when asked to "make an MCP for <package>", wire up an installed Sublime package to an agent, or reproduce the debugger-mcp/lsp-mcp pattern for a different package.
+description: Generate a standalone MCP server plugin that lets an AI agent control an installed Sublime Text package. SECONDARY path -- default to the package-skill-generator skill instead (a cheap skill file, not a server) unless the client genuinely has no eval_python-equivalent of its own, or the capability must be reachable independent of any agent session. Use this one only when that specific condition applies.
 ---
 
 # Package MCP Generator
+
+**Read this first: default to `package-skill-generator`, not this skill.**
+Confirmed directly (2026-09-08) against three real packages that the
+generic discover-then-call loop (`get_package_mcp_info` -> read source ->
+`run_command`/`eval_python`) is sufficient on its own for an agent that
+already has that access -- no standalone server required in any of them,
+including debugger-mcp's own deepest handlers on inspection. Reach for
+*this* skill only in the narrow remaining case: the client calling has no
+`eval_python`-equivalent of its own, or the capability genuinely needs to
+be reachable independent of any particular agent session. If neither is
+true, stop and use `package-skill-generator` instead.
 
 Produces a **new, standalone** Sublime Text plugin — its own Packages/ folder,
 own settings file, own port, own tool catalog — that bridges one target
