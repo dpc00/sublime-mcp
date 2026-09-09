@@ -1,0 +1,13 @@
+interface:
+  display_name: "Package Skill Generator"
+  short_description: "Document how to control any installed Sublime Text package directly, as a skill"
+  default_prompt: "Use $package-skill-generator to document how to control <package>."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sublime-mcp"
+      description: "Sublime Text MCP server (used for get_package_mcp_info, source reading, and verifying the generated skill)"
+      transport: "streamable_http"
+      url: "http://127.0.0.1:9502/mcp"
+policy:
+  allow_implicit_invocation: false
