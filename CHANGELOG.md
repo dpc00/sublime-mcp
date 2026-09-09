@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.4
+
+Fixes view-name matching (`run_command`'s `name` param and
+`get_view_content`) silently failing for any normal saved file. The
+lookup only checked `view.name()` (the tab-title override), which is
+empty for a file-backed view that was never explicitly renamed — so
+targeting a tab by its filename always missed, and the error's own
+`open_views` diagnostic showed blank names instead of the real
+filenames. Now falls back to the file's basename, matching what
+`get_open_files` already did correctly.
+
 ## 1.7.3
 
 Fixes a real regression introduced while responding to the Package Control

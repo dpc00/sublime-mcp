@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.7.3"
+__version__ = "1.7.4"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -331,14 +331,22 @@ def _active_output_panel_view(window):
     return short_name, window.find_output_panel(short_name)
 
 
+def _view_display_name(v):
+    n = v.name()
+    if n:
+        return n
+    fp = v.file_name()
+    return os.path.basename(fp) if fp else ""
+
+
 def _find_view_by_name(window, name):
     views = window.views()
     if name:
         match = next(
-            (v for v in views if name.lower() in (v.name() or "").lower()), None
+            (v for v in views if name.lower() in _view_display_name(v).lower()), None
         )
         if not match:
-            return None, [v.name() for v in views]
+            return None, [_view_display_name(v) for v in views]
         return match, None
     return window.active_view(), None
 
@@ -535,20 +543,11 @@ def _get_ide_companion_status(params):
 
 def _get_open_files(params):
     def fn():
-        import os
-
         w = sublime.active_window()
-
-        def _name(v):
-            n = v.name()
-            if n:
-                return n
-            fp = v.file_name()
-            return os.path.basename(fp) if fp else ""
 
         return {
             "files": [
-                {"path": v.file_name(), "name": _name(v), "is_dirty": v.is_dirty()}
+                {"path": v.file_name(), "name": _view_display_name(v), "is_dirty": v.is_dirty()}
                 for v in w.views()
             ]
         }
@@ -871,9 +870,11 @@ def _get_file_content(params):
 def _resolve_view(w, name, index):
     views = w.views()
     if name:
-        match = next((v for v in views if name.lower() in v.name().lower()), None)
+        match = next(
+            (v for v in views if name.lower() in _view_display_name(v).lower()), None
+        )
         if not match:
-            names = [v.name() for v in views]
+            names = [_view_display_name(v) for v in views]
             return None, {"error": "no view matching {!r}".format(name), "open_views": names}
         return match, None
     if index >= 0:
@@ -1503,11 +1504,13 @@ def _get_view_size(params):
         w = sublime.active_window()
         views = w.views()
         if name:
-            match = next((v for v in views if name.lower() in v.name().lower()), None)
+            match = next(
+                (v for v in views if name.lower() in _view_display_name(v).lower()), None
+            )
             if not match:
                 return {
                     "error": "no view matching {!r}".format(name),
-                    "open_views": [v.name() for v in views],
+                    "open_views": [_view_display_name(v) for v in views],
                 }
             v = match
         else:
@@ -1528,11 +1531,13 @@ def _get_view_chars(params):
         w = sublime.active_window()
         views = w.views()
         if name:
-            match = next((v for v in views if name.lower() in v.name().lower()), None)
+            match = next(
+                (v for v in views if name.lower() in _view_display_name(v).lower()), None
+            )
             if not match:
                 return {
                     "error": "no view matching {!r}".format(name),
-                    "open_views": [v.name() for v in views],
+                    "open_views": [_view_display_name(v) for v in views],
                 }
             v = match
         else:
