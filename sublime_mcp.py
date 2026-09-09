@@ -71,51 +71,29 @@ from urllib.parse import parse_qs, unquote, urlparse
 import sublime
 import sublime_plugin
 
-try:
-    from .search_results import parse_find_results, search_is_complete
-except ImportError:
-    from search_results import parse_find_results, search_is_complete
+from .lib.search_results import parse_find_results, search_is_complete
 
 # Single source of truth for the version this plugin advertises over MCP.
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.7.2"
+__version__ = "1.7.3"
 
-try:
-    from .mcp_http_policy import is_oauth_discovery_path, send_no_authorization
-except ImportError:
-    from mcp_http_policy import is_oauth_discovery_path, send_no_authorization
+from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
-try:
-    from .ide_companion import (
-        IdeCompanionServer,
-        IdeContextTracker,
-        build_selection_changed_params,
-        companion_dispatch,
-        create_gemini_discovery_file,
-        create_qwen_discovery_file,
-        detect_line_ending,
-        preserve_line_endings,
-        remove_discovery_file,
-    )
-except ImportError:
-    from ide_companion import (
-        IdeCompanionServer,
-        IdeContextTracker,
-        build_selection_changed_params,
-        companion_dispatch,
-        create_gemini_discovery_file,
-        create_qwen_discovery_file,
-        detect_line_ending,
-        preserve_line_endings,
-        remove_discovery_file,
-    )
+from .lib.ide_companion import (
+    IdeCompanionServer,
+    IdeContextTracker,
+    build_selection_changed_params,
+    companion_dispatch,
+    create_gemini_discovery_file,
+    create_qwen_discovery_file,
+    detect_line_ending,
+    preserve_line_endings,
+    remove_discovery_file,
+)
 
-try:
-    from .claude_ide import claude_dispatch, create_claude_discovery_file
-except ImportError:
-    from claude_ide import claude_dispatch, create_claude_discovery_file
+from .lib.claude_ide import claude_dispatch, create_claude_discovery_file
 
 _PORT = 9500 if sys.platform == "win32" else 9501
 
@@ -2313,7 +2291,13 @@ def _eval_python_latest(body):
         fname = f.name
     try:
         _python = shutil.which("python3") or shutil.which("python") or "python"
-        r = subprocess.run([_python, fname], capture_output=True, text=True, timeout=30)
+        _startupinfo = None
+        if sys.platform == "win32":
+            _startupinfo = subprocess.STARTUPINFO()
+            _startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            _startupinfo.wShowWindow = subprocess.SW_HIDE
+        r = subprocess.run([_python, fname], capture_output=True, text=True, timeout=30,
+                            startupinfo=_startupinfo)
         return {"ok": True, "stdout": r.stdout, "stderr": r.stderr, "returncode": r.returncode}
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout after 30s"}
