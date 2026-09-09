@@ -4101,9 +4101,19 @@ _MCP_TOOLS = [
      }, "required": ["command"]},
      _p("/edit_file")),
     ("get_package_mcp_info",
-     "Return everything needed to write an MCP extension for an installed Package Control package.\n"
-     "Returns: path, output_file, commands (with captions and args), settings_keys, python_files, extension_template.\n"
-     "Write the extension to output_file following extension_template; ST loads it automatically.",
+     "Discover what an installed Sublime package can do, then just control it directly --\n"
+     "no separate MCP server needed. Primary workflow: call this for the package name, Read\n"
+     "the files it lists under python_files to find the package's real command-dispatch table\n"
+     "and settings (this tool's own commands/settings_keys are a starting point, not the full\n"
+     "picture -- a package that routes many actions through one command with an 'action' arg,\n"
+     "for example, only shows up here as that one wrapper command), then call the real thing\n"
+     "with run_command or eval_python. That loop -- discover, read source, call directly -- is\n"
+     "almost always enough on its own.\n"
+     "Returns: path, commands (with captions and args), settings_keys, python_files, plus\n"
+     "output_file/extension_template for the rarer case where a standing, independently-\n"
+     "reachable MCP server is actually needed (e.g. a client with no eval_python-equivalent of\n"
+     "its own) -- write the extension to output_file following extension_template and ST loads\n"
+     "it automatically; see the package-mcp-generator skill for that heavier path.",
      {"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]},
      _get_package_mcp_info),
     ("search_packages",
