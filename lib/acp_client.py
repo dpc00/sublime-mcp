@@ -7,6 +7,7 @@ behavior can be regression-tested with an in-memory agent.
 import json
 import queue
 import subprocess
+import sys
 import threading
 
 # PROOF: F9 — 2026-08-17. Cap in-flight agent-request workers so a flood
@@ -173,6 +174,11 @@ class AcpProcessClient:
     def start(self):
         if self.process and self.process.poll() is None:
             return self
+        _startupinfo = None
+        if sys.platform == "win32":
+            _startupinfo = subprocess.STARTUPINFO()
+            _startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            _startupinfo.wShowWindow = subprocess.SW_HIDE
         self.process = subprocess.Popen(
             self.command,
             cwd=self.cwd,
@@ -183,6 +189,7 @@ class AcpProcessClient:
             encoding="utf-8",
             errors="replace",
             bufsize=1,
+            startupinfo=_startupinfo,
         )
         self.connection = AcpConnection(
             self.process.stdout,

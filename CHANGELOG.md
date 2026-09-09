@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.7.3
+
+Fixes a real regression introduced while responding to the Package Control
+review bot: an attempted fix for its "don't import root-level plugin
+module" finding removed the only import path that actually worked on
+plugin reload, breaking the plugin entirely (`ModuleNotFoundError:
+No module named 'search_results'`). The correct fix, per the bot's own
+suggestion, is what's here now: `search_results.py`, `mcp_http_policy.py`,
+`ide_companion.py`, `claude_ide.py`, and `acp_client.py` moved into a real
+`lib/` subpackage, so they're no longer independently scanned as
+root-level plugins and the relative import is unambiguous either way.
+
+Also addresses the bot's other findings:
+- Added a "Key Bindings" entry under Preferences > Package Settings >
+  MCP Commander in `Main.sublime-menu` (the diff-review Escape/Ctrl+S/
+  Ctrl+Shift+Enter bindings existed but had no menu entry to find them).
+- `subprocess.Popen`/`subprocess.run` calls on Windows now pass
+  `STARTUPINFO` with `SW_HIDE` to avoid a flashing console window.
+
 ## 1.7.2
 
 Adds the `mcp-name: io.github.dpc00/sublime-mcp` marker required by the
