@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.7.6
+
+Adds `drive_input_panel`: fills and submits/cancels Sublime's currently
+open `show_input_panel`, e.g. a package's "Enter a path..." prompt.
+Input-panel views aren't reachable through any documented API
+(`window.views()`, `window.active_view()`, etc. all miss them), and
+pressing Enter to submit is a native keybinding (`select`, gated by
+`panel_has_focus`/`panel_type=="input"` in the default keymap) rather
+than anything `view.run_command("insert", ...)` can trigger — a literal
+inserted newline is silently accepted into the buffer without
+submitting. `drive_input_panel` locates the panel's view directly and
+drives it via Sublime's own built-in `select`/`hide_panel` commands,
+which reach the panel's real `on_done`/`on_cancel` callback correctly
+even when that callback belongs to a package running on the legacy
+Python 3.3 plugin host (a separate OS process from the one `eval_python`
+reaches) — no monkeypatching or OS-level keyboard injection required.
+
 ## 1.7.5
 
 Removes dead `debugger-mcp`/`lsp-mcp` probing code from the Node proxy's
