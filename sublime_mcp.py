@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.7.4"
+__version__ = "1.7.6"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -2067,6 +2067,85 @@ def _select_all_bookmarks(body):
     return _on_main(fn)
 
 
+def _find_input_panel_view(window):
+    """Locate the View backing window's currently open show_input_panel, if any.
+
+    Input-panel views are not returned by window.views(), window.active_view(),
+    or any other public lookup -- they live in a separate low-id widget
+    namespace. This scans that namespace directly via sublime.View(id) and
+    filters by is_widget + matching window, which is the only way to reach
+    the view at all (confirmed empirically; ST exposes no direct accessor).
+    """
+    for vid in range(0, 128):
+        v = sublime.View(vid)
+        if not v.is_valid():
+            continue
+        try:
+            if not v.settings().get("is_widget"):
+                continue
+        except Exception:
+            continue
+        vw = v.window()
+        if vw and vw.id() == window.id():
+            return v
+    return None
+
+
+def _drive_input_panel(body):
+    """Fill and/or submit or cancel Sublime's currently open input panel
+    (window.show_input_panel), reliably, regardless of which plugin --
+    or which plugin_host process, including the legacy Python 3.3 host --
+    opened it.
+
+    Two things make this necessary instead of just using run_command/insert:
+    - The input panel's View is not reachable through window.views(),
+      window.active_view(), or any documented accessor; _find_input_panel_view
+      above is the only known way to find it.
+    - Pressing Enter to submit is a native keybinding (bound to the built-in
+      "select" command when context panel_has_focus + panel_type=="input"),
+      not something view.run_command("insert", {"characters": "\\n"}) can
+      trigger -- a literal newline is silently accepted into the buffer
+      without submitting. Cancel is likewise the built-in
+      hide_panel(cancel=True), bound to Escape. Both "select" and
+      "hide_panel" are core ST commands (not Python), so calling them via
+      window.run_command reaches the input panel's on_done/on_cancel
+      callback correctly even when that callback lives in a different
+      plugin_host process than this one -- no monkeypatching, no same-
+      process requirement, and no OS-level keyboard injection needed.
+
+    Body params:
+      text (optional): replace the panel's entire current content with this
+        before acting. Omit to act on whatever text is already there.
+      action ("submit" | "cancel", default "submit"): submit calls the
+        panel's on_done with the current text; cancel calls on_cancel and
+        discards it.
+    """
+    def fn():
+        w = sublime.active_window()
+        if w.active_panel() != "input":
+            return {"error": "no input panel is currently open"}
+        panel_view = _find_input_panel_view(w)
+        if panel_view is None:
+            return {"error": "input panel is open but its view could not be located"}
+
+        text = body.get("text")
+        if text is not None:
+            panel_view.run_command("select_all")
+            panel_view.run_command("right_delete")
+            panel_view.run_command("insert", {"characters": text})
+
+        action = body.get("action", "submit")
+        if action == "submit":
+            w.run_command("select")
+        elif action == "cancel":
+            w.run_command("hide_panel", {"cancel": True})
+        else:
+            return {"error": "action must be 'submit' or 'cancel'"}
+
+        return {"ok": True, "submitted_text": text}
+    return _on_main(fn)
+
+
 def _find_in_file(body):
     """Find all occurrences of pattern in the active file. Returns list of
     {line, col, text}. Does not open a panel — for the interactive Find panel
@@ -2866,6 +2945,7 @@ _POST = {
     "/prev_bookmark": _prev_bookmark,
     "/clear_bookmarks": _clear_bookmarks,
     "/select_all_bookmarks": _select_all_bookmarks,
+    "/drive_input_panel": _drive_input_panel,
     "/set_syntax": _set_syntax,
     "/toggle_comment": _toggle_comment,
     "/toggle_sidebar": _toggle_sidebar,
@@ -4018,6 +4098,22 @@ _MCP_TOOLS = [
      "Select every line containing a bookmark in the active view.",
      {"type": "object", "properties": {}},
      _p("/select_all_bookmarks")),
+    ("drive_input_panel",
+     "Fill and/or submit or cancel Sublime's currently open input panel "
+     "(window.show_input_panel), e.g. a package's 'Enter a path...' prompt.\n"
+     "Input panels have no reachable View through normal APIs and Enter is a "
+     "native keybinding, not a scriptable insert -- this reaches both, and "
+     "works even when the panel belongs to a legacy Python 3.3-hosted "
+     "package in a different plugin_host process, since it drives the panel "
+     "through Sublime's own built-in commands rather than that package's code.\n"
+     "text (optional): replace the panel's current content before acting. "
+     "action: 'submit' (default, fires on_done) or 'cancel' (fires on_cancel). "
+     "Errors if no input panel is currently open.",
+     {"type": "object", "properties": {
+         "text": {"type": "string"},
+         "action": {"type": "string", "default": "submit"},
+     }},
+     _p("/drive_input_panel")),
     ("set_syntax",
      "Set the syntax of the active file by name (case-insensitive partial match is fine).",
      {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
