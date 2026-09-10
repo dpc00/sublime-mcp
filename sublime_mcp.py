@@ -14,7 +14,7 @@ Model Context Protocol.  The plugin runs two local HTTP servers on load:
   HTTP bridge     127.0.0.1:9500 (Windows) / 9501 (Mac/Linux)
     Internal REST API used by the MCP SSE dispatcher above.
 
-Ports are configured via sublime-mcp.sublime-settings (Preferences: MCP Commander Settings).
+Ports are configured via "MCP Commander.sublime-settings" (Preferences: MCP Commander Settings).
 Use "MCP Commander: Server Status" in the Command Palette to stop or start.
 
 Thread model
@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.7.6"
+__version__ = "1.7.7"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -3177,7 +3177,7 @@ class _Handler(BaseHTTPRequestHandler):
 # Claude Code config:
 #   { "type": "sse", "url": "http://127.0.0.1:9502/sse" }   (Windows)
 #   { "type": "sse", "url": "http://127.0.0.1:9503/sse" }   (Mac/Linux)
-# Override via sublime-mcp.sublime-settings ("mcp_port" / "http_port").
+# Override via MCP Commander.sublime-settings ("mcp_port" / "http_port").
 
 import queue as _queue
 import uuid as _uuid
@@ -3189,7 +3189,7 @@ _mcp_sessions = {}  # session_id -> queue.Queue
 
 def _load_ports():
     global _PORT, _MCP_PORT, _IDE_PORT
-    settings = sublime.load_settings("sublime-mcp.sublime-settings")
+    settings = sublime.load_settings("MCP Commander.sublime-settings")
     default_mcp_port = 9502 if sys.platform == "win32" else 9503
     default_http_port = 9500 if sys.platform == "win32" else 9501
     default_ide_port = 9504 if sys.platform == "win32" else 9505
