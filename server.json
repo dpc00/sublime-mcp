@@ -7,12 +7,12 @@
     "url": "https://github.com/dpc00/sublime-mcp",
     "source": "github"
   },
-  "version": "1.7.5",
+  "version": "1.7.6",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "sublime-mcp",
-      "version": "1.7.5",
+      "version": "1.7.6",
       "transport": {
         "type": "stdio"
       }
