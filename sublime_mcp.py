@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.7.7"
+__version__ = "1.7.8"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -5245,18 +5245,20 @@ def _line_diff_ops(a, b):
     return ops
 
 
-def _highlight_diff_panes(left_view, right_view, original_content, new_content):
+def _highlight_diff_panes(left_view, right_view, ops):
     """Highlight the diff across two real panes instead of one merged buffer.
 
     Each pane shows its own actual content (left = original, right =
     proposed) — no phantom overlays, no struck-through inline copies. A
     deletion is visible as a highlighted line in the left pane; there is
     nothing to fake in the right pane for it.
-    """
-    old_lines = original_content.splitlines()
-    new_lines = new_content.splitlines()
-    ops = _line_diff_ops(old_lines, new_lines)
 
+    Takes precomputed diff ops rather than the raw content: _line_diff_ops
+    is an O(n*m) pure-Python DP that can take seconds on a sizeable diff,
+    and this function runs inside open_review() on ST's single UI thread
+    (via _on_main) -- computing it here would freeze the whole editor for
+    the duration. The caller computes ops off the main thread instead.
+    """
     removed_regions, left_changed_regions = [], []
     added_regions, right_changed_regions = [], []
 
@@ -5552,6 +5554,12 @@ def _ide_open_diff(arguments):
         except Exception as e:
             return _ide_tool_error("Could not read file: {}".format(e))
 
+    # Computed here, off ST's main thread: _line_diff_ops is an O(n*m)
+    # pure-Python DP that can take seconds on a sizeable diff, and
+    # open_review() below runs on the single UI thread via _on_main --
+    # doing this work there froze the whole editor for the duration.
+    diff_ops = _line_diff_ops(original_content.splitlines(), new_content.splitlines())
+
     def _sublime_window_hwnds():
         """Top-level window handles belonging to Sublime Text's own real
         GUI process.
@@ -5599,22 +5607,27 @@ def _ide_open_diff(arguments):
         stayed behind the main ST window with no way to bring it forward
         short of minimizing the main window.
 
-        Two real, confirmed dead ends before this version, both frozen the
-        whole editor live 2026-09-10: (1) simulating an Alt keypress to
-        unlock SetForegroundWindow -- a raw synthetic key event system-wide
-        risks leaving whatever window has focus stuck in Windows' keyboard
-        menu-navigation mode; (2) calling ShowWindow/SetForegroundWindow/
-        BringWindowToTop *synchronously*, inline, from this same call --
-        confirmed via isolated testing that this deadlocks outright, not
-        just fails: those Win32 calls resolve via a synchronous message to
-        the target window's owning thread, which is *this exact thread*,
-        currently busy executing this Python code instead of pumping
-        messages -- the call waits forever for a response that can only
-        ever come after this function returns. The fix is to defer the
-        actual Win32 calls to a later, separate main-thread tick via
-        sublime.set_timeout(..., 0): by the time it runs, this call has
-        already returned and the message pump is idle again, so the
-        SendMessage-equivalent can actually complete.
+        Three real, confirmed dead ends before this version, all of which
+        froze the whole editor live 2026-09-10: (1) simulating an Alt
+        keypress to unlock SetForegroundWindow -- a raw synthetic key event
+        system-wide risks leaving whatever window has focus stuck in
+        Windows' keyboard menu-navigation mode; (2) calling ShowWindow/
+        SetForegroundWindow/BringWindowToTop *synchronously*, inline, from
+        this same call -- those Win32 calls resolve via a synchronous
+        message to the target window's owning thread, which is *this exact
+        thread*, currently busy executing this Python code instead of
+        pumping messages, so the call waits forever for a response that can
+        only ever come after this function returns; (3) deferring via
+        sublime.set_timeout(..., 0) -- still runs on ST's own main thread,
+        and still wedged main_thread_stack inside BringWindowToTop when
+        confirmed live again via eval_python/diagnostics, most likely
+        because the real GUI process (a separate OS process from this
+        plugin_host) was itself blocked waiting on plugin_host for
+        something else, making the two-way wait circular regardless of
+        which plugin_host tick issues the call. The actual fix: run the
+        Win32 calls on a plain, fully independent OS thread that is never
+        involved in any plugin_host <-> GUI-process round trip, so even a
+        genuine hang here can never hold ST's main thread hostage.
         """
         if os.name != "nt":
             return
@@ -5635,7 +5648,7 @@ def _ide_open_diff(arguments):
         if not new_hwnds:
             return
         hwnd = next(iter(new_hwnds))
-        sublime.set_timeout(lambda: _do_foreground(hwnd), 0)
+        threading.Thread(target=_do_foreground, args=(hwnd,), daemon=True).start()
 
     def open_review():
         # A dedicated new window, not a group split in the caller's current
@@ -5709,7 +5722,7 @@ def _ide_open_diff(arguments):
         review_window.focus_view(right)
         _force_window_foreground(before_hwnds)
 
-        _highlight_diff_panes(left, right, original_content, new_content)
+        _highlight_diff_panes(left, right, diff_ops)
         _ReviewScrollSyncer(review_window, left, right)
         _add_accept_reject_banner(left, right)
 
