@@ -274,7 +274,7 @@
     },
     {
       "name": "diagnostics",
-      "description": "One-call plugin health snapshot: main-thread heartbeat freshness (and a likely_wedged flag), the currently in-flight _on_main dispatch (if any) with its label and running time, open IDE-companion diff reviews, on_activated/on_load/on_post_save/on_selection_modified/on_close event counts (total vs. suppressed as agent-caused), console-capture buffer size, and a live main-thread stack trace. Answers 'wedged vs slow vs fine' without needing the main thread's cooperation -- use this before assuming a timeout means the server is dead.",
+      "description": "One-call plugin health snapshot: main-thread heartbeat freshness (and a likely_wedged flag), the currently in-flight _on_main dispatch (if any) with its label and running time, console-capture buffer size, and a live main-thread stack trace. Answers 'wedged vs slow vs fine' without needing the main thread's cooperation -- use this before assuming a timeout means the server is dead.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -298,6 +298,22 @@
         "required": [
           "query"
         ]
+      }
+    },
+    {
+      "name": "drive_input_panel",
+      "description": "Fill and/or submit or cancel Sublime's currently open input panel (window.show_input_panel), e.g. a package's 'Enter a path...' prompt.\nInput panels have no reachable View through normal APIs and Enter is a native keybinding, not a scriptable insert -- this reaches both, and works even when the panel belongs to a legacy Python 3.3-hosted package in a different plugin_host process, since it drives the panel through Sublime's own built-in commands rather than that package's code.\ntext (optional): replace the panel's current content before acting. action: 'submit' (default, fires on_done) or 'cancel' (fires on_cancel). Errors if no input panel is currently open.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "default": "submit"
+          }
+        }
       }
     },
     {

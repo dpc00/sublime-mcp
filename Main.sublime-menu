@@ -23,22 +23,6 @@
                                     "base_file": "${packages}/MCP Commander/MCP Commander.sublime-settings",
                                     "default": "{\n\t$0\n}\n"
                                 }
-                            },
-                            {
-                                "caption": "Key Bindings – Default",
-                                "command": "open_file",
-                                "args":
-                                {
-                                    "file": "${packages}/MCP Commander/Default ($platform).sublime-keymap"
-                                }
-                            },
-                            {
-                                "caption": "Key Bindings – User",
-                                "command": "open_file",
-                                "args":
-                                {
-                                    "file": "${packages}/User/Default ($platform).sublime-keymap"
-                                }
                             }
                         ]
                     }

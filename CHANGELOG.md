@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.8.0
+
+Removes the IDE Companion feature entirely (Gemini/Qwen/Claude Code
+legacy `/ide` diff-review integration: `lib/ide_companion.py`,
+`lib/claude_ide.py`, the Accept/Reject commands, keymaps, and context
+menu entries). It had a long history of serious, structural problems
+across its lifetime -- main-thread freezes from an O(n*m) diff
+computed on the UI thread, a Win32 foreground-activation call that
+could wedge the whole editor even when deferred, the Accept/Reject
+banner silently disappearing on a common diff shape, and the review
+window seizing OS-level input focus with no way to switch away until
+the review was resolved. Given that pattern, the decision was to
+remove the feature rather than continue patching it one bug at a
+time. sublime-mcp's core MCP server (HTTP bridge + MCP SSE) is
+unaffected.
+
 ## 1.7.9
 
 Fixes the Accept/Reject banner silently disappearing from a diff
