@@ -30,7 +30,7 @@ produce an equivalent skill for any other package.
 | -------------- | ---------- | -------------------------------- | -------------------------------- | ------------------------------ |
 | **sublime-mcp**  | repo root | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | 7 default, 238 discoverable    |
 
-Ports are configured via `sublime-mcp.sublime-settings` (`"mcp_port"` /
+Ports are configured via `MCP Commander.sublime-settings` (`"mcp_port"` /
 `"http_port"`), overridable in `Packages/User/`. The proxy → HTTP bridge URL
 is the one remaining env var: `SUBLIME_MCP_BASE`.
 

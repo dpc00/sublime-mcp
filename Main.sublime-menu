@@ -20,7 +20,7 @@
                                 "command": "edit_settings",
                                 "args":
                                 {
-                                    "base_file": "${packages}/sublime-mcp/sublime-mcp.sublime-settings",
+                                    "base_file": "${packages}/MCP Commander/MCP Commander.sublime-settings",
                                     "default": "{\n\t$0\n}\n"
                                 }
                             },
@@ -29,7 +29,7 @@
                                 "command": "open_file",
                                 "args":
                                 {
-                                    "file": "${packages}/sublime-mcp/Default ($platform).sublime-keymap"
+                                    "file": "${packages}/MCP Commander/Default ($platform).sublime-keymap"
                                 }
                             },
                             {

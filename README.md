@@ -27,7 +27,7 @@ The bundled Node/Python proxies use sublime-mcp's HTTP bridge only. Defaults:
 
 | Plugin        | MCP SSE                         | HTTP bridge                     | Settings file                        |
 | ------------- | ------------------------------- | ------------------------------- | ------------------------------------- |
-| sublime-mcp   | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | `sublime-mcp.sublime-settings`        |
+| sublime-mcp   | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | `MCP Commander.sublime-settings`      |
 
 The settings file takes `"mcp_port"` and `"http_port"` keys; edit your copy
 under `Packages/User/` (Preferences > Package Settings) to override the

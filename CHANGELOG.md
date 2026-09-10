@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.7
+
+Fixes a Package Control submission bug: `Main.sublime-menu` hardcoded
+`${packages}/sublime-mcp/...` for the settings and keymap paths, but
+Package Control installs this package under the folder name from
+`m.json` ("MCP Commander"), not the git repo name. That path only
+resolved locally by coincidence (dev clones are usually named
+`sublime-mcp`); it would have broken the Preferences menu for every
+real install. Renamed `sublime-mcp.sublime-settings` to
+`MCP Commander.sublime-settings` to match and fixed all references.
+
 ## 1.7.6
 
 Adds `drive_input_panel`: fills and submits/cancels Sublime's currently
