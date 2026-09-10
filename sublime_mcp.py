@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.7.8"
+__version__ = "1.7.9"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -5272,40 +5272,40 @@ def _highlight_diff_panes(left_view, right_view, ops):
                 region = right_view.full_line(right_view.text_point(row, 0))
                 (right_changed_regions if tag == "replace" else added_regions).append(region)
 
+    def _add_diff_regions(view, key, regions, scope, color):
+        """add_regions with a per-line annotation marker, except on row 0.
+
+        Row 0 is reserved for _add_accept_reject_banner's own annotation --
+        even an empty-string annotation there from this call would already
+        occupy row 0's annotation slot and silently hide the banner's real
+        one underneath it, confirmed live 2026-09-10 (a diff hunk starting
+        at the very first line made Accept/Reject disappear entirely).
+        Row 0 still gets the same color fill, just via a separate region
+        key with no annotation.
+        """
+        if not regions:
+            return
+        row0 = [r for r in regions if view.rowcol(r.a)[0] == 0]
+        rest = [r for r in regions if view.rowcol(r.a)[0] != 0]
+        if row0:
+            view.add_regions(key + "_row0", row0, scope, "", sublime.DRAW_NO_OUTLINE)
+        if rest:
+            view.add_regions(
+                key, rest, scope, "", sublime.DRAW_NO_OUTLINE,
+                annotations=[""] * len(rest),
+                annotation_color=color,
+            )
+
     # region.redish/greenish/bluish are Sublime's generic bookmark-marker
     # scopes -- many color schemes only give them a border, not a fill, so
     # the highlight silently rendered invisible. markup.deleted/inserted/
     # changed are the canonical unified-diff scopes every reasonable color
     # scheme fills solid (they're what .diff/.patch syntax highlighting
     # uses), so they're guaranteed visible regardless of theme.
-    if removed_regions:
-        left_view.add_regions(
-            "ide_diff_removed", removed_regions, "markup.deleted", "",
-            sublime.DRAW_NO_OUTLINE,
-            annotations=[""] * len(removed_regions),
-            annotation_color="#f92672",
-        )
-    if left_changed_regions:
-        left_view.add_regions(
-            "ide_diff_changed", left_changed_regions, "markup.changed", "",
-            sublime.DRAW_NO_OUTLINE,
-            annotations=[""] * len(left_changed_regions),
-            annotation_color="#66d9ef",
-        )
-    if added_regions:
-        right_view.add_regions(
-            "ide_diff_added", added_regions, "markup.inserted", "",
-            sublime.DRAW_NO_OUTLINE,
-            annotations=[""] * len(added_regions),
-            annotation_color="#a6e22e",
-        )
-    if right_changed_regions:
-        right_view.add_regions(
-            "ide_diff_changed", right_changed_regions, "markup.changed", "",
-            sublime.DRAW_NO_OUTLINE,
-            annotations=[""] * len(right_changed_regions),
-            annotation_color="#66d9ef",
-        )
+    _add_diff_regions(left_view, "ide_diff_removed", removed_regions, "markup.deleted", "#f92672")
+    _add_diff_regions(left_view, "ide_diff_changed", left_changed_regions, "markup.changed", "#66d9ef")
+    _add_diff_regions(right_view, "ide_diff_added", added_regions, "markup.inserted", "#a6e22e")
+    _add_diff_regions(right_view, "ide_diff_changed", right_changed_regions, "markup.changed", "#66d9ef")
 
     # Per-hunk marker rows, stored now so a future next-diff/prev-diff
     # command (not implemented yet) has something to walk without
