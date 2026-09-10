@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.7.9
+
+Fixes the Accept/Reject banner silently disappearing from a diff
+review whenever the diff has a hunk right at row 0 (a very common
+case -- any edit near the top of the file). `_highlight_diff_panes`
+was giving its own empty-string annotation to every changed/added/
+removed line, including row 0, and that competed with the real
+Accept/Reject banner annotation `_add_accept_reject_banner` pins to
+the same row -- the empty one silently won, so the banner never
+rendered. Row 0 now gets its diff-highlight color fill through a
+separate, unannotated region key, leaving row 0's one annotation slot
+for the banner. Verified live: same diff, banner now shows correctly.
+
 ## 1.7.8
 
 Fixes two confirmed causes of a full editor freeze in the IDE Companion
