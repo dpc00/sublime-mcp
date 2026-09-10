@@ -233,12 +233,6 @@ live-invoke:
 
 Silent buffer tools: prefer a scratch tab.
 
-## Road forward
-
-Compiled in-process engine for search / diff / token work:
-[MCP Speedup Response.md](../MCP%20Speedup%20Response.md). Python stays the
-orchestrator; only hot loops move to C.
-
 ## Lessons
 
 - Never `insert` large content — ST auto-indent mangles it. Use
