@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.7.8
+
+Fixes two confirmed causes of a full editor freeze in the IDE Companion
+diff-review flow (`openDiff`):
+
+- `_line_diff_ops`'s O(n*m) pure-Python diff DP (capped at 4,000,000
+  cells before falling back to `difflib`) was running synchronously on
+  ST's single UI thread inside `_on_main`, blocking the whole editor
+  for however long a sizeable diff took to compute. Now computed on
+  the calling (already off-main) thread before the main-thread-only
+  UI work runs.
+- `_force_window_foreground`'s Win32 `ShowWindow`/`SetForegroundWindow`/
+  `BringWindowToTop` calls, meant to bring the new review window to
+  the OS foreground, still wedged the main thread even when deferred
+  via `sublime.set_timeout(...)` -- confirmed live via
+  `main_thread_stack`/`diagnostics` showing the main thread genuinely
+  stuck inside `BringWindowToTop`. Moved off ST's main thread entirely
+  onto a plain background thread so a hang there can never hold the
+  editor hostage.
+
+Both fixes verified live: the same near-worst-case diff (1900x2047
+lines, DP just under the cap) that reproduced the freeze before now
+opens cleanly in under a second with heartbeat staying fresh
+throughout.
+
 ## 1.7.7
 
 Fixes a Package Control submission bug: `Main.sublime-menu` hardcoded
