@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__sublime-mcp__discover_tools",
+      "mcp__sublime-mcp__get_help",
+      "mcp__sublime-mcp__get_active_file",
+      "mcp__claude_ai_Gmail__search_threads",
+      "mcp__claude_ai_Gmail__get_thread",
+      "mcp__context7__query-docs",
+      "mcp__context7__resolve-library-id",
+      "mcp__firecrawl__firecrawl_scrape",
+      "mcp__pycharm__lint_files",
+      "mcp__pycharm__get_file_problems",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "mcp__claude-in-chrome__find",
+      "mcp__claude-in-chrome__get_page_text",
+      "mcp__github__search_repositories",
+      "Bash(python -m pytest *)",
+      "Bash(tasklist *)",
+      "Bash(where *)",
+      "Bash(python -m py_compile *)",
+      "Bash(npm view *)",
+      "Bash(claude mcp list)"
+    ]
+  }
+}

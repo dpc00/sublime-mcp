@@ -5552,13 +5552,100 @@ def _ide_open_diff(arguments):
         except Exception as e:
             return _ide_tool_error("Could not read file: {}".format(e))
 
+    def _sublime_window_hwnds():
+        """Top-level window handles belonging to Sublime Text's own real
+        GUI process.
+
+        plugin_host (where this code runs) is a separate OS process from
+        the real GUI process, so there is no Python-API way to get "the
+        window I just created"'s HWND directly -- snapshot before/after
+        and diff instead. Matches by Sublime's real Win32 window class
+        (PX_WINDOW_CLASS) rather than PID+tasklist: a blocking subprocess
+        call from here runs on Sublime's own main UI thread (this whole
+        function is invoked from open_review(), itself on the main
+        thread) and froze the entire editor when tried live 2026-09-10 --
+        pure ctypes/EnumWindows has no such risk.
+        """
+        if os.name != "nt":
+            return set()
+        import ctypes
+        from ctypes import wintypes
+        user32 = ctypes.windll.user32
+
+        hwnds = []
+        EnumWindowsProc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        buf = ctypes.create_unicode_buffer(256)
+
+        def _cb(hwnd, lparam):
+            if not user32.IsWindowVisible(hwnd):
+                return True
+            user32.GetClassNameW(hwnd, buf, 256)
+            if buf.value == "PX_WINDOW_CLASS":
+                hwnds.append(hwnd)
+            return True
+
+        user32.EnumWindows(EnumWindowsProc(_cb), 0)
+        return set(hwnds)
+
+    def _force_window_foreground(before_hwnds):
+        """Try to bring the newly created review window to the real OS
+        foreground.
+
+        Sublime's own Window.focus_view()/new_window() only ask for focus
+        through Sublime's own API -- on Windows, a foreground-focus request
+        that did not originate from real user input (exactly what every
+        MCP-triggered dispatch is) is routinely denied by the OS itself,
+        confirmed live 2026-09-10: the review window opened correctly but
+        stayed behind the main ST window with no way to bring it forward
+        short of minimizing the main window.
+
+        Two real, confirmed dead ends before this version, both frozen the
+        whole editor live 2026-09-10: (1) simulating an Alt keypress to
+        unlock SetForegroundWindow -- a raw synthetic key event system-wide
+        risks leaving whatever window has focus stuck in Windows' keyboard
+        menu-navigation mode; (2) calling ShowWindow/SetForegroundWindow/
+        BringWindowToTop *synchronously*, inline, from this same call --
+        confirmed via isolated testing that this deadlocks outright, not
+        just fails: those Win32 calls resolve via a synchronous message to
+        the target window's owning thread, which is *this exact thread*,
+        currently busy executing this Python code instead of pumping
+        messages -- the call waits forever for a response that can only
+        ever come after this function returns. The fix is to defer the
+        actual Win32 calls to a later, separate main-thread tick via
+        sublime.set_timeout(..., 0): by the time it runs, this call has
+        already returned and the message pump is idle again, so the
+        SendMessage-equivalent can actually complete.
+        """
+        if os.name != "nt":
+            return
+
+        def _do_foreground(hwnd):
+            import ctypes
+            user32 = ctypes.windll.user32
+            SW_RESTORE = 9
+            try:
+                user32.ShowWindow(hwnd, SW_RESTORE)
+                user32.SetForegroundWindow(hwnd)
+                user32.BringWindowToTop(hwnd)
+            except Exception:
+                pass
+
+        after_hwnds = _sublime_window_hwnds()
+        new_hwnds = after_hwnds - before_hwnds
+        if not new_hwnds:
+            return
+        hwnd = next(iter(new_hwnds))
+        sublime.set_timeout(lambda: _do_foreground(hwnd), 0)
+
     def open_review():
         # A dedicated new window, not a group split in the caller's current
         # window — this review can be triggered while that window is doing
         # something else (e.g. hosting a terminal), and must not touch its
         # existing layout/focus to get its own two-pane compare view.
+        before_hwnds = _sublime_window_hwnds()
         sublime.active_window().run_command("new_window")
         review_window = sublime.active_window()
+        _force_window_foreground(before_hwnds)
         review_window.set_layout({
             "cols": [0.0, 0.5, 1.0],
             "rows": [0.0, 1.0],
@@ -5599,6 +5686,13 @@ def _ide_open_diff(arguments):
         )
         right.sel().clear()
         right.sel().add(sublime.Region(0))
+        # Read-only by default: this pane opens in a brand-new OS window and
+        # grabs focus immediately, so any keystrokes the user was mid-typing
+        # elsewhere (a terminal, another app) land here instead -- confirmed
+        # live 2026-09-10 as real file corruption on Accept, not a hypothetical.
+        # Accept/Reject no longer supports hand-editing the proposed content
+        # before accepting; that tradeoff is worth it for corruption safety.
+        right.set_read_only(True)
         right.settings().set("ide_companion_diff_path", file_path)
         # Keymap "context" clauses default to operand:true (an equality
         # check against boolean True) when none is given -- matching
@@ -5613,6 +5707,7 @@ def _ide_open_diff(arguments):
         review_window.set_view_index(left, 0, 0)
         review_window.set_view_index(right, 1, 0)
         review_window.focus_view(right)
+        _force_window_foreground(before_hwnds)
 
         _highlight_diff_panes(left, right, original_content, new_content)
         _ReviewScrollSyncer(review_window, left, right)
