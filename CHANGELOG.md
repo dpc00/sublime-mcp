@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.8.1
+
+Documents a known Claude Code harness bug (not a sublime-mcp bug) in
+`AGENT_GUIDE.md`: reading Sublime's console via
+`get_console(mode='visible'/'auto')` (and the `get_console_full`/
+`get_console_win` aliases) on Windows can trigger a spurious
+"Interrupted, what do you want to do instead?" from the Claude Code
+client even though nothing was actually interrupted -- filed upstream
+as anthropics/claude-code#93529. `mode='captured'` avoids the OS-level
+path that triggers it, but is called out explicitly as not a
+guaranteed substitute: it only contains messages observed since
+capture began, so an earlier error can still be missed. No code
+changes.
+
 ## 1.8.0
 
 Removes the IDE Companion feature entirely (Gemini/Qwen/Claude Code
