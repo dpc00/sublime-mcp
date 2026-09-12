@@ -98,6 +98,27 @@ get_commands()                     # command ids, scopes, packages, palette capt
 `project_search` `where` accepts folder paths, `*.py`, `-*.md`, `${project}`,
 `${open_files}`, `${folder:Name}`.
 
+## Known issues
+
+- `get_console(mode='visible')` / `mode='auto'` (and the `get_console_full`
+  / `get_console_win` aliases) read Sublime's console via OS-level UI
+  automation on Windows. In Claude Code specifically, this can trigger an
+  upstream harness bug where the client shows "Interrupted, what do you
+  want to do instead?" even though nothing was actually interrupted — no
+  permission prompt appears, and the call has already completed by the
+  time the message shows up. This is a bug in Claude Code's own bundled
+  code (filed as anthropics/claude-code#93529), not in sublime-mcp; it has
+  been confirmed not to be caused by any individual mechanism the Windows
+  console reader uses (focus changes, clipboard access, `set_timeout`
+  hops).
+  `mode='captured'` does not use OS-level automation and does not trigger
+  this, but it is **not a guaranteed substitute**: it only contains
+  messages observed since capture began, so an error emitted earlier (e.g.
+  before the MCP connection was established, or before this specific
+  capture buffer started) will not appear there even though it did happen.
+  Pick the mode deliberately based on what you're trying to catch, rather
+  than treating one as a strictly safer default for the other.
+
 ## Do not
 
 - Run shell/builds via ST `exec` / `run_build` — the user cannot reliably cancel.
