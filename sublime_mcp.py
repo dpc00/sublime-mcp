@@ -4091,10 +4091,12 @@ _MCP_TOOLS = [
      "with run_command or eval_python. That loop -- discover, read source, call directly -- is\n"
      "almost always enough on its own.\n"
      "Returns: path, commands (with captions and args), settings_keys, python_files, plus\n"
-     "output_file/extension_template for the rarer case where a standing, independently-\n"
-     "reachable MCP server is actually needed (e.g. a client with no eval_python-equivalent of\n"
-     "its own) -- write the extension to output_file following extension_template and ST loads\n"
-     "it automatically; see the package-mcp-generator skill for that heavier path.",
+     "output_file/extension_template for the rare theoretical case where a standing,\n"
+     "independently-reachable MCP server is needed (e.g. a client with no eval_python-\n"
+     "equivalent of its own) -- write the extension to output_file following extension_template\n"
+     "and ST loads it automatically. A full audit of the real, current, popular Package Control\n"
+     "catalog (2026-09-14) found zero packages that actually needed this path -- treat it as a\n"
+     "documented escape hatch, not something to reach for by default.",
      {"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]},
      _get_package_mcp_info),
     ("search_packages",

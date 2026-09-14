@@ -6,6 +6,8 @@
 *.sublime-workspace
 .cache
 .claude/settings.local.json
+.omp/
+.mcp.json
 .env
 .git/
 .idea/
