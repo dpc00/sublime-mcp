@@ -58,7 +58,9 @@ following are keys in `MCP Commander.sublime-settings`:
   shared/multi-user machine, reaching `127.0.0.1` on the same host.
   Generate a real random value yourself; don't use a short or guessable
   string. Not every MCP client UI exposes custom headers — check yours
-  supports one before relying on this.
+  supports one before relying on this. If you connect through the bundled
+  Node/Python proxy instead of a direct SSE/HTTP URL, set the same value
+  as `SUBLIME_MCP_TOKEN` in the proxy process's environment.
 - **`disabled_tools`** (default `[]`) — a list of tool names to refuse
   and hide from discovery entirely, e.g. `["eval_python", "run_command"]`
   to remove the two tools with the broadest reach while keeping the rest
