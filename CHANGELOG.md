@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.8.2
+
+Removes the `package-mcp-generator` skill. A full audit of the real,
+current Package Control catalog (5434 packages, filtered to real
+installs >=10k and a GitHub push within 2 years -- 182 survivors,
+individually source-triaged) found zero packages that actually need a
+standalone dedicated MCP server; the one candidate that looked like an
+exception (a native OS color-picker dialog, in ColorPicker and
+ColorHelper) turned out to be reachable too, by launching the same
+bundled executable directly and driving it with a separate UI-automation
+tool instead of through Sublime's own blocking command. `get_package_mcp_info`
+keeps its `output_file`/`extension_template` fields as a documented
+escape hatch, just no longer points at a generator skill nothing in the
+real corpus ends up needing. `package-skill-generator` (the lightweight,
+validated pattern actually used throughout the audit) is unaffected.
+
 ## 1.8.1
 
 Documents a known Claude Code harness bug (not a sublime-mcp bug) in
