@@ -76,7 +76,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.8.4"
+__version__ = "1.8.5"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -3063,6 +3063,9 @@ class _Handler(BaseHTTPRequestHandler):
         if is_oauth_discovery_path(self.path):
             send_no_authorization(self)
             return
+        if not _check_auth(self):
+            _deny_auth_json(self)
+            return
         params = parse_qs(parsed.query)
         handler = _GET.get(parsed.path)
         if handler:
@@ -3074,7 +3077,14 @@ class _Handler(BaseHTTPRequestHandler):
             self._json({"error": "not found"}, 404)
 
     def do_POST(self):
+        if not _check_auth(self):
+            _deny_auth_json(self)
+            return
         parsed = urlparse(self.path)
+        tool_name = parsed.path.lstrip("/")
+        if tool_name in _DISABLED_TOOLS:
+            self._json(_tool_disabled_error(tool_name), 403)
+            return
         length = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(length)) if length else {}
         handler = _POST.get(parsed.path)
@@ -3116,15 +3126,61 @@ _mcp_sessions = {}  # session_id -> queue.Queue
 # binding all interfaces on the Windows side).
 _BIND_HOST = "127.0.0.1"
 
+# Empty (default) = no auth required, matching every prior release's
+# behavior. Set "auth_token" in MCP Commander.sublime-settings to require a
+# matching `Authorization: Bearer <token>` header on every request to
+# either HTTP server -- the one control that works regardless of bind
+# address, since loopback-only does not protect against another process (or
+# another user, on a shared/multi-user machine) on the same host.
+_AUTH_TOKEN = ""
+
+# Tool names in "disabled_tools" (MCP Commander.sublime-settings) are
+# blocked at every call path that can reach a tool's handler: tools/call
+# (_mcp_dispatch), batch (_batch), and the direct POST /<tool_name> routes
+# _Handler serves for node-proxy/dynamic-registration compatibility
+# (register_mcp_tools). All three call the same handler functions
+# independently -- a check added to only one of them is not a real
+# restriction, confirmed by reading _batch's own tools_by_name lookup,
+# which bypasses _mcp_dispatch entirely.
+_DISABLED_TOOLS = set()
+
+
+def _check_auth(handler):
+    """True if this request may proceed. Always True when auth_token is
+    unset (default) -- opt-in only, see _AUTH_TOKEN above."""
+    if not _AUTH_TOKEN:
+        return True
+    got = handler.headers.get("Authorization", "")
+    if got.startswith("Bearer "):
+        got = got[7:]
+    return got == _AUTH_TOKEN
+
+
+def _deny_auth_json(handler):
+    body = b'{"error":"unauthorized"}'
+    handler.send_response(401)
+    handler.send_header("Content-Type", "application/json")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.send_header("WWW-Authenticate", "Bearer")
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
+def _tool_disabled_error(name):
+    return {"error": "tool '{}' is disabled by this server's settings (disabled_tools)".format(name)}
+
 
 def _load_ports():
-    global _PORT, _MCP_PORT, _BIND_HOST
+    global _PORT, _MCP_PORT, _BIND_HOST, _AUTH_TOKEN, _DISABLED_TOOLS
     settings = sublime.load_settings("MCP Commander.sublime-settings")
     default_mcp_port = 9502 if sys.platform == "win32" else 9503
     default_http_port = 9500 if sys.platform == "win32" else 9501
     _MCP_PORT = int(settings.get("mcp_port", default_mcp_port))
     _PORT = int(settings.get("http_port", default_http_port))
     _BIND_HOST = "0.0.0.0" if settings.get("allow_lan_access", False) else "127.0.0.1"
+    _AUTH_TOKEN = str(settings.get("auth_token", "") or "")
+    disabled = settings.get("disabled_tools", [])
+    _DISABLED_TOOLS = set(disabled) if isinstance(disabled, list) else set()
 
 _EXTENSION_TEMPLATE = """\
 Place this file in Packages/<YourPackage>/<yourpackage>_mcp_tools.py.
@@ -3233,6 +3289,9 @@ def _batch(args):
         tool_args = call.get("args") or {}
         if tool_name == "batch":
             results.append({"error": "batch cannot call itself"})
+            continue
+        if tool_name in _DISABLED_TOOLS:
+            results.append(_tool_disabled_error(tool_name))
             continue
         handler = tools_by_name.get(tool_name)
         if handler is None:
@@ -4848,6 +4907,9 @@ class _MCPHandler(BaseHTTPRequestHandler):
         if is_oauth_discovery_path(self.path):
             send_no_authorization(self)
             return
+        if not _check_auth(self):
+            _deny_auth_json(self)
+            return
         if path == "/sse":
             self._handle_sse()
         elif path == "/mcp":
@@ -4861,6 +4923,9 @@ class _MCPHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def do_POST(self):
+        if not _check_auth(self):
+            _deny_auth_json(self)
+            return
         path = urlparse(self.path).path
         if path == "/messages":
             self._handle_message()
@@ -4973,7 +5038,8 @@ def _mcp_dispatch(msg):
         elif method == "tools/list":
             with _mcp_tools_lock:
                 snapshot = [tool for tool in _MCP_TOOLS
-                            if tool[0] in _MCP_DEFAULT_TOOL_NAMES]
+                            if tool[0] in _MCP_DEFAULT_TOOL_NAMES
+                            and tool[0] not in _DISABLED_TOOLS]
             tools = []
             for name, desc, schema, _ in snapshot:
                 input_schema = dict(schema) if schema else {}
@@ -4986,6 +5052,8 @@ def _mcp_dispatch(msg):
         elif method == "tools/call":
             tool_name = params.get("name")
             tool_args = params.get("arguments") or {}
+            if tool_name in _DISABLED_TOOLS:
+                raise ValueError(_tool_disabled_error(tool_name)["error"])
             with _mcp_tools_lock:
                 entry = next((t for t in _MCP_TOOLS if t[0] == tool_name), None)
             if entry is None:

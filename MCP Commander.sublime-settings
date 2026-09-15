@@ -17,4 +17,25 @@
     // doesn't forward localhost to the Windows host and switching WSL to
     // mirrored networking mode isn't an option.
     // "allow_lan_access": false
+
+    // Require a matching `Authorization: Bearer <token>` header on every
+    // request to either server. Empty/unset (default) = no auth required,
+    // same as every prior release. This is the one control that works
+    // regardless of bind address -- loopback-only does not protect against
+    // another process, or another user on a shared/multi-user machine,
+    // reaching 127.0.0.1 on the same host. Generate a real random value
+    // yourself (e.g. `python -c "import secrets; print(secrets.token_hex(32))"`)
+    // -- do not use a short or guessable string. Your MCP client config
+    // then needs a matching `Authorization: Bearer <token>` header, which
+    // not every MCP client UI exposes; check yours supports custom headers
+    // before relying on this.
+    // "auth_token": ""
+
+    // Tool names listed here are refused at every call path (tools/call,
+    // batch, and the direct POST /<tool_name> routes) and hidden from
+    // tools/list -- a client cannot see or call them at all. Use this to
+    // remove specific high-risk tools (eval_python and run_command are the
+    // two with the broadest reach) while keeping the rest of the server
+    // usable, e.g. for a shared or less-trusted deployment.
+    // "disabled_tools": ["eval_python", "run_command"]
 }
