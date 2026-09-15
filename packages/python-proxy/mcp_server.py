@@ -103,7 +103,14 @@ print(f"sublime-mcp: BASE={BASE} sys.platform={sys.platform}", file=sys.stderr)
 sys.stderr.flush()
 
 mcp = FastMCP("sublime-mcp")
-_client = httpx.Client(base_url=BASE, timeout=DEFAULT_TIMEOUT)
+# Only sent when set -- matches the server's auth_token setting (unset by
+# default on both sides, so this is a no-op unless the user opted in).
+_AUTH_TOKEN = os.environ.get("SUBLIME_MCP_TOKEN")
+_client = httpx.Client(
+    base_url=BASE,
+    timeout=DEFAULT_TIMEOUT,
+    headers={"Authorization": f"Bearer {_AUTH_TOKEN}"} if _AUTH_TOKEN else {},
+)
 
 
 def _get(endpoint: str, **params) -> dict:

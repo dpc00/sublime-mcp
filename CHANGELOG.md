@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.6
+
+Fixes a gap in 1.8.5's `auth_token`: the bundled Node/Python proxies had
+no way to send it, so setting a token broke any client using them (stdio
+clients, not a direct SSE/HTTP URL). Both proxies now send
+`Authorization: Bearer <token>` when a `SUBLIME_MCP_TOKEN` environment
+variable is set on the proxy process, matching the server's `auth_token`
+setting. Unset by default on both sides -- no-op unless you already opted
+into `auth_token`.
+
 ## 1.8.5
 
 Two new opt-in access controls, following up on 1.8.4's network-exposure
