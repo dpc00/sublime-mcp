@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.8.4
+
+Security hardening. Both local HTTP servers (the MCP endpoint and the
+internal HTTP bridge) now bind `127.0.0.1` by default instead of
+`0.0.0.0`, and no longer send `Access-Control-Allow-Origin: *` on any
+real tool-call endpoint.
+
+Neither server has ever had authentication -- by design, since a
+loopback-only server doesn't need it -- but the implementation didn't
+actually enforce loopback-only: `0.0.0.0` made both reachable from
+every other device on the same network, and the CORS wildcard meant
+any webpage's JavaScript running in a browser on the same machine
+(a malicious site, a compromised ad, a tracking script on an
+otherwise-trusted page) could reach them too and read the response,
+no network access needed at all. Combined with `eval_python` --
+arbitrary code execution in Sublime's process, by design -- this was
+a real, currently-exploitable-if-found vulnerability, not a
+theoretical one.
+
+New setting: `"allow_lan_access"` (default `false`) in `MCP Commander
+.sublime-settings` opts back into the `0.0.0.0` bind for setups that
+specifically need it -- e.g. a WSL client that can't reach
+`127.0.0.1` on the Windows host without either this or switching WSL
+to mirrored networking mode. The CORS removal is unconditional and
+doesn't affect this: CORS only governs browser access, not CLI/desktop
+MCP clients, which were never subject to it in the first place.
+
 ## 1.8.3
 
 `close_file` now routes through Sublime's real window-close commands
