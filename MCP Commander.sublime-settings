@@ -6,4 +6,15 @@
     // Port for the internal HTTP bridge used by the MCP SSE dispatcher above.
     // Defaults to 9500 on Windows, 9501 on Mac/Linux, if unset.
     // "http_port": 9500
+
+    // Both servers above are loopback-only (127.0.0.1) by default and have
+    // NO authentication at all -- one of the tools they expose
+    // (eval_python) is arbitrary code execution in Sublime's own process.
+    // Setting this to true binds 0.0.0.0 instead, making both reachable
+    // from every other device on your network, still with no auth. Only
+    // turn this on if you have a specific reason a client can't reach
+    // 127.0.0.1 directly -- e.g. a WSL client when WSL's networking mode
+    // doesn't forward localhost to the Windows host and switching WSL to
+    // mirrored networking mode isn't an option.
+    // "allow_lan_access": false
 }

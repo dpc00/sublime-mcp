@@ -76,7 +76,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.8.3"
+__version__ = "1.8.4"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -3103,14 +3103,28 @@ import uuid as _uuid
 _MCP_PORT = 9502 if sys.platform == "win32" else 9503
 _mcp_sessions = {}  # session_id -> queue.Queue
 
+# Loopback-only by default: both HTTP servers below have no authentication
+# at all (see lib/mcp_http_policy.py's own "loopback servers are no-auth"
+# design note), and one of their tools (eval_python) is arbitrary code
+# execution in Sublime's process by design. Binding 0.0.0.0 instead of
+# 127.0.0.1 makes that reachable from every other device on the same
+# network with zero auth -- opt into "allow_lan_access": true in
+# MCP Commander.sublime-settings only if something like a WSL client
+# genuinely can't reach 127.0.0.1 on the Windows host directly (confirmed
+# live 2026-09-15: WSL's default NAT networking mode doesn't always forward
+# localhost from the Linux side without either mirrored networking mode or
+# binding all interfaces on the Windows side).
+_BIND_HOST = "127.0.0.1"
+
 
 def _load_ports():
-    global _PORT, _MCP_PORT
+    global _PORT, _MCP_PORT, _BIND_HOST
     settings = sublime.load_settings("MCP Commander.sublime-settings")
     default_mcp_port = 9502 if sys.platform == "win32" else 9503
     default_http_port = 9500 if sys.platform == "win32" else 9501
     _MCP_PORT = int(settings.get("mcp_port", default_mcp_port))
     _PORT = int(settings.get("http_port", default_http_port))
+    _BIND_HOST = "0.0.0.0" if settings.get("allow_lan_access", False) else "127.0.0.1"
 
 _EXTENSION_TEMPLATE = """\
 Place this file in Packages/<YourPackage>/<yourpackage>_mcp_tools.py.
@@ -4814,8 +4828,17 @@ class _MCPHandler(BaseHTTPRequestHandler):
         pass
 
     def do_OPTIONS(self):
+        # No Access-Control-Allow-Origin here or anywhere else in this
+        # handler: MCP clients are CLI/desktop processes making direct HTTP
+        # requests, not browser fetch() calls, so CORS isn't needed for the
+        # intended use -- and CORS governs whether a browser lets a
+        # webpage's JS *read* the response, not whether the request reaches
+        # the server at all, so a wildcard here would let any webpage's JS
+        # read tool-call responses (including from eval_python -- arbitrary
+        # code execution) with zero authentication. See MCP Commander
+        # .sublime-settings' allow_lan_access comment for the related
+        # bind-address tradeoff.
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
@@ -4855,7 +4878,6 @@ class _MCPHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-cache")
         self.send_header("Connection", "keep-alive")
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
 
         try:
@@ -4911,7 +4933,6 @@ class _MCPHandler(BaseHTTPRequestHandler):
             # Notification (no "id"): no JSON-RPC response body per spec.
             self.send_response(202)
             self.send_header("Content-Length", "0")
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             return
 
@@ -4919,7 +4940,6 @@ class _MCPHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(payload)
 
@@ -5000,19 +5020,19 @@ def _start_servers():
     _install_console_capture()
     if not _server:
         try:
-            _server = _ThreadingHTTPServer(("0.0.0.0", _PORT), _Handler)
+            _server = _ThreadingHTTPServer((_BIND_HOST, _PORT), _Handler)
             threading.Thread(target=_server.serve_forever, daemon=True).start()
         except OSError as e:
             print("sublime-mcp: could not bind HTTP bridge on port {}: {}".format(_PORT, e))
             _server = None
     if not _mcp_server:
         try:
-            _mcp_server = _ThreadingHTTPServer(("0.0.0.0", _MCP_PORT), _MCPHandler)
+            _mcp_server = _ThreadingHTTPServer((_BIND_HOST, _MCP_PORT), _MCPHandler)
             threading.Thread(target=_mcp_server.serve_forever, daemon=True).start()
         except OSError as e:
             print("sublime-mcp: could not bind MCP SSE on port {}: {}".format(_MCP_PORT, e))
             _mcp_server = None
-    print("sublime-mcp: MCP SSE on 0.0.0.0:{}, HTTP bridge on 0.0.0.0:{}".format(_MCP_PORT, _PORT))
+    print("sublime-mcp: MCP SSE on {0}:{1}, HTTP bridge on {0}:{2}".format(_BIND_HOST, _MCP_PORT, _PORT))
 
 
 def _stop_servers():
