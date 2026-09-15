@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.8.5
+
+Two new opt-in access controls, following up on 1.8.4's network-exposure
+fix with the access-control angle: loopback-only + no CORS closes remote
+and drive-by-webpage access, but there was still no way to restrict
+*local* access or reduce the tool surface for a shared/less-trusted
+deployment.
+
+- **`auth_token`** (default unset) — require a matching
+  `Authorization: Bearer <token>` header on every request to either
+  server. Works regardless of bind address, since loopback-only doesn't
+  protect against another process, or another user on a shared/multi-user
+  machine, reaching `127.0.0.1` on the same host.
+- **`disabled_tools`** (default `[]`) — block specific tools by name
+  (e.g. `eval_python`, `run_command`) at every call path that can reach a
+  tool's handler: `tools/call`, `batch`, and the direct `POST
+  /<tool_name>` routes served for node-proxy/dynamic-registration
+  compatibility -- all three call the tool's handler function
+  independently, so a check added to only one of them would not be a real
+  restriction. Disabled tools are also hidden from `tools/list`.
+
+Both default to today's existing behavior (no auth, no restrictions) --
+purely additive, nothing changes for an existing setup that doesn't set
+either key. See the new **Security** section in README.md.
+
 ## 1.8.4
 
 Security hardening. Both local HTTP servers (the MCP endpoint and the

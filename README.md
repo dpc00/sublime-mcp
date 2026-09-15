@@ -37,6 +37,37 @@ SSE URL form: `http://127.0.0.1:<sse-port>/sse`. The bundled Node/Python
 proxies talk to sublime-mcp's **HTTP bridge**, not SSE; override with
 `SUBLIME_MCP_BASE` (e.g. `http://127.0.0.1:9500`).
 
+## Security
+
+Both servers are **loopback-only (`127.0.0.1`) by default and have no
+authentication** — one of the tools they expose (`eval_python`) is
+arbitrary code execution in Sublime's own process, so treat this server
+as equivalent in trust level to your own login session. All of the
+following are keys in `MCP Commander.sublime-settings`:
+
+- **`allow_lan_access`** (default `false`) — binds `0.0.0.0` instead of
+  `127.0.0.1`, making both servers reachable from every other device on
+  your network, still with no authentication. Only turn this on for a
+  specific reason a client can't reach `127.0.0.1` directly (e.g. a WSL
+  client when WSL's networking mode doesn't forward localhost to the
+  Windows host).
+- **`auth_token`** (default unset) — requires a matching
+  `Authorization: Bearer <token>` header on every request. This is the
+  one control that works regardless of bind address, since loopback-only
+  doesn't protect against another process, or another user on a
+  shared/multi-user machine, reaching `127.0.0.1` on the same host.
+  Generate a real random value yourself; don't use a short or guessable
+  string. Not every MCP client UI exposes custom headers — check yours
+  supports one before relying on this.
+- **`disabled_tools`** (default `[]`) — a list of tool names to refuse
+  and hide from discovery entirely, e.g. `["eval_python", "run_command"]`
+  to remove the two tools with the broadest reach while keeping the rest
+  of the server usable.
+
+There is no cross-origin access at all: the real tool-call endpoints send
+no `Access-Control-Allow-Origin` header, so a webpage's JavaScript running
+in a browser cannot reach them even if it's running on the same machine.
+
 ## Installation
 
 ### 1. Install the Sublime Text plugin
