@@ -27,3 +27,12 @@ buffer unsaved.
 Fall back to ordinary filesystem or shell tools when sublime-mcp is unavailable,
 returns an explicit limitation, or the operation is outside Sublime's scope. Do not
 claim an editor operation succeeded unless its tool result confirms it.
+
+Don't call `close_file` on an ai_terminal-hosted tab (any tab running an agent
+CLI, including the one hosting this session) expecting it to close it.
+GhostShell's ai_terminal package now blocks every native window-close command
+outright for its own tabs (no dialog, just a no-op with a status message), so
+the call does nothing rather than closing anything -- safe to call by
+accident, but useless for actually closing one. Ask the user to use that
+tab's own "Tab Close ▼" toolbar control instead if a tab needs to be ended or
+detached.

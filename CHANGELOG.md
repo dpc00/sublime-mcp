@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.8.3
+
+`close_file` now routes through Sublime's real window-close commands
+(`close_file`/`close_by_index`) instead of calling `view.close()`
+directly. A direct API call bypasses any host-side close-handling hook
+entirely, the same way a mouse-X tab close bypasses Sublime's own
+`on_window_command` dispatch (`sublimehq/sublime_text#1922`) — this was
+how a misdirected `close_file` call (an unresolved `path` silently falling
+back to the active view) closed an unrelated coordinating session's own
+tab instead of the intended disposable one on 2026-09-15. Routing through
+the real command gives a host package a chance to see and handle the
+close — e.g. GhostShell's `ai_terminal` package now blocks the command
+outright for its own tabs. Tool description and the `sublime-mcp` skill
+docs updated to describe the new behavior and the still-real limitation:
+`close_file` cannot target an unsaved/path-less tab by anything other than
+being the active view.
+
 ## 1.8.2
 
 Removes the `package-mcp-generator` skill. A full audit of the real,

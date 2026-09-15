@@ -76,7 +76,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.8.1"
+__version__ = "1.8.3"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -1743,7 +1743,19 @@ def _close_file(body):
             v = w.active_view()
         if not v:
             return {"error": "no active view"}
-        v.close()
+        # Route through a real window command instead of calling v.close()
+        # directly. Some hosts (GhostShell's ai_terminal package) hook
+        # on_window_command to ask for confirmation before a tab actually
+        # closes; a bare view.close() bypasses that entirely, the same way
+        # a mouse-X tab close bypasses it (sublimehq/sublime_text#1922).
+        # That gap is how a "close the disposable test tab" call ended up
+        # silently closing an unrelated tab instead (2026-09-15) -- going
+        # through the command path gives any such hook a chance to run.
+        if v is w.active_view():
+            w.run_command("close_file")
+        else:
+            group, index = w.get_view_index(v)
+            w.run_command("close_by_index", {"group": group, "index": index})
         return {"ok": True}
 
     return _on_main(fn)
@@ -3872,7 +3884,16 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {"path": {"type": "string", "default": ""}}},
      _p("/save_file")),
     ("close_file",
-     "Close a file by path, or close the active file if path is omitted.",
+     "Close a file by path, or close the active file if path is omitted. "
+     "Routed through Sublime's real close command (not a direct API call), "
+     "so a host-side close-blocking hook gets a chance to run -- e.g. "
+     "GhostShell's ai_terminal package refuses this outright (no dialog, "
+     "just a no-op) for any ai_terminal tab, so calling this on one does "
+     "nothing rather than closing it. Only ever targets an already-open "
+     "view found by path or the current active view -- it cannot target an "
+     "unsaved/path-less tab (like an ai_terminal tab) by index; do not call "
+     "this expecting it to close 'whatever tab you mean' when no path "
+     "resolves.",
      {"type": "object", "properties": {"path": {"type": "string", "default": ""}}},
      _p("/close_file")),
     ("toggle_comment",
