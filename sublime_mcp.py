@@ -489,21 +489,41 @@ def _get_sheets(params):
             except Exception:
                 pass
             v = s.view()
-            out.append(
-                {
-                    "index": i,
-                    "id": s.id(),
-                    "type": kind,
-                    "path": path,
-                    "name": v.name() if v else None,
-                    "is_dirty": v.is_dirty() if v else False,
-                    "group": s.group(),
-                    "index_in_group": w.get_sheet_index(s)[1],
-                    "is_selected": s.id() in selected_ids,
-                    "is_focused": s.id() == active_sheet_id,
-                    "is_active_group": s.group() == active_group,
-                }
-            )
+            item = {
+                "index": i,
+                "id": s.id(),
+                "type": kind,
+                "path": path,
+                "name": v.name() if v else None,
+                "is_dirty": v.is_dirty() if v else False,
+                "group": s.group(),
+                "index_in_group": w.get_sheet_index(s)[1],
+                "is_selected": s.id() in selected_ids,
+                "is_focused": s.id() == active_sheet_id,
+                "is_active_group": s.group() == active_group,
+            }
+            # Any package can tag a view with its own settings (GhostShell's
+            # ai_terminal_* keys, for example) -- surface all of it rather
+            # than a hand-picked subset, so a caller can always tell what a
+            # tab actually is without sublime-mcp needing to know about
+            # that package by name.
+            if v is not None:
+                try:
+                    item["settings"] = v.settings().to_dict()
+                except Exception:
+                    item["settings"] = {}
+                item["is_scratch"] = v.is_scratch()
+                item["is_read_only"] = v.is_read_only()
+                try:
+                    item["size"] = v.size()
+                except Exception:
+                    item["size"] = None
+                try:
+                    syntax = v.syntax()
+                    item["syntax"] = syntax.name if syntax else None
+                except Exception:
+                    item["syntax"] = None
+            out.append(item)
         return {
             "sheets": out,
             "selected_sheet_ids": [s.id() for s in selected_sheets],
@@ -522,7 +542,7 @@ def _sheet_summary(w, s):
     except Exception:
         pass
     group, index_in_group = w.get_sheet_index(s)
-    return {
+    summary = {
         "id": s.id(),
         "type": type(s).__name__,
         "path": path,
@@ -531,6 +551,27 @@ def _sheet_summary(w, s):
         "group": group,
         "index_in_group": index_in_group,
     }
+    # Any package can tag a view with its own settings (GhostShell's
+    # ai_terminal_* keys, for example) -- surface all of it rather than a
+    # hand-picked subset, so a caller can always tell what a tab actually
+    # is without sublime-mcp needing to know about that package by name.
+    if v is not None:
+        try:
+            summary["settings"] = v.settings().to_dict()
+        except Exception:
+            summary["settings"] = {}
+        summary["is_scratch"] = v.is_scratch()
+        summary["is_read_only"] = v.is_read_only()
+        try:
+            summary["size"] = v.size()
+        except Exception:
+            summary["size"] = None
+        try:
+            syntax = v.syntax()
+            summary["syntax"] = syntax.name if syntax else None
+        except Exception:
+            summary["syntax"] = None
+    return summary
 
 
 def _get_selected_sheets(params):
