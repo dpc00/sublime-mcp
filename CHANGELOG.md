@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.7
+
+`get_sheets` now returns each view's full `settings().to_dict()` plus
+`is_scratch`/`is_read_only`/`size`/`syntax`, instead of a hand-picked
+subset of fields. Any package can tag a view with its own settings (a
+detachable terminal package identifying which agent session a tab is,
+for example) -- this surfaces all of it generically, so a caller can
+always tell what a tab actually is without sublime-mcp needing to know
+that package exists. Also fixes `_sheet_summary` (used by
+`get_selected_sheets`/`move_sheets_to_group`) the same way -- it turned
+out `get_sheets` itself had a separate, duplicated field list that never
+called it.
+
 ## 1.8.6
 
 Fixes a gap in 1.8.5's `auth_token`: the bundled Node/Python proxies had
