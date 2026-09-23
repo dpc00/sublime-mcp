@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.8.8
+
+Both bundled proxies (node-proxy, python-proxy) no longer advertise tools
+from a backend that isn't actually there. Until now, a failed
+`/mcp_tools` discovery fell back to a generated catalog of the same 7
+default tools regardless -- so a client whose config still pointed a
+proxy at a server that had been removed (a stale port, an old name) saw
+it listed as connected with 7 working tools, and every call to it
+failed. A proxy with no backend now advertises no tools and logs why;
+it keeps retrying in the background and registers the real tools once
+the backend answers, so an agent started before Sublime still gets its
+tools once Sublime is up (node-proxy pushes `notifications/tools/
+list_changed`; python-proxy's MCP library version can't push that, so a
+client sees the new tools on its next `tools/list`).
+
 ## 1.8.7
 
 `get_sheets` now returns each view's full `settings().to_dict()` plus
