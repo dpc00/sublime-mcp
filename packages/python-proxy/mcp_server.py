@@ -214,8 +214,33 @@ def _build_tool(name: str, description: str, schema: dict):
 
 _focused_tools = {tool["name"]: tool for tool in TOOLS if tool["name"] in DEFAULT_TOOL_NAMES}
 _focused_tools.update({tool["name"]: tool for tool in GATEWAY_FALLBACKS})
-for _tool in _focused_tools.values():
-    mcp.add_tool(_build_tool(_tool["name"], _tool["description"], _tool.get("inputSchema")))
+
+
+def _register_tools() -> None:
+    for tool in _focused_tools.values():
+        mcp.add_tool(_build_tool(tool["name"], tool["description"], tool.get("inputSchema")))
+
+
+def _backend_reachable() -> bool:
+    try:
+        _get("/mcp_tools")
+        return True
+    except Exception:
+        return False
+
+
+# Tools are advertised only while the backend really answers. Until
+# 2026-09-23 they were registered unconditionally at import, so a proxy
+# pointed at a backend that no longer existed still reported its tools and
+# every call failed (the node proxy did the same through its fallback
+# catalog). With no backend at startup the proxy advertises none and a
+# background thread keeps checking; once the backend answers, the tools are
+# registered. This FastMCP version cannot push notifications/tools/
+# list_changed from outside a request, so a client sees them the next time
+# it lists tools (a refresh or reconnect).
+STARTUP_ATTEMPTS = 3
+STARTUP_RETRY_S = 2.0
+BACKGROUND_RETRY_S = 5.0
 
 
 # ── hand-written overrides ────────────────────────────────────────────────────
@@ -224,6 +249,29 @@ for _tool in _focused_tools.values():
 # generated twin, so registration order does not decide which one wins.
 
 def main():
+    import threading
+    import time
+
+    for attempt in range(STARTUP_ATTEMPTS):
+        if _backend_reachable():
+            _register_tools()
+            break
+        if attempt < STARTUP_ATTEMPTS - 1:
+            time.sleep(STARTUP_RETRY_S)
+    else:
+        print(
+            f"sublime-mcp: backend {BASE} unreachable; advertising no tools, "
+            f"retrying every {BACKGROUND_RETRY_S:.0f}s",
+            file=sys.stderr,
+        )
+
+        def _wait_for_backend() -> None:
+            while not _backend_reachable():
+                time.sleep(BACKGROUND_RETRY_S)
+            _register_tools()
+            print(f"sublime-mcp: backend {BASE} came up; tools registered", file=sys.stderr)
+
+        threading.Thread(target=_wait_for_backend, daemon=True).start()
     mcp.run()
 
 
