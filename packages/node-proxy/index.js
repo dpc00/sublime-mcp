@@ -174,11 +174,41 @@ function registerFallbackTools() {
 }
 
 // ── startup ───────────────────────────────────────────────────────────────────
+//
+// Only tools the backend actually serves are ever advertised. Until
+// 2026-09-23 a failed discovery registered the fallback catalog instead, so a
+// proxy pointed at a backend that no longer existed still reported 7 working
+// tools (every call then failed). Now a proxy with no backend reports none and
+// keeps looking; when the backend comes up (e.g. an agent started before
+// Sublime), the real tools are registered and the SDK sends
+// notifications/tools/list_changed to the client. registerFallbackTools() and
+// fallback-tools.json are no longer used.
 
-if (!await loadDynamicTools()) {
-  process.stderr.write('mcp-commander: dynamic discovery failed, using generated fallback catalog\n');
-  registerFallbackTools();
-}
+const BACKGROUND_RETRY_MS = 5000;
 
 const transport = new StdioServerTransport();
-await server.connect(transport);
+if (!await loadDynamicTools()) {
+  process.stderr.write(
+    `mcp-commander: backend ${BASE} unreachable; advertising no tools, retrying every ${BACKGROUND_RETRY_MS / 1000}s\n`,
+  );
+  await server.connect(transport);
+  const retry = async () => {
+    try {
+      const toolsList = await get('/mcp_tools');
+      if (!toolsList?.tools) throw new Error('backend returned no tool list');
+      for (const tool of toolsList.tools) {
+        server.registerTool(
+          tool.name,
+          { description: tool.description, inputSchema: jsonSchemaToZod(tool.inputSchema) },
+          async (args) => ok(await post('/' + tool.name, args ?? {})),
+        );
+      }
+      process.stderr.write(`mcp-commander: backend came up; loaded ${toolsList.tools.length} tools\n`);
+    } catch {
+      setTimeout(retry, BACKGROUND_RETRY_MS);
+    }
+  };
+  setTimeout(retry, BACKGROUND_RETRY_MS);
+} else {
+  await server.connect(transport);
+}
