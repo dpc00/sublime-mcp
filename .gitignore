@@ -32,3 +32,5 @@ package-lock.json
 sublime_mcp.egg-info/
 tests/
 venv/
+campaign_tools/
+.package_skill_test_log.md
