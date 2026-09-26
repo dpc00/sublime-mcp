@@ -161,6 +161,8 @@ arguments, once more with sandbox arguments. What was seen is in
   panel, popup or overlay open; `open_folder` starts another program; 158 showed no
   effect.
 
+The 44 other tools (reads, meta tools, MCP-only tools) were run through the MCP endpoint the same way (results in `tools/st_other_tools_behavior.json`): all 44 answered, 43 showed no effect, and for `get_output_panel` the harness saw a Windows system process (`backgroundTaskHost.exe`) start during the call.
+
 ### When a native dialog blocks Sublime (Windows)
 
 If a tool call fails with "main-thread timeout after 5s", or a command just

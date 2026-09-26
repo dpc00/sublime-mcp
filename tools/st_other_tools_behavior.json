@@ -1,0 +1,918 @@
+{
+ "_meta": {
+  "app": "bare portable, MCP Commander only",
+  "method": "each tool called through the MCP endpoint (tools/call); pass 1 no arguments, pass 2 schema-derived sandbox arguments",
+  "sublime_text_build": "4215"
+ },
+ "tools": {
+  "add_folder": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"path required\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "path": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [
+     "folders"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"ok\\\": true}\"}]}}",
+    "tags": [],
+    "visual_change_pct": 17.62
+   }
+  },
+  "batch": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"calls must be a non-empty lis",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "calls": []
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"calls must be a non-empty lis",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "diagnostics": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"uptime_seconds\\\": 27.9, \\\"heartbeat\\\": {",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "discover_tools": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"query required\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "limit": 1,
+     "query": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"tools\\\": [{\\\"name\\\": \\\"close_by_index\\\",",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_active_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"path\\\": \\\"D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_active_panel": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"active_panel\\\": null, \\\"name\\\": null, \\\"",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_bookmarks": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"path\\\": \\\"D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_command_palette": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"entries\\\": [{\\\"caption\\\": \\\"Arithmetic\\\"",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "caption": "x",
+     "command": "x",
+     "package": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"entries\\\": [], \\\"count\\\": 0}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_commands": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"commands\\\": [{\\\"command\\\": \\\"add_channel",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "command": "x",
+     "include_palette": false,
+     "package": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"commands\\\": [], \\\"count\\\": 0}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_console": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"entries\\\": [\\\"sublime-mcp: MCP SSE on 12",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.15
+   },
+   "with_args": {
+    "args_used": {
+     "mode": "auto",
+     "tail": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"entries\\\": [\\\"Package Control: Skipping ",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.15
+   }
+  },
+  "get_console_full": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"console copy did not update t",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.15
+   }
+  },
+  "get_console_log": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"entries\\\": [\\\"sublime-mcp: MCP SSE on 12",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "tail": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"entries\\\": [\\\"Package Control: Skipping ",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_console_win": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"console copy did not update t",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.15
+   }
+  },
+  "get_cursor_context": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"path\\\": \\\"D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "lines": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"path\\\": \\\"D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_encoding": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"path\\\": \\\"D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_file_content": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"path required\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "path": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"path\\\": \\\"D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_layout": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"layout\\\": {\\\"cells\\\": [[0, 0, 1, 1]], \\\"",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_line_count": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"path\\\": \\\"D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_menu_items": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"entries\\\": [{\\\"caption\\\": \\\"\\\", \\\"comman",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "caption": "x",
+     "command": "x",
+     "menu": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"entries\\\": [], \\\"count\\\": 0}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_open_files": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"files\\\": [{\\\"path\\\": \\\"D:\\\\\\\\st_bare_san",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_output_panel": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "backgroundTaskHost.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"no active output panel\\\"}\"}]}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "name": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"panel not found: D:\\\\\\\\st_bar",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_package_mcp_info": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"package required\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "package": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"Package 'x' not found\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_project_data": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"project_data\\\": {}}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_project_folders": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"folders\\\": []}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_scope_at_cursor": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"scope\\\": \\\"text.plain\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_selected_sheets": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"sheets\\\": [{\\\"id\\\": 160, \\\"type\\\": \\\"Tex",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "group": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"group 1 out of range (have 1)",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_selection": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"selections\\\": [{\\\"text\\\": \\\"\\\", \\\"begin_",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_sheet_content": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"index\\\": 0, \\\"type\\\": \\\"TextSheet\\\", \\\"p",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "index": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"index 1 out of range (have 1 ",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_sheet_index": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"provide index/indices or id/i",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "id": 1,
+     "index": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"index 1 out of range (have 1 ",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_sheets": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"sheets\\\": [{\\\"index\\\": 0, \\\"id\\\": 188, \\",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_symbols": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"path\\\": \\\"D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_syntaxes": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"syntaxes\\\": [{\\\"name\\\": \\\"XML\\\", \\\"path\\",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_variables": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"file\\\": \\\"D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_view_chars": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"name\\\": \\\"\\\", \\\"path\\\": \\\"D:\\\\\\\\st_bare_",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "begin": 1,
+     "end": 1,
+     "name": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"no view matching 'D:\\\\\\\\\\\\\\\\s",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_view_content": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"name\\\": \\\"\\\", \\\"path\\\": \\\"D:\\\\\\\\st_bare_",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "index": 1,
+     "name": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"no view matching 'D:\\\\\\\\\\\\\\\\s",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_view_phantoms": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"name\\\": \\\"\\\", \\\"path\\\": \\\"D:\\\\\\\\st_bare_",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "key": "x",
+     "name": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"no view matching 'D:\\\\\\\\\\\\\\\\s",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_view_size": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"name\\\": \\\"\\\", \\\"path\\\": \\\"D:\\\\\\\\st_bare_",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "name": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"no view matching 'D:\\\\\\\\\\\\\\\\s",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_word_at_cursor": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"word\\\": \\\"alpha\\\", \\\"line\\\": 1, \\\"col\\\":",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "install_package": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"package required\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "package": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"ok\\\": true, \\\"message\\\": \\\"Installing 'x",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "lookup_symbol": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"symbol required\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "symbol": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"locations\\\": []}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "main_thread_stack": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"stack\\\": \\\"main thread frame unavailable",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "project_search": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"pattern required\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "case_sensitive": false,
+     "limit": 1,
+     "pattern": "x",
+     "regex": false,
+     "show_panel": false,
+     "timeout": 1.0,
+     "where": "x",
+     "whole_word": false
+    },
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"native project search timed o",
+    "tags": [],
+    "visual_change_pct": 2.5
+   }
+  },
+  "remove_folder": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"error\\\": \\\"path required\\\"}\"}]}}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "path": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"ok\\\": false, \\\"note\\\": \\\"folder not foun",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "search_packages": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"packages\\\": [{\\\"name\\\": \\\"0x0\\\", \\\"descr",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "limit": 1,
+     "query": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"packages\\\": [{\\\"name\\\": \\\"0x0\\\", \\\"descr",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  }
+ }
+}

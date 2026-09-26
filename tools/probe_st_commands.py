@@ -197,7 +197,7 @@ def diff_state(a, b):
     for k in a:
         if k in ("user_files", "local_files", "sandbox_files"):
             ch = sorted(set(a[k]) ^ set(b[k]) | {p for p in a[k] if p in b[k] and a[k][p] != b[k][p]})
-            ch = [c for c in ch if not c.endswith(("Session.sublime_session", "Recent"))]
+            ch = [c for c in ch if not c.endswith(("Session.sublime_session", "Session.sublime_session.tmp", "Recent"))]
             if ch:
                 changes.append(k + ":" + ",".join(os.path.basename(c) for c in ch[:4]))
         elif a[k] != b[k]:
@@ -378,13 +378,42 @@ def synth_from_schema(sandbox, schema):
     return body
 
 
+def mcp_call(mcp_port, name, args, timeout=12):
+    """Call a tool through the MCP endpoint (JSON-RPC tools/call), the path direct MCP clients use."""
+    msg = {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": name, "arguments": args}}
+    req = urllib.request.Request("http://127.0.0.1:%d/mcp" % mcp_port, data=json.dumps(msg).encode(),
+                                 headers={"Content-Type": "application/json", "Accept": "application/json, text/event-stream"})
+    raw = urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8", "replace")
+    for line in raw.splitlines():
+        if line.startswith("data:"):
+            raw = line[5:].strip()
+            break
+    return json.loads(raw)
+
+
+def other_tools():
+    """Hand-written tools that are not plain _p routes (GET reads, meta tools, MCP-only)."""
+    import ast
+    src = SOURCE.read_text(encoding="utf-8")
+    generated = set(generated_names())
+    out = {}
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "_MCP_TOOLS" for t in node.targets):
+            for e in node.value.elts:
+                name, handler = e.elts[0].value, e.elts[3]
+                if name in generated or (isinstance(handler, ast.Call) and getattr(handler.func, "id", "") == "_p"):
+                    continue
+                out[name] = ast.literal_eval(e.elts[2])
+    return out
+
+
 def generated_names():
     src = SOURCE.read_text(encoding="utf-8")
     blk = re.search(r"# BEGIN GENERATED ST COMMAND TOOLS.*?# END GENERATED ST COMMAND TOOLS", src, re.S).group(0)
     return re.findall(r'^    \("([a-z0-9_]+)",$', blk, re.M)
 
 
-def probe_one(name, exe, port, sandbox, pristine, pid, results, body=None, route=None):
+def probe_one(name, exe, port, sandbox, pristine, pid, results, body=None, route=None, caller=None):
     """Run one command; return (record, pid) - pid changes if the app was restarted."""
     rec = {"tags": [], "changes": [], "new_windows": [], "new_processes": []}
     reset_sandbox(sandbox, pristine)
@@ -397,7 +426,7 @@ def probe_one(name, exe, port, sandbox, pristine, pid, results, body=None, route
     img_before = capture(main) if main else None
 
     try:
-        resp = post(port, route or name, body or {}, timeout=8)
+        resp = caller(body or {}) if caller else post(port, route or name, body or {}, timeout=8)
         rec["response"] = json.dumps(resp)[:120]
     except Exception as e:
         rec["response"] = "error: %s" % type(e).__name__
@@ -464,6 +493,8 @@ def main():
     ap.add_argument("--port", type=int, default=9520)
     ap.add_argument("--sandbox", required=True)
     ap.add_argument("--only")
+    ap.add_argument("--other-tools", action="store_true", help="probe the hand-written tools that are not plain routes, through the MCP endpoint")
+    ap.add_argument("--mcp-port", type=int, default=9522)
     ap.add_argument("--hand-written", action="store_true", help="probe the hand-written tools instead (two passes: no args, schema args)")
     ap.add_argument("--with-args", action="store_true", help="second pass: commands that take arguments, called with synthesized sandbox arguments")
     ap.add_argument("--out")
@@ -491,6 +522,33 @@ def main():
                         "method": "each command called with no arguments via its tool route; see tools/probe_st_commands.py"}
 
     pid = find_pid(args.exe) or start(args.exe, args.port)
+    if args.other_tools:
+        tools = other_tools()
+        out_path = Path(args.out) if args.out else ROOT / "tools" / "st_other_tools_behavior.json"
+        res = {"_meta": {"sublime_text_build": "4215", "app": "bare portable, MCP Commander only",
+                         "method": "each tool called through the MCP endpoint (tools/call); pass 1 no arguments, pass 2 schema-derived sandbox arguments"},
+               "tools": {}}
+        todo = [n for n in sorted(tools) if (not args.only or n in args.only.split(","))]
+        for i, name in enumerate(todo, 1):
+            schema = tools[name]
+            entry = {}
+            for label, body in (("no_args", {}), ("with_args", synth_from_schema(args.sandbox, schema) if schema.get("properties") else None)):
+                if body is None:
+                    continue
+                if not pid_running(pid) or not alive(args.port, 5):
+                    pid = find_pid(args.exe) or start(args.exe, args.port)
+                try:
+                    rec, pid = probe_one(name, args.exe, args.port, args.sandbox, pristine, pid, {}, body,
+                                         caller=lambda b, n=name: mcp_call(args.mcp_port, n, b))
+                except Exception as e:
+                    rec = {"tags": ["PROBE_ERROR"], "note": "%s: %s" % (type(e).__name__, e)}
+                    pid = find_pid(args.exe) or start(args.exe, args.port)
+                rec["args_used"] = body
+                entry[label] = rec
+            res["tools"][name] = entry
+            out_path.write_text(json.dumps(res, indent=1, sort_keys=True), encoding="utf-8")
+            print("%3d/%d %-30s %s" % (i, len(todo), name, " | ".join(",".join(v["tags"]) for v in entry.values())), flush=True)
+        return
     if args.hand_written:
         tools = hand_written_tools()
         out_path = Path(args.out) if args.out else ROOT / "tools" / "st_hand_written_behavior.json"
