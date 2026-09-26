@@ -36,7 +36,7 @@ OUT = ROOT / "tools" / "st_commands_behavior.json"
 
 # Process names that are noise (our own shell loops, OS services).
 NOISE = {"sleep.exe", "conhost.exe", "tasklist.exe", "powershell.exe", "cmd.exe", "timeout.exe", "sppsvc.exe", "smartscreen.exe", "chrome-native-host.exe", "extension-host.exe"}
-EXTERNAL_APPS = ("msedge.exe", "chrome.exe", "firefox.exe", "brave.exe", "explorer.exe", "sublime_merge.exe")
+EXTERNAL_APPS = ("msedge.exe", "chrome.exe", "firefox.exe", "brave.exe", "explorer.exe", "sublime_merge.exe", "openwith.exe")
 
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
