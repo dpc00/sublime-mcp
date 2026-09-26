@@ -3,8 +3,8 @@
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.
 
-Seven workflow tools are shown by default; the complete typed catalog (399
-tools since 1.9.0) remains available through `discover_tools` and `batch`. Prefer a named capability over
+Seven workflow tools are shown by default; the complete typed catalog (401
+tools) remains available through `discover_tools` and `batch`. Prefer a named capability over
 `run_command`, which often opens UI that steals focus from the agent chat.
 
 On the first Sublime operation, call `get_help` once.
@@ -114,9 +114,6 @@ CommandsBrowser's Sublime Text command list, written by
   60 of these tools take arguments, 100 take none.
 - **`{"ok": true}` only means the command was dispatched.** Confirm the effect
   with a read tool (`get_selection`, `get_sheets`, ...).
-- **Prefer the hand-written tool** when one exists for the same job
-  (`save_file`, `open_file`, `close_file`, `replace_lines`): it handles prompts,
-  focus and edge cases the raw command does not.
 
 ### What the command tools were observed to do
 
@@ -124,18 +121,17 @@ Every generated tool was run on a disposable, bare Sublime Text 4215 (only
 MCP Commander installed): once with no arguments, and, for the 59 that take
 arguments, once more with sandbox arguments. What was seen is in
 `tools/st_commands_behavior.json` (harness: `tools/probe_st_commands.py`), and
-44 tool descriptions say so ("Observed on Sublime Text 4215: ..."). Read that
-sentence before calling a command tool.
+44 tool descriptions say so ("Observed on Sublime Text 4215: ...").
 
-- **Blocks Sublime's main thread until a person dismisses a native window (16).**
-  Nothing can answer the window through this server, and every other tool
-  stalls (`eval_python` times out after 5 s) until it is closed: `context_menu`,
+- **Blocks Sublime's main thread until a native window is dismissed (16).**
+  Every other tool stalls (`eval_python` times out after 5 s) until it is; see
+  "When a native dialog blocks Sublime" below. The 16: `context_menu`,
   `delete_file` and `delete_folder` (confirmation dialogs), `open_project_or_workspace`,
   `primary_j_changed`, `prompt_add_folder`, `prompt_open_file`, `prompt_open_folder`,
   `prompt_open_project_or_workspace`, `prompt_save_as`,
   `prompt_switch_project_or_workspace`, `remove_license`,
   `save_project_and_workspace_as`, `save_workspace_as`, `sublime_merge_blame_file`,
-  `sublime_merge_file_history`. Never call these unattended.
+  `sublime_merge_file_history`.
 - **Quits Sublime Text (3), and the server with it:** `exit`, `hot_exit`, and
   `close_window` (closing the last window quits).
 - **Opens a window that does not block (7):** `prompt_select_workspace`,
@@ -144,9 +140,8 @@ sentence before calling a command tool.
 - **Leaves an in-app panel, popup or overlay open (6):** `auto_complete`,
   `build`, `prompt_open`, `rename_path`, `replace_completion_with_auto_complete`,
   `toggle_show_open_files`. Dismiss with `hide_overlay`, `hide_panel` or `hide_popup`.
-- **Opens the browser or file manager:** `upgrade_license` (seen), and from
-  their documentation, not run by the probe: `purchase_license`, `open_url`,
-  `open_dir`.
+- **Starts another program:** `purchase_license` and `upgrade_license` (the web
+  browser). `open_url` and `open_dir` showed no effect with the probe's arguments.
 - **Writes something:** settings (`add_word`, `ignore_word`,
   `increase_font_size`, `decrease_font_size`, `reset_font_size`), files (`save`,
   `open_project_or_workspace`), the clipboard (`copy_as_html`).
@@ -156,7 +151,39 @@ sentence before calling a command tool.
 - The other **116** showed no effect in the probe. That does not prove they do
   nothing: many need a selection, an open panel, a project or specific arguments.
 - `disabled_tools` in `MCP Commander.sublime-settings` refuses any tool by name.
-- The 239 hand-written tools were not part of this probe.
+- The hand-written tools were probed the same way (195 run, results in
+  `tools/st_hand_written_behavior.json`): `install_package_control` blocks the main
+  thread behind a native window; `customize_color_scheme`, `customize_theme`,
+  `edit_syntax_settings` and `run_syntax_tests` open a window that does not block;
+  `arithmetic`, `exec`, `prompt_goto_line`, `rename_file`, `replace_in_files`,
+  `run_build`, `select_color_scheme`, `select_theme`, `show_panel`, `show_scope_name`,
+  `toggle_menu`, `toggle_status_bar`, `toggle_tabs` and `view_resource` leave a
+  panel, popup or overlay open; `open_folder` starts another program; 158 showed no
+  effect.
+
+### When a native dialog blocks Sublime (Windows)
+
+If a tool call fails with "main-thread timeout after 5s", or a command just
+opened a native dialog or menu, Sublime's main thread is blocked and almost
+every tool will time out. Two tools still work, because they never use the main
+thread:
+
+```
+list_native_windows()                     # dialogs/menus with buttons + message text,
+                                          # main_thread_blocked, blocked_by (the tool)
+dismiss_native_window()                   # default action "cancel": Cancel/No, else close
+dismiss_native_window(action="ok")        # OK / Yes / the default button (this CONFIRMS)
+dismiss_native_window(action="button", button="Remove")   # a named button
+dismiss_native_window(hwnd=..., action="close")           # a specific window
+```
+
+The default action is `cancel`: on the `delete_file` confirmation it clicks
+**No**, on `remove_license` it clicks **Cancel**. `action="ok"` clicks OK / Yes /
+the default button, which confirms the action (on `delete_file` the file is
+deleted; on `remove_license` the license is removed). The tools act only on windows of the Sublime Text process, and they are Windows
+only (they use Win32). Verified on all 16 blocking commands with
+`tools/verify_native_dialogs.py`: each froze Sublime, was listed and dismissed
+by these tools, and Sublime answered again.
 
 ## Known issues
 
@@ -184,11 +211,8 @@ sentence before calling a command tool.
 - Run shell/builds via ST `exec` / `run_build` — the user cannot reliably cancel.
 - Live-invoke UI tools while verifying new routes: `prompt_goto_line`,
   `quick_panel`, `select_color_scheme`, `select_theme`, `open_in_browser`,
-  `html_print`, `customize_*`, `convert_*`, `edit_syntax_settings`, and any
-  generated command tool whose description says it "blocks Sublime's main
-  thread", "quits Sublime Text", "opens the web browser" or starts with
-  "Warning:" (see "What the command tools were observed to do"). Confirm they
-  exist in `_MCP_TOOLS`; do not POST them at the user.
+  `html_print`, `customize_*`, `convert_*`, `edit_syntax_settings`. Confirm
+  they exist in `_MCP_TOOLS`; do not POST them at the user.
 
 ## Reliable reload
 

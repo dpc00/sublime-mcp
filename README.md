@@ -13,7 +13,7 @@ to turn a one-time investigation into a small, reusable skill file instead.
 ## Toolset
 
 Seven workflow tools are advertised by default. `discover_tools` searches the
-complete internal catalog of 399 typed Sublime capabilities, and `batch` invokes
+complete internal catalog of 401 typed Sublime capabilities, and `batch` invokes
 discovered capabilities without flooding the model's initial tool context.
 
 Agent how-to: [AGENT_GUIDE.md](AGENT_GUIDE.md) (also served live by

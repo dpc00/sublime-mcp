@@ -37,17 +37,6 @@ KIND = {
 
 BEHAVIOR = ROOT / "tools" / "st_commands_behavior.json"
 
-# Commands that were not executed by the probe because they open the person's
-# browser / file manager (see tools/probe_st_commands.py).
-EXTERNAL_NOT_RUN = {
-    # name: (text, observed)  - observed=True means the first probe pass saw it happen
-    "purchase_license": ("opens the web browser", False),
-    "upgrade_license": ("opens the web browser", True),
-    "open_url": ("opens the web browser or the default application", False),
-    "open_dir": ("opens the file manager", False),
-}
-
-
 def load_behavior():
     if not BEHAVIOR.exists():
         return {}
@@ -70,11 +59,6 @@ def _window_titles(rec):
 def observed_note(name, behavior):
     """One sentence stating what running the command was OBSERVED to do on a bare
     Sublime Text 4215 (tools/probe_st_commands.py). Empty when nothing notable."""
-    if name in EXTERNAL_NOT_RUN:
-        text, seen = EXTERNAL_NOT_RUN[name]
-        if seen:
-            return "Observed on Sublime Text 4215: {}.".format(text)
-        return "Documented: {} (not run by the probe).".format(text)
     rec = behavior.get(name)
     if not rec:
         return ""
@@ -98,6 +82,8 @@ def observed_note(name, behavior):
             found.append("opens a new Sublime Text window")
         if tags & {"OPENS_PANEL", "VISUAL_ONLY_OVERLAY_OR_POPUP"} and not tags & {"BLOCKS_MAIN_THREAD", "NEW_OS_WINDOW"}:
             found.append("shows an in-app panel, popup or overlay (dismiss with hide_overlay, hide_panel or hide_popup)")
+        if "STARTS_EXTERNAL_APP" in tags:
+            found.append("starts another program ({})".format(", ".join(r.get("new_processes") or ["see st_commands_behavior.json"])))
         if "CHANGES_FILES" in tags:
             found.append("writes files")
         if "CHANGES_SETTINGS_OR_SESSION" in tags:
@@ -112,19 +98,6 @@ def observed_note(name, behavior):
     if len(parts) == 2 and parts[1].split(": ", 1)[1] == parts[0]:
         parts = parts[:1]
     return "Observed on Sublime Text 4215: " + " | ".join(parts) + "."
-
-# Extra warnings for commands that end the session or discard data. They stay
-# available (use the `disabled_tools` setting to refuse them), but the tool
-# description says what they do.
-WARNINGS = {
-    "close_window": "Warning: closes the active window (unsaved buffers may prompt).",
-    "remove_license": "Warning: unregisters Sublime Text.",
-    "delete_file": "Warning: moves the file(s) to the recycle bin.",
-    "delete_folder": "Warning: moves the folder(s) to the recycle bin.",
-    "revert": "Warning: discards unsaved changes in the view.",
-    "revert_hunk": "Warning: discards the changes in the diff hunk.",
-    "revert_modification": "Warning: discards the modification.",
-}
 
 
 def strip_blocks(text):
@@ -213,8 +186,6 @@ def build_description(name, meta, behavior):
     note = observed_note(name, behavior)
     if note:
         doc += " " + note
-    if name in WARNINGS:
-        doc += " " + WARNINGS[name]
     return doc
 
 

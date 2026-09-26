@@ -306,8 +306,7 @@ TOOLS = [   {   'name': 'add_directory',
                                                                          'target group.'}}}},
     {   'name': 'close_window',
         'description': 'Closes the active window. (WindowCommand) Observed on Sublime Text 4215: '
-                       'quits Sublime Text (which also stops this MCP server). Warning: closes the '
-                       'active window (unsaved buffers may prompt).',
+                       'quits Sublime Text (which also stops this MCP server).',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'close_workspace',
         'description': 'Closes the active workspace. (WindowCommand)',
@@ -408,8 +407,7 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Deletes the given file(s) by moving the file(s) to the system '
                        'trash/recycle bin. (WindowCommand) Observed on Sublime Text 4215: when '
                        'given arguments: opens a native OS window ("Delete File") that blocks '
-                       "Sublime's main thread until a person dismisses it. Warning: moves the "
-                       'file(s) to the recycle bin.',
+                       "Sublime's main thread until a person dismisses it.",
         'inputSchema': {   'type': 'object',
                            'properties': {   'files': {   'type': 'array',
                                                           'description': 'The absolute path(s) to '
@@ -424,8 +422,7 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Deletes the given folder(s) by moving the folder(s) to the system trash '
                        'bin. (WindowCommand) Observed on Sublime Text 4215: when given arguments: '
                        'opens a native OS window ("Delete Folder") that blocks Sublime\'s main '
-                       'thread until a person dismisses it. Warning: moves the folder(s) to the '
-                       'recycle bin.',
+                       'thread until a person dismisses it.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'dirs': {   'type': 'array',
                                                          'description': 'The absolute path(s) to '
@@ -473,6 +470,31 @@ TOOLS = [   {   'name': 'add_directory',
                                                                          'syntax, or commands.'},
                                              'limit': {'type': 'integer', 'default': 10}},
                            'required': ['query']}},
+    {   'name': 'dismiss_native_window',
+        'description': 'Dismiss a native dialog or menu of this Sublime Text process (Windows '
+                       "only), even while it has blocked Sublime's main thread. action: 'cancel' "
+                       "(default; clicks Cancel/No or closes), 'ok' (clicks OK/Yes/the default "
+                       "button), 'button' (click the button named in 'button') or 'close'. hwnd "
+                       'defaults to the first dialog, then the first menu; take it from '
+                       'list_native_windows. Acts only on windows of the Sublime Text process. '
+                       "'ok' clicks OK/Yes/the default button.",
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'hwnd': {   'type': 'integer',
+                                                         'description': 'Window handle from '
+                                                                        'list_native_windows '
+                                                                        '(default: first dialog, '
+                                                                        'then first menu).'},
+                                             'action': {   'type': 'string',
+                                                           'enum': [   'cancel',
+                                                                       'ok',
+                                                                       'button',
+                                                                       'close'],
+                                                           'description': 'What to do (default: '
+                                                                          'cancel).'},
+                                             'button': {   'type': 'string',
+                                                           'description': 'Button label for action '
+                                                                          "'button' (ignores case "
+                                                                          'and & mnemonics).'}}}},
     {   'name': 'drag_select',
         'description': "Runs the Sublime Text 'drag_select' command. (TextCommand)",
         'inputSchema': {   'type': 'object',
@@ -1064,6 +1086,14 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Deletes the character(s) to the left of the text selection caret(s). '
                        '(TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
+    {   'name': 'list_native_windows',
+        'description': 'List the native OS windows, dialogs and menus of this Sublime Text process '
+                       '(Windows only): kind (dialog, menu, editor_window, window), title, hwnd, '
+                       'and for dialogs their buttons and message text. Works while a native '
+                       "dialog has BLOCKED Sublime's main thread (every other tool then times "
+                       'out); the result says whether the main thread is blocked and which tool '
+                       'blocked it.',
+        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'lookup_symbol',
         'description': 'Find where a symbol is defined across all open files.',
         'inputSchema': {   'type': 'object',
@@ -1258,8 +1288,7 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'open_dir',
         'description': 'Opens the specified dir in the default file manager application, '
-                       'optionally highlighting the specified file. (WindowCommand) Documented: '
-                       'opens the file manager (not run by the probe).',
+                       'optionally highlighting the specified file. (WindowCommand)',
         'inputSchema': {   'type': 'object',
                            'properties': {   'dir': {   'type': 'string',
                                                         'description': 'The absolute path to the '
@@ -1336,8 +1365,7 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'open_url',
         'description': 'Opens the web browser to display the URL or the default application '
                        'associated with the file/folder represented by the URL. '
-                       '(ApplicationCommand) Documented: opens the web browser or the default '
-                       'application (not run by the probe).',
+                       '(ApplicationCommand)',
         'inputSchema': {   'type': 'object',
                            'properties': {   'url': {   'type': 'string',
                                                         'description': 'The URL to be opened.'}}}},
@@ -1545,7 +1573,7 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'purchase_license',
         'description': 'Navigates to the url https://www.sublimehq.com/store/text in the default '
                        'browser to allow a user to purchase a license.. (ApplicationCommand) '
-                       'Documented: opens the web browser (not run by the probe).',
+                       'Observed on Sublime Text 4215: starts another program (msedge.exe).',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'quick_panel',
         'description': 'Open the Goto Anything overlay (WindowCommand show_overlay). Optional '
@@ -1577,8 +1605,7 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Removes the license. This will cause Sublime Text/Merge to go into an '
                        'unregistered state. (ApplicationCommand) Observed on Sublime Text 4215: '
                        'opens a native OS window ("Remove license key?") that blocks Sublime\'s '
-                       'main thread until a person dismisses it. Warning: unregisters Sublime '
-                       'Text.',
+                       'main thread until a person dismisses it.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'rename_file',
         'description': "Rename the active file (WindowCommand). Pass 'path' for the new name.",
@@ -1684,20 +1711,17 @@ TOOLS = [   {   'name': 'add_directory',
                                                                         'directorie(s) to be '
                                                                         'resolved.'}}}},
     {   'name': 'revert',
-        'description': 'Reloads the file. (TextCommand) Warning: discards unsaved changes in the '
-                       'view.',
+        'description': 'Reloads the file. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'revert_file',
         'description': 'Revert the active file to its last saved state, discarding unsaved '
                        'changes.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'revert_hunk',
-        'description': 'Reverts a diff hunk. (TextCommand) Warning: discards the changes in the '
-                       'diff hunk.',
+        'description': 'Reverts a diff hunk. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'revert_modification',
-        'description': 'Reverts a single modification. (TextCommand) Warning: discards the '
-                       'modification.',
+        'description': 'Reverts a single modification. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'right_delete',
         'description': 'Deletes the character to the right of the text selection caret(s). '
@@ -2279,8 +2303,7 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'upgrade_license',
         'description': 'Navigates to https://www.sublimehq.com/store/upgrade, where you can '
-                       'upgrade an expired license. (ApplicationCommand) Observed on Sublime Text '
-                       '4215: opens the web browser.',
+                       'upgrade an expired license. (ApplicationCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'upper_case',
         'description': 'Convert the current selection(s) to UPPER CASE.',

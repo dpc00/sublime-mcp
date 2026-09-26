@@ -1254,7 +1254,24 @@
    "tags": [
     "NO_OBSERVABLE_EFFECT"
    ],
-   "visual_change_pct": 0.0
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "dir": "D:\\st_bare_sandbox\\sub",
+     "file": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "closed_external_windows": [
+     "explorer.exe"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
   },
   "open_project_or_workspace": {
    "changes": [],
@@ -1356,7 +1373,20 @@
    "tags": [
     "NO_OBSERVABLE_EFFECT"
    ],
-   "visual_change_pct": 0.0
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "url": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
   },
   "overwrite": {
    "changes": [],
@@ -1661,10 +1691,20 @@
    }
   },
   "purchase_license": {
-   "note": "opens the default web browser (documented)",
+   "changes": [],
+   "closed_external_windows": [
+    "msedge.exe"
+   ],
+   "new_processes": [
+    "msedge.exe"
+   ],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
    "tags": [
-    "NOT_EXECUTED"
-   ]
+    "STARTS_EXTERNAL_APP",
+    "STARTED_PROCESS"
+   ],
+   "visual_change_pct": 0.0
   },
   "redo_or_repeat": {
    "changes": [],
