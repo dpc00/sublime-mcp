@@ -6,5 +6,13 @@
     {
         "caption": "MCP Commander: Connection Doctor",
         "command": "mcp_connection_doctor"
+    },
+    {
+        "caption": "Preferences: MCP Commander Settings",
+        "command": "edit_settings",
+        "args": {
+            "base_file": "${packages}/MCP Commander/MCP Commander.sublime-settings",
+            "default": "// MCP Commander user settings\n{\n\t$0\n}\n"
+        }
     }
 ]

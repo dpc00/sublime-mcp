@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.9
+
+Adds a Command Palette entry, "Preferences: MCP Commander Settings", so the
+settings file can be opened without going through the Preferences menu
+(the Package Control reviewer asked for it). README now states the correct
+size of the typed catalog: 239 tools, matching `_MCP_TOOLS` and both proxy
+fallback catalogs.
+
 ## 1.8.8
 
 Both bundled proxies (node-proxy, python-proxy) no longer advertise tools
