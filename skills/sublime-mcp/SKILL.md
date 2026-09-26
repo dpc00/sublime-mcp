@@ -20,6 +20,10 @@ discover_tools(query="bookmarks")
 batch(calls=[{"tool": "get_bookmarks", "args": {}}])
 ```
 
+`list_native_windows` and `dismiss_native_window` (Windows) work while a native dialog
+or menu has blocked Sublime's main thread and the other tools time out; call them
+through `batch`.
+
 Edit through `str_replace_based_edit_tool` so changes appear in Sublime with undo
 and diff markers. Call `save_file` after an edit unless the user asks to leave the
 buffer unsaved.
