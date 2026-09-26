@@ -3511,12 +3511,72 @@ def _batch(args):
     return {"results": results}
 
 
+_TOOL_TREE_CACHE = []
+
+
+def _tool_tree():
+    """The category tree from tool_tree.json (built by tools/build_tool_tree.py)."""
+    if not _TOOL_TREE_CACHE:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tool_tree.json")
+        with open(path, encoding="utf-8") as f:
+            _TOOL_TREE_CACHE.append(json.load(f))
+    return _TOOL_TREE_CACHE[0]
+
+
+def _tool_definition(name, snapshot):
+    for tool_name, desc, schema, _handler in snapshot:
+        if tool_name == name:
+            input_schema = dict(schema) if schema else {}
+            input_schema.setdefault("type", "object")
+            input_schema.setdefault("properties", {})
+            return {"name": name, "description": desc, "inputSchema": input_schema}
+    return None
+
+
+def _discover_by_category(category):
+    tree = _tool_tree()
+    parts = [p for p in category.strip("/").split("/") if p]
+    usage = ("Call a discovered tool through batch, even for one call: "
+             "batch(calls=[{tool: <name>, args: {...}}]).")
+    if not parts:
+        return {
+            "categories": [
+                {"path": name, "description": node["description"],
+                 "tools": sum(len(c["tools"]) for c in node["children"].values()),
+                 "subcategories": sorted(node["children"])}
+                for name, node in sorted(tree.items())],
+            "usage": "Call discover_tools(category=<path>) to open a category, "
+                     "or discover_tools(query=<words>) to search all tools.",
+        }
+    node = tree.get(parts[0])
+    if node is None or len(parts) > 2:
+        return {"error": "unknown category {!r}".format(category), "categories": sorted(tree)}
+    if len(parts) == 1:
+        return {
+            "path": parts[0], "description": node["description"],
+            "subcategories": [
+                {"path": parts[0] + "/" + name, "description": child["description"],
+                 "tools": len(child["tools"])}
+                for name, child in sorted(node["children"].items())],
+            "usage": "Call discover_tools(category=<subcategory path>) to list its tools.",
+        }
+    child = node["children"].get(parts[1])
+    if child is None:
+        return {"error": "unknown category {!r}".format(category),
+                "subcategories": sorted(parts[0] + "/" + n for n in node["children"])}
+    with _mcp_tools_lock:
+        snapshot = list(_MCP_TOOLS)
+    tools = [d for d in (_tool_definition(n, snapshot) for n in child["tools"]) if d]
+    return {"path": category.strip("/"), "description": child["description"],
+            "tools": tools, "usage": usage}
+
+
 def _discover_tools(args):
-    """Search the complete internal catalog without advertising it up front."""
+    """Walk the category tree (category=...) or search the whole catalog (query=...)."""
     query = (args.get("query") or "").strip().lower()
+    if "category" in args or not query:
+        return _discover_by_category(args.get("category") or "")
     limit = max(1, min(int(args.get("limit", 10)), 25))
-    if not query:
-        return {"error": "query required"}
     terms = [term for term in re.split(r"[^a-z0-9_]+", query) if term]
     with _mcp_tools_lock:
         snapshot = list(_MCP_TOOLS)
@@ -3909,13 +3969,15 @@ _MCP_TOOLS = [
      }, "required": ["calls"]},
      _batch),
     ("discover_tools",
-     "Search advanced Sublime capabilities hidden from the default tool surface. "
-     "Returns matching names, descriptions, and schemas. Invoke a result through "
-     "batch(calls=[{tool: <name>, args: {...}}]), including for a single call.",
+     "Find advanced Sublime tools hidden from the default tool surface. With no arguments "
+     "it lists the top-level categories; category=<path> opens a category (then a subcategory, "
+     "which lists its tools with schemas); query=<words> searches all tools. Invoke a result "
+     "through batch(calls=[{tool: <name>, args: {...}}]), including for a single call.",
      {"type": "object", "properties": {
-         "query": {"type": "string", "description": "Capability to find, such as bookmarks, tabs, syntax, or commands."},
+         "category": {"type": "string", "description": "Category path, such as editing or editing/lines. Empty lists the categories."},
+         "query": {"type": "string", "description": "Words to search for, such as bookmarks, tabs, syntax, or commands."},
          "limit": {"type": "integer", "default": 10},
-     }, "required": ["query"]},
+     }},
      _discover_tools),
     ("project_search",
      "Search project files with Sublime Text's native Find in Files engine and return "

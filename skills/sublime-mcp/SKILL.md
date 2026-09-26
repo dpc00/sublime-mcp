@@ -16,9 +16,16 @@ Use `batch` for two or more independent operations. It is also the gateway for a
 advanced capability returned by `discover_tools`:
 
 ```text
-discover_tools(query="bookmarks")
+discover_tools()                          # top-level categories with tool counts
+discover_tools(category="selection")      # subcategories
+discover_tools(category="selection/select")   # tools in one, with schemas
+discover_tools(query="bookmarks")         # keyword search across all tools
 batch(calls=[{"tool": "get_bookmarks", "args": {}}])
 ```
+
+Case commands act on the selection (`select_all` first); `insert` types at the cursor;
+closing a modified untitled tab opens a native "Save Changes?" dialog. `get_help`
+has the details.
 
 `list_native_windows` and `dismiss_native_window` (Windows) work while a native dialog
 or menu has blocked Sublime's main thread and the other tools time out; call them

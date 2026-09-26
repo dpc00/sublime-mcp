@@ -1,0 +1,681 @@
+{
+ "app": {
+  "children": {
+   "exit": {
+    "description": "Commands that quit Sublime",
+    "tools": [
+     "exit",
+     "hot_exit"
+    ]
+   },
+   "license_and_updates": {
+    "description": "License, about, changelog, update check",
+    "tools": [
+     "purchase_license",
+     "remove_license",
+     "show_about_window",
+     "show_changelog",
+     "show_license_window",
+     "update_check",
+     "upgrade_license"
+    ]
+   },
+   "merge_and_web": {
+    "description": "Sublime Merge and browser links",
+    "tools": [
+     "open_context_url",
+     "open_in_browser",
+     "open_url",
+     "sublime_merge_blame_file",
+     "sublime_merge_file_history",
+     "sublime_merge_folder_history",
+     "sublime_merge_line_history",
+     "sublime_merge_open_repo"
+    ]
+   },
+   "misc": {
+    "description": "Other application commands",
+    "tools": [
+     "primary_j_changed"
+    ]
+   },
+   "native_dialogs": {
+    "description": "Native dialogs and menus that block Sublime",
+    "tools": [
+     "dismiss_native_window",
+     "list_native_windows"
+    ]
+   },
+   "prompts": {
+    "description": "Commands that open a file or folder chooser",
+    "tools": [
+     "prompt_open_file",
+     "prompt_save_as"
+    ]
+   },
+   "windows": {
+    "description": "Windows, OS tabs and full screen",
+    "tools": [
+     "close_window",
+     "new_window",
+     "resize_window"
+    ]
+   }
+  },
+  "description": "The Sublime Text application and its windows"
+ },
+ "editing": {
+  "children": {
+   "basic": {
+    "description": "Insert, replace, undo and redo",
+    "tools": [
+     "append",
+     "echo",
+     "insert",
+     "noop",
+     "overwrite",
+     "redo",
+     "redo_or_repeat",
+     "replace_all",
+     "replace_lines",
+     "replace_selection",
+     "soft_redo",
+     "soft_undo",
+     "toggle_overwrite",
+     "undo"
+    ]
+   },
+   "case_and_whitespace": {
+    "description": "Change case, trim and normalise whitespace",
+    "tools": [
+     "add_missing_newline",
+     "arithmetic",
+     "convert_ident_case",
+     "detect_indentation",
+     "encode_html_entities",
+     "ensure_newline_at_eof",
+     "expand_tabs",
+     "lower_case",
+     "rot13",
+     "set_indent_spaces",
+     "set_indent_tabs",
+     "swap_case",
+     "tab",
+     "title_case",
+     "toggle_case",
+     "transformer",
+     "trim_trailing_white_space",
+     "trim_whitespace",
+     "trim_whitespaces",
+     "unexpand_tabs",
+     "upper_case"
+    ]
+   },
+   "clipboard": {
+    "description": "Cut, copy and paste",
+    "tools": [
+     "copy",
+     "copy_as_html",
+     "cut",
+     "paste",
+     "paste_and_indent",
+     "paste_from_history",
+     "paste_selection_clipboard",
+     "yank"
+    ]
+   },
+   "delete": {
+    "description": "Delete words and characters",
+    "tools": [
+     "delete_to_mark",
+     "delete_word",
+     "left_delete",
+     "right_delete"
+    ]
+   },
+   "lines": {
+    "description": "Line operations: move, join, sort, swap, indent",
+    "tools": [
+     "auto_indent",
+     "duplicate_line",
+     "indent",
+     "join_lines",
+     "move_line_down",
+     "move_line_up",
+     "old_wrap_lines",
+     "permute_lines",
+     "permute_selection",
+     "reindent",
+     "sort_lines",
+     "sort_selection",
+     "split_line",
+     "swap_line_down",
+     "swap_line_up",
+     "toggle_comment",
+     "transpose",
+     "transpose_chars",
+     "unindent",
+     "wrap_block",
+     "wrap_lines"
+    ]
+   },
+   "snippets_macros_fields": {
+    "description": "Snippets, macros, tag helpers and snippet fields",
+    "tools": [
+     "add_where_snippet",
+     "auto_complete",
+     "auto_complete_open_link",
+     "auto_complete_prev",
+     "auto_indent_tag",
+     "clear_fields",
+     "close_tag",
+     "commit_completion",
+     "expand_snippet",
+     "hide_auto_complete",
+     "insert_snippet",
+     "next_field",
+     "prev_field",
+     "replace_completion_with_auto_complete"
+    ]
+   }
+  },
+  "description": "Change text"
+ },
+ "files": {
+  "children": {
+   "manage": {
+    "description": "Rename, delete, copy a path, reveal a file",
+    "tools": [
+     "clear_missing_recent_projects_and_workspaces",
+     "clear_recent_files",
+     "clear_recent_projects_and_workspaces",
+     "copy_path",
+     "delete_file",
+     "delete_folder",
+     "rename_file",
+     "rename_path",
+     "reveal_in_side_bar",
+     "reveal_link_source"
+    ]
+   },
+   "open_and_create": {
+    "description": "Open or create files, folders and recent items",
+    "tools": [
+     "clone_file",
+     "new_file",
+     "new_file_at",
+     "new_folder",
+     "new_view",
+     "open_containing_folder",
+     "open_dir",
+     "open_file",
+     "open_file_settings",
+     "open_folder",
+     "open_recent_file",
+     "open_recent_folder",
+     "open_recent_project_or_workspace",
+     "reopen",
+     "reopen_closed_file",
+     "reopen_last_file",
+     "send_to_view",
+     "switch_file",
+     "view_resource"
+    ]
+   },
+   "save_and_close": {
+    "description": "Save, revert and close files, tabs and windows' views",
+    "tools": [
+     "close",
+     "close_all",
+     "close_by_index",
+     "close_deleted_files",
+     "close_file",
+     "close_other_tabs",
+     "close_others",
+     "close_others_by_index",
+     "close_pane",
+     "close_selected",
+     "close_to_right_by_index",
+     "close_transient",
+     "close_unmodified",
+     "close_unmodified_to_right_by_index",
+     "close_unselected",
+     "revert",
+     "revert_file",
+     "revert_hunk",
+     "revert_modification",
+     "save",
+     "save_all"
+    ]
+   }
+  },
+  "description": "Open, create, save, close, rename and delete files"
+ },
+ "packages_and_dev": {
+  "children": {
+   "create": {
+    "description": "Create new plugins, snippets, syntaxes, build systems",
+    "tools": [
+     "new_build_system",
+     "new_plugin",
+     "new_snippet",
+     "new_syntax"
+    ]
+   },
+   "diagnostics": {
+    "description": "Profiling, syntax tests and diagnostics",
+    "tools": [
+     "diagnostics",
+     "main_thread_stack",
+     "profile_plugins",
+     "profile_syntax_definition",
+     "run_syntax_tests",
+     "syntax_definition_compatability",
+     "syntax_definition_compatibility"
+    ]
+   },
+   "packages": {
+    "description": "Search, install and inspect packages",
+    "tools": [
+     "install_package",
+     "install_package_control",
+     "search_packages"
+    ]
+   }
+  },
+  "description": "Packages and plugin development"
+ },
+ "project": {
+  "children": {
+   "folders": {
+    "description": "Add, remove and refresh project folders",
+    "tools": [
+     "add_directory",
+     "add_folder",
+     "close_folder_list",
+     "prompt_add_folder",
+     "prompt_open_folder",
+     "refresh_folder_list",
+     "remove_folder"
+    ]
+   },
+   "workspaces": {
+    "description": "Open and save projects and workspaces",
+    "tools": [
+     "close_workspace",
+     "new_window_for_project",
+     "open_project_or_workspace",
+     "prompt_open_project_or_workspace",
+     "prompt_select_workspace",
+     "prompt_switch_project_or_workspace",
+     "save_project_and_workspace_as",
+     "save_workspace_as"
+    ]
+   }
+  },
+  "description": "Project folders and workspaces"
+ },
+ "read": {
+  "children": {
+   "catalog": {
+    "description": "Commands, menu items, palette entries, packages",
+    "tools": [
+     "console_python_version",
+     "get_command_palette",
+     "get_commands",
+     "get_menu_items",
+     "get_package_mcp_info"
+    ]
+   },
+   "console": {
+    "description": "Sublime's console",
+    "tools": [
+     "get_console",
+     "get_console_full",
+     "get_console_log",
+     "get_console_win"
+    ]
+   },
+   "state": {
+    "description": "Selection, cursor, panels, layout, syntax, encoding, settings",
+    "tools": [
+     "get_active_panel",
+     "get_encoding",
+     "get_open_files",
+     "get_project_data",
+     "get_project_folders",
+     "get_scope_at_cursor",
+     "get_setting",
+     "get_syntaxes",
+     "get_variables"
+    ]
+   },
+   "text": {
+    "description": "File, view and sheet contents",
+    "tools": [
+     "get_cursor_context",
+     "get_file_content",
+     "get_line_count",
+     "get_output_panel",
+     "get_sheet_content",
+     "get_view_chars",
+     "get_view_content",
+     "get_view_phantoms",
+     "get_view_size",
+     "get_word_at_cursor"
+    ]
+   }
+  },
+  "description": "Read state from the editor without changing it"
+ },
+ "run": {
+  "children": {
+   "build_and_exec": {
+    "description": "Builds and external programs",
+    "tools": [
+     "exec"
+    ]
+   },
+   "commands": {
+    "description": "Run a Sublime command by name",
+    "tools": [
+     "chain",
+     "run_command"
+    ]
+   },
+   "macros": {
+    "description": "Record and play macros",
+    "tools": [
+     "play_macro",
+     "run_macro",
+     "run_macro_file",
+     "save_macro",
+     "toggle_record_macro"
+    ]
+   },
+   "python": {
+    "description": "Run Python in Sublime or on the system",
+    "tools": [
+     "eval_python",
+     "eval_python_latest"
+    ]
+   }
+  },
+  "description": "Run code and commands"
+ },
+ "search": {
+  "children": {
+   "bookmarks": {
+    "description": "Bookmarks",
+    "tools": [
+     "clear_bookmarks",
+     "get_bookmarks",
+     "next_bookmark",
+     "prev_bookmark",
+     "toggle_bookmark"
+    ]
+   },
+   "find_in_file": {
+    "description": "Find and replace inside the current file",
+    "tools": [
+     "cancel_find",
+     "find_all",
+     "find_and_replace",
+     "find_in_file",
+     "find_next",
+     "find_prev",
+     "find_under",
+     "find_under_expand",
+     "find_under_expand_skip",
+     "find_under_prev",
+     "next_result",
+     "prev_result",
+     "replace_next",
+     "slurp_find_string",
+     "slurp_replace_string",
+     "toggle_case_sensitive",
+     "toggle_highlight",
+     "toggle_in_selection",
+     "toggle_preserve_case",
+     "toggle_regex",
+     "toggle_whole_word"
+    ]
+   },
+   "find_in_files": {
+    "description": "Find and replace across files and folders",
+    "tools": [
+     "find_in_files",
+     "find_in_folder",
+     "replace_in_files",
+     "toggle_use_buffer",
+     "toggle_use_gitignore"
+    ]
+   },
+   "symbols": {
+    "description": "Symbols, definitions and references",
+    "tools": [
+     "auto_complete_goto_definition",
+     "get_symbols",
+     "goto_definition",
+     "goto_line",
+     "goto_reference",
+     "goto_symbol_in_project",
+     "lookup_symbol",
+     "open_symbol_definition",
+     "prompt_goto_line",
+     "show_scope_name"
+    ]
+   }
+  },
+  "description": "Find, replace and go to symbols"
+ },
+ "selection": {
+  "children": {
+   "marks_and_history": {
+    "description": "Mark, kill ring, jump back and forward",
+    "tools": [
+     "add_jump_record",
+     "add_to_kill_ring",
+     "clear_location",
+     "jump_back",
+     "jump_forward",
+     "select_to_mark",
+     "set_mark",
+     "swap_with_mark"
+    ]
+   },
+   "select": {
+    "description": "Select all, lines, words, brackets, scope",
+    "tools": [
+     "drag_select",
+     "expand_selection",
+     "expand_selection_to_brackets",
+     "expand_selection_to_indentation",
+     "expand_selection_to_paragraph",
+     "expand_selection_to_scope",
+     "find_all_under",
+     "get_selection",
+     "invert_selection",
+     "old_expand_selection_to_paragraph",
+     "select_all",
+     "select_all_bookmarks",
+     "select_bookmark",
+     "select_lines",
+     "select_to_left",
+     "select_to_right",
+     "shrink_selection",
+     "single_selection",
+     "split_selection_into_lines",
+     "unselect_others",
+     "unselect_to_left",
+     "unselect_to_right"
+    ]
+   }
+  },
+  "description": "Cursors and selections"
+ },
+ "settings": {
+  "children": {
+   "appearance": {
+    "description": "Themes and colour schemes",
+    "tools": [
+     "convert_color_scheme",
+     "convert_syntax",
+     "customize_color_scheme",
+     "customize_theme",
+     "select_color_scheme",
+     "select_theme"
+    ]
+   },
+   "build": {
+    "description": "Build systems and building",
+    "tools": [
+     "build",
+     "cancel_build",
+     "run_build",
+     "set_build_system"
+    ]
+   },
+   "editor": {
+    "description": "Get and set settings, syntax, encoding, line endings, indentation",
+    "tools": [
+     "edit_settings",
+     "edit_syntax_settings",
+     "set_encoding",
+     "set_file_type",
+     "set_line_ending",
+     "set_setting",
+     "set_syntax"
+    ]
+   }
+  },
+  "description": "Settings, syntax, encoding, themes and colour schemes"
+ },
+ "tabs": {
+  "children": {
+   "panes": {
+    "description": "Pane layout and moving between groups",
+    "tools": [
+     "focus_group",
+     "focus_neighboring_group",
+     "focus_to_left",
+     "focus_to_right",
+     "get_layout",
+     "move",
+     "move_to",
+     "move_to_group",
+     "move_to_neighboring_group",
+     "new_pane",
+     "next_pane",
+     "prev_pane",
+     "set_layout",
+     "set_max_columns"
+    ]
+   },
+   "sheets": {
+    "description": "Select, focus, move and close tabs",
+    "tools": [
+     "focus_by_index",
+     "focus_sheet",
+     "get_selected_sheets",
+     "get_sheet_index",
+     "get_sheets",
+     "move_sheets_to_group",
+     "move_view",
+     "new_os_tab",
+     "next_os_tab",
+     "next_view",
+     "next_view_in_stack",
+     "prev_os_tab",
+     "prev_view",
+     "prev_view_in_stack",
+     "select",
+     "select_by_index",
+     "select_sheets",
+     "set_sheet_index"
+    ]
+   }
+  },
+  "description": "Tabs (sheets), panes and layouts"
+ },
+ "view": {
+  "children": {
+   "folding": {
+    "description": "Fold and unfold code",
+    "tools": [
+     "fold",
+     "fold_all",
+     "fold_by_level",
+     "fold_lines",
+     "fold_tag_attributes",
+     "fold_unfold",
+     "unfold",
+     "unfold_all"
+    ]
+   },
+   "font_and_wrap": {
+    "description": "Font size and word wrap",
+    "tools": [
+     "decrease_font_size",
+     "increase_font_size",
+     "reset_font_size",
+     "toggle_wrap"
+    ]
+   },
+   "panels_and_popups": {
+    "description": "Panels, overlays, popups, quick panels, status bar",
+    "tools": [
+     "cancel",
+     "context_menu",
+     "drive_input_panel",
+     "focus_side_bar",
+     "hide_overlay",
+     "hide_panel",
+     "hide_popup",
+     "html_print",
+     "open_control_panel",
+     "prompt_open",
+     "quick_panel",
+     "set_status",
+     "show_panel",
+     "show_progress_window",
+     "toggle_show_context",
+     "toggle_show_open_files"
+    ]
+   },
+   "scrolling": {
+    "description": "Scroll and centre",
+    "tools": [
+     "scroll_lines",
+     "scroll_to_bof",
+     "scroll_to_eof",
+     "show_at_center"
+    ]
+   },
+   "toggles": {
+    "description": "Turn UI parts and view options on or off",
+    "tools": [
+     "add_word",
+     "correct_spelling",
+     "ignore_word",
+     "next_misspelling",
+     "next_modification",
+     "prev_misspelling",
+     "prev_modification",
+     "toggle_distraction_free",
+     "toggle_full_screen",
+     "toggle_inline_diff",
+     "toggle_menu",
+     "toggle_minimap",
+     "toggle_save_all_on_build",
+     "toggle_setting",
+     "toggle_side_bar",
+     "toggle_sidebar",
+     "toggle_status_bar",
+     "toggle_tabs"
+    ]
+   }
+  },
+  "description": "What the window shows"
+ }
+}
