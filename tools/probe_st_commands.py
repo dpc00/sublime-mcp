@@ -12,8 +12,8 @@ instance if it quit or hung. Results go to tools/st_commands_behavior.json.
         --port 9520 --sandbox D:\\st_bare_sandbox
 
 NEVER point this at your real Sublime Text: it runs commands such as exit,
-delete_file and revert. Commands that would open the user's web browser
-(purchase_license) are recorded from the documentation, not executed.
+delete_file and revert. Every command is run; windows of a browser or file manager that a command
+opens are closed afterwards and recorded.
 """
 
 import argparse
@@ -34,13 +34,6 @@ SOURCE = ROOT / "sublime_mcp.py"
 SNAPSHOT = ROOT / "tools" / "st_commands_metadata.json"
 OUT = ROOT / "tools" / "st_commands_behavior.json"
 
-# Not executed: they open the person's web browser / file manager on their real desktop.
-NOT_EXECUTED = {
-    "purchase_license": "opens the default web browser (documented)",
-    "upgrade_license": "opens the default web browser (observed in the first pass: started msedge.exe)",
-    "open_url": "opens the default web browser or application (documented)",
-    "open_dir": "opens the file manager (documented)",
-}
 # Process names that are noise (our own shell loops, OS services).
 NOISE = {"sleep.exe", "conhost.exe", "tasklist.exe", "powershell.exe", "cmd.exe", "timeout.exe", "sppsvc.exe", "smartscreen.exe", "chrome-native-host.exe", "extension-host.exe"}
 EXTERNAL_APPS = ("msedge.exe", "chrome.exe", "firefox.exe", "brave.exe", "explorer.exe", "sublime_merge.exe")
@@ -110,6 +103,35 @@ def windows_of(pid):
 
     user32.EnumWindows(proto(cb), 0)
     return found
+
+
+def all_windows():
+    found = {}
+    proto = ctypes.WINFUNCTYPE(ctypes.c_bool, wt.HWND, wt.LPARAM)
+
+    def cb(hwnd, _):
+        if user32.IsWindowVisible(hwnd):
+            p = wt.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(p))
+            found[hwnd] = p.value
+        return True
+
+    user32.EnumWindows(proto(cb), 0)
+    return found
+
+
+def process_image(pid):
+    h = kernel32.OpenProcess(0x1000, False, pid)
+    if not h:
+        return ""
+    try:
+        size = wt.DWORD(1024)
+        buf = ctypes.create_unicode_buffer(1024)
+        if not kernel32.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(size)):
+            return ""
+        return buf.value.rsplit("\\", 1)[-1].lower()
+    finally:
+        kernel32.CloseHandle(h)
 
 
 def process_names():
@@ -309,13 +331,60 @@ def synth_args(sandbox, meta):
     return body
 
 
+def hand_written_tools():
+    """{tool name: (route, inputSchema)} for hand-written tools that are plain _p routes."""
+    import ast
+    src = SOURCE.read_text(encoding="utf-8")
+    generated = set(generated_names())
+    out = {}
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.Assign) and any(getattr(t, "id", "") == "_MCP_TOOLS" for t in node.targets):
+            for e in node.value.elts:
+                name, handler = e.elts[0].value, e.elts[3]
+                if name in generated:
+                    continue
+                if isinstance(handler, ast.Call) and getattr(handler.func, "id", "") == "_p" and handler.args                         and isinstance(handler.args[0], ast.Constant):
+                    out[name] = (handler.args[0].value.lstrip("/"), ast.literal_eval(e.elts[2]))
+    return out
+
+
+def synth_from_schema(sandbox, schema):
+    """Sandbox-only arguments for every property of a tool's input schema."""
+    a_txt = os.path.join(sandbox, "a.txt")
+    body = {}
+    for n, spec in (schema.get("properties") or {}).items():
+        t = spec.get("type")
+        if spec.get("enum"):
+            v = spec["enum"][0]
+        elif n in ("path", "file", "file_path", "filename", "name") and t == "string":
+            v = a_txt
+        elif n in ("folder", "dir", "directory") and t == "string":
+            v = os.path.join(sandbox, "sub")
+        elif t == "string":
+            v = "x"
+        elif t == "integer":
+            v = 1
+        elif t == "number":
+            v = 1.0
+        elif t == "boolean":
+            v = False
+        elif t == "array":
+            v = []
+        elif t == "object":
+            v = {}
+        else:
+            v = "x"
+        body[n] = v
+    return body
+
+
 def generated_names():
     src = SOURCE.read_text(encoding="utf-8")
     blk = re.search(r"# BEGIN GENERATED ST COMMAND TOOLS.*?# END GENERATED ST COMMAND TOOLS", src, re.S).group(0)
     return re.findall(r'^    \("([a-z0-9_]+)",$', blk, re.M)
 
 
-def probe_one(name, exe, port, sandbox, pristine, pid, results, body=None):
+def probe_one(name, exe, port, sandbox, pristine, pid, results, body=None, route=None):
     """Run one command; return (record, pid) - pid changes if the app was restarted."""
     rec = {"tags": [], "changes": [], "new_windows": [], "new_processes": []}
     reset_sandbox(sandbox, pristine)
@@ -324,10 +393,11 @@ def probe_one(name, exe, port, sandbox, pristine, pid, results, body=None):
     main = next(iter(base_wins), None)
     before = snapshot(port, sandbox)
     procs_before = process_names()
+    all_before = all_windows()
     img_before = capture(main) if main else None
 
     try:
-        resp = post(port, name, body or {}, timeout=8)
+        resp = post(port, route or name, body or {}, timeout=8)
         rec["response"] = json.dumps(resp)[:120]
     except Exception as e:
         rec["response"] = "error: %s" % type(e).__name__
@@ -360,6 +430,10 @@ def probe_one(name, exe, port, sandbox, pristine, pid, results, body=None):
         rec["tags"].append("VISUAL_ONLY_OVERLAY_OR_POPUP")
     for h in new:
         user32.PostMessageW(h, WM_CLOSE, 0, 0)
+    for hwnd, wpid in all_windows().items():
+        if hwnd not in all_before and wpid != pid and process_image(wpid) in EXTERNAL_APPS:
+            rec.setdefault("closed_external_windows", []).append(process_image(wpid))
+            user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
     newp = sorted(n for n in process_names() - procs_before if n.lower() not in NOISE)
     if any(n.lower() in EXTERNAL_APPS for n in newp):
         rec["tags"].append("STARTS_EXTERNAL_APP")
@@ -390,6 +464,7 @@ def main():
     ap.add_argument("--port", type=int, default=9520)
     ap.add_argument("--sandbox", required=True)
     ap.add_argument("--only")
+    ap.add_argument("--hand-written", action="store_true", help="probe the hand-written tools instead (two passes: no args, schema args)")
     ap.add_argument("--with-args", action="store_true", help="second pass: commands that take arguments, called with synthesized sandbox arguments")
     ap.add_argument("--out")
     ap.add_argument("--redo", action="store_true")
@@ -416,9 +491,38 @@ def main():
                         "method": "each command called with no arguments via its tool route; see tools/probe_st_commands.py"}
 
     pid = find_pid(args.exe) or start(args.exe, args.port)
+    if args.hand_written:
+        tools = hand_written_tools()
+        out_path = Path(args.out) if args.out else ROOT / "tools" / "st_hand_written_behavior.json"
+        res = json.loads(out_path.read_text(encoding="utf-8")) if out_path.exists() and not args.redo else {"_meta": {}, "tools": {}}
+        res["_meta"] = {"sublime_text_build": "4215", "app": "bare portable, MCP Commander only",
+                        "method": "hand-written _p-routed tools; pass 1 no arguments, pass 2 schema-derived sandbox arguments",
+                        "skipped": "nothing: every hand-written tool with a _p route is run"}
+        todo = [n for n in sorted(tools) if (not args.only or n in args.only.split(","))]
+        for i, name in enumerate(todo, 1):
+            route, schema = tools[name]
+            if name in res["tools"] and not args.only:
+                continue
+            entry = {}
+            for label, body in (("no_args", {}), ("with_args", synth_from_schema(args.sandbox, schema) if schema.get("properties") else None)):
+                if body is None:
+                    continue
+                if not pid_running(pid) or not alive(args.port, 5):
+                    pid = find_pid(args.exe) or start(args.exe, args.port)
+                try:
+                    rec, pid = probe_one(name, args.exe, args.port, args.sandbox, pristine, pid, {}, body, route)
+                except Exception as e:
+                    rec = {"tags": ["PROBE_ERROR"], "note": "%s: %s" % (type(e).__name__, e)}
+                    pid = find_pid(args.exe) or start(args.exe, args.port)
+                rec["args_used"] = body
+                entry[label] = rec
+            res["tools"][name] = entry
+            out_path.write_text(json.dumps(res, indent=1, sort_keys=True), encoding="utf-8")
+            print("%3d/%d %-34s %s" % (i, len(todo), name, " | ".join(",".join(v["tags"]) for v in entry.values())), flush=True)
+        return
     if args.with_args:
         snap = json.loads(SNAPSHOT.read_text(encoding="utf-8"))["commands"]
-        names = [n for n in names if snap[n].get("args") and n not in NOT_EXECUTED]
+        names = [n for n in names if snap[n].get("args")]
         for i, name in enumerate(names, 1):
             body = synth_args(args.sandbox, snap[name])
             if not pid_running(pid) or not alive(args.port, 5):
@@ -436,9 +540,7 @@ def main():
     for i, name in enumerate(names, 1):
         if name in results["commands"] and not args.only:
             continue
-        if name in NOT_EXECUTED:
-            results["commands"][name] = {"tags": ["NOT_EXECUTED"], "note": NOT_EXECUTED[name]}
-        else:
+        if True:
             if not pid_running(pid) or not alive(args.port, 5):
                 pid = find_pid(args.exe) or start(args.exe, args.port)
             try:

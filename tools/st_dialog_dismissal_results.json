@@ -1,0 +1,88 @@
+[
+ {
+  "command": "context_menu",
+  "called": "no args",
+  "frozen_while_dialog_open": true,
+  "main_thread_blocked_reported": true,
+  "blocked_by": "sublime_mcp.py:2471",
+  "windows": [
+   {
+    "kind": "menu",
+    "title": "",
+    "buttons": [],
+    "messages": []
+   }
+  ],
+  "dismiss": {
+   "ok": true,
+   "closed": true,
+   "did": "sent WM_CLOSE",
+   "title": "",
+   "error": null
+  },
+  "answers_again": true,
+  "tool_call_outcome": "{\"error\": \"HTTPError: HTTP Error 500: Internal Server Error\"}"
+ },
+ {
+  "command": "delete_file",
+  "called": "with args",
+  "frozen_while_dialog_open": true,
+  "main_thread_blocked_reported": true,
+  "blocked_by": "sublime_mcp.py:2471",
+  "windows": [
+   {
+    "kind": "dialog",
+    "title": "Delete File",
+    "buttons": [
+     "Yes",
+     "No",
+     "Do this for all current items"
+    ],
+    "messages": [
+     "Are you sure you want to permanently delete this file?",
+     "a.txt"
+    ]
+   }
+  ],
+  "dismiss": {
+   "ok": true,
+   "closed": true,
+   "did": "clicked button 'No'",
+   "title": "Delete File",
+   "error": null
+  },
+  "answers_again": true,
+  "tool_call_outcome": "{\"error\": \"HTTPError: HTTP Error 500: Internal Server Error\"}"
+ },
+ {
+  "command": "prompt_open_file",
+  "called": "no args",
+  "frozen_while_dialog_open": true,
+  "main_thread_blocked_reported": true,
+  "blocked_by": "sublime_mcp.py:2471",
+  "windows": [
+   {
+    "kind": "dialog",
+    "title": "Open",
+    "buttons": [
+     "Open",
+     "Cancel",
+     "Help"
+    ],
+    "messages": [
+     "Namespace Tree Control",
+     "File &name:"
+    ]
+   }
+  ],
+  "dismiss": {
+   "ok": true,
+   "closed": true,
+   "did": "clicked button 'Cancel'",
+   "title": "Open",
+   "error": null
+  },
+  "answers_again": true,
+  "tool_call_outcome": "{\"error\": \"HTTPError: HTTP Error 500: Internal Server Error\"}"
+ }
+]

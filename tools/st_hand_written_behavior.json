@@ -1,0 +1,3446 @@
+{
+ "_meta": {
+  "app": "bare portable, MCP Commander only",
+  "method": "hand-written _p-routed tools; pass 1 no arguments, pass 2 schema-derived sandbox arguments",
+  "skipped": "nothing: every hand-written tool with a _p route is run",
+  "sublime_text_build": "4215"
+ },
+ "tools": {
+  "add_missing_newline": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "add_to_kill_ring": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "arithmetic": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP"
+    ],
+    "visual_change_pct": 4.32
+   }
+  },
+  "auto_complete_goto_definition": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "auto_indent": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "auto_indent_tag": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.77
+   }
+  },
+  "clear_bookmarks": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "clear_fields": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "clone_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.81
+   }
+  },
+  "close_all": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.41
+   }
+  },
+  "close_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.41
+   },
+   "with_args": {
+    "args_used": {
+     "path": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.41
+   }
+  },
+  "close_other_tabs": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "close_others": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "close_pane": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "close_transient": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.41
+   }
+  },
+  "close_unmodified": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "convert_color_scheme": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "convert_ident_case": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "case": "x",
+     "first_case": "x",
+     "separator": "x"
+    },
+    "changes": [
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.17
+   }
+  },
+  "convert_syntax": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size",
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 2.99
+   }
+  },
+  "copy": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "clipboard"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_CLIPBOARD"
+    ],
+    "visual_change_pct": 0.16
+   }
+  },
+  "copy_path": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "clipboard"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_CLIPBOARD"
+    ],
+    "visual_change_pct": 0.16
+   }
+  },
+  "customize_color_scheme": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "windows",
+     "views",
+     "file",
+     "size",
+     "sel",
+     "viewport",
+     "layout",
+     "sidebar"
+    ],
+    "new_processes": [],
+    "new_windows": [
+     "PX_WINDOW_CLASS | D:\\st_bare_4215\\Data\\Packages\\User\\Mariana.sublime-color-scheme - Sublime Text (UNREGISTERED)"
+    ],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "NEW_ST_WINDOW"
+    ],
+    "visual_change_pct": 0.17
+   }
+  },
+  "customize_theme": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "windows",
+     "views",
+     "file",
+     "size",
+     "sel",
+     "viewport",
+     "layout",
+     "sidebar"
+    ],
+    "new_processes": [],
+    "new_windows": [
+     "PX_WINDOW_CLASS | D:\\st_bare_4215\\Data\\Packages\\User\\Default.sublime-theme - Sublime Text (UNREGISTERED)"
+    ],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "NEW_ST_WINDOW"
+    ],
+    "visual_change_pct": 0.17
+   }
+  },
+  "cut": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty",
+     "clipboard"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_CLIPBOARD"
+    ],
+    "visual_change_pct": 0.51
+   }
+  },
+  "delete_to_mark": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "SearchProtocolHost.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "detect_indentation": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "drive_input_panel": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"no input panel is currently open\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "action": "x",
+     "text": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"no input panel is currently open\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "duplicate_line": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.73
+   }
+  },
+  "echo": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "msg": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "edit_settings": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "resource": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "edit_syntax_settings": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "windows",
+     "views",
+     "file",
+     "size",
+     "sel",
+     "viewport",
+     "layout",
+     "sidebar"
+    ],
+    "new_processes": [],
+    "new_windows": [
+     "PX_WINDOW_CLASS | D:\\st_bare_4215\\Data\\Packages\\User\\Plain text.sublime-settings - Sublime Text (UNREGISTERED)"
+    ],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "NEW_ST_WINDOW"
+    ],
+    "visual_change_pct": 0.17
+   }
+  },
+  "ensure_newline_at_eof": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "eval_python": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"code required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "code": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": false, \"error\": \"name 'x' is not defined\", \"output\": \"\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "eval_python_latest": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"code required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "code": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true, \"stdout\": \"\", \"stderr\": \"Python was not found; run without arguments to install from the Microsoft Store, o",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "exec": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "panel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "OPENS_PANEL"
+    ],
+    "visual_change_pct": 5.13
+   },
+   "with_args": {
+    "args_used": {
+     "cmd": [],
+     "env": {},
+     "shell_cmd": "x",
+     "working_dir": "x"
+    },
+    "changes": [
+     "panel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "OPENS_PANEL"
+    ],
+    "visual_change_pct": 2.82
+   }
+  },
+  "expand_selection": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "expand_selection_to_brackets": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "expand_selection_to_indentation": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "expand_selection_to_paragraph": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.27
+   }
+  },
+  "expand_selection_to_scope": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "expand_tabs": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.17
+   }
+  },
+  "find_and_replace": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"pattern required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "case_sensitive": false,
+     "in_selection": false,
+     "pattern": "x",
+     "preserve_case": false,
+     "regex": false,
+     "replace": "x",
+     "replace_all": false,
+     "show_panel": false,
+     "whole_word": false,
+     "wrap": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true, \"panel_open\": false, \"pattern\": \"x\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "find_in_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"pattern required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "case_sensitive": false,
+     "pattern": "x",
+     "regex": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"path\": \"D:\\\\st_bare_sandbox\\\\a.txt\", \"matches\": []}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "find_in_files": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"pattern required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "case_sensitive": false,
+     "pattern": "x",
+     "preserve_case": false,
+     "regex": false,
+     "replace": "x",
+     "show_panel": false,
+     "where": "x",
+     "whole_word": false
+    },
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "error: TimeoutError",
+    "tags": [],
+    "visual_change_pct": 2.65
+   }
+  },
+  "find_in_folder": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "pattern": "x",
+     "where": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "focus_group": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"group required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "group": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"group 1 out of range (have 1)\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "focus_neighboring_group": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "focus_sheet": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "chcp.com"
+    ],
+    "new_windows": [],
+    "response": "{\"error\": \"provide index/indices or id/ids\"}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "id": 1,
+     "index": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"index 1 out of range (have 1 sheets)\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "focus_to_left": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "focus_to_right": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "fold_lines": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"begin and end required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "begin": 1,
+     "end": 1
+    },
+    "changes": [
+     "sel",
+     "folded"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.4
+   }
+  },
+  "fold_unfold": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_help": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"AGENT_GUIDE.md not found at D:\\\\st_bare_4215\\\\Data\\\\Packages\\\\MCP Commander\\\\AGENT_GUIDE.md\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "get_setting": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"key required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "key": "x",
+     "scope": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"key\": \"x\", \"value\": null, \"scope\": \"window\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "goto_definition": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.16
+   }
+  },
+  "goto_line": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"line required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "col": 1,
+     "line": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "goto_reference": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.16
+   }
+  },
+  "html_print": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "OpenWith.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "indent": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.26
+   }
+  },
+  "insert": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "characters": "x"
+    },
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.24
+   }
+  },
+  "insert_snippet": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"contents required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "contents": "x"
+    },
+    "changes": [
+     "size",
+     "dirty",
+     "sel",
+     "local_files:Auto Save Temp Session.sublime_session.tmp"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_SETTINGS_OR_SESSION"
+    ],
+    "visual_change_pct": 0.24
+   }
+  },
+  "install_package_control": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Sublime Text"
+    ],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 0.01
+   }
+  },
+  "invert_selection": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "sel"
+    ],
+    "new_processes": [
+     "stat.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 1.27
+   }
+  },
+  "join_lines": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.35
+   }
+  },
+  "jump_back": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.18
+   }
+  },
+  "jump_forward": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.18
+   }
+  },
+  "lower_case": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.17
+   }
+  },
+  "move_line_down": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "move_line_up": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "move_sheets_to_group": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"group required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "group": 1,
+     "ids": [],
+     "indices": [],
+     "insertion_index": 1,
+     "select": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"at least one sheet must be specified\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "move_to_neighboring_group": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "move_view": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "direction": "x",
+     "group": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "new_build_system": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 3.11
+   }
+  },
+  "new_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 2.32
+   }
+  },
+  "new_file_at": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "path": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "new_folder": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "new_pane": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "layout"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 3.19
+   }
+  },
+  "new_plugin": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 3.46
+   }
+  },
+  "new_snippet": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 4.28
+   }
+  },
+  "new_syntax": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size",
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 5.7
+   }
+  },
+  "new_view": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 2.05
+   }
+  },
+  "next_bookmark": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "next_pane": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "next_result": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "next_view": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "next_view_in_stack": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "old_expand_selection_to_paragraph": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.27
+   }
+  },
+  "old_wrap_lines": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.56
+   },
+   "with_args": {
+    "args_used": {
+     "width": 1
+    },
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.32
+   }
+  },
+  "open_containing_folder": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "open_context_url": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "user_files:Package Control.sublime-settings"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_SETTINGS_OR_SESSION"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "open_control_panel": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true, \"view\": \"Claude Control Panel\", \"servers\": [\"filesystem\", \"github\", \"postgres\", \"sublime-mcp\"]}",
+    "tags": [],
+    "visual_change_pct": 12.61
+   }
+  },
+  "open_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"path required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "col": 1,
+     "line": 1,
+     "path": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "open_file_settings": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 2.1
+   }
+  },
+  "open_folder": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "msedge.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTS_EXTERNAL_APP",
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "path": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "open_in_browser": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "user_files:Package Control.sublime-settings,Preferences.sublime-settings"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_SETTINGS_OR_SESSION"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "open_symbol_definition": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "symbol": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "paste": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.26
+   }
+  },
+  "paste_and_indent": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.26
+   }
+  },
+  "paste_from_history": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "stat.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "permute_lines": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.5
+   }
+  },
+  "permute_selection": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "play_macro": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "prev_bookmark": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "stat.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "prev_pane": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "prev_result": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "prev_view": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "prev_view_in_stack": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "ProcInfo.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "profile_plugins": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "profile_syntax_definition": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "prompt_goto_line": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "panel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "OPENS_PANEL"
+    ],
+    "visual_change_pct": 5.85
+   }
+  },
+  "quick_panel": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "show_files": false,
+     "text": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "redo": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "reindent": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.26
+   }
+  },
+  "rename_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP"
+    ],
+    "visual_change_pct": 2.23
+   },
+   "with_args": {
+    "args_used": {
+     "path": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "reopen_closed_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "replace_in_files": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"pattern required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "case_sensitive": false,
+     "pattern": "x",
+     "preserve_case": false,
+     "regex": false,
+     "replace": "x",
+     "show_panel": false,
+     "where": "x",
+     "whole_word": false
+    },
+    "changes": [
+     "panel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true, \"panel_open\": false, \"pattern\": \"x\", \"replace\": \"x\", \"where\": \"x\"}",
+    "tags": [
+     "OPENS_PANEL"
+    ],
+    "visual_change_pct": 15.06
+   }
+  },
+  "replace_lines": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"begin and end required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "begin": 1,
+     "end": 1,
+     "index": 1,
+     "path": "D:\\st_bare_sandbox\\a.txt",
+     "text": "x"
+    },
+    "changes": [
+     "size",
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.37
+   }
+  },
+  "replace_selection": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "text": "x"
+    },
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.24
+   }
+  },
+  "revert_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "rot13": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.21
+   }
+  },
+  "run_build": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "panel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "OPENS_PANEL"
+    ],
+    "visual_change_pct": 5.13
+   },
+   "with_args": {
+    "args_used": {
+     "cmd": [],
+     "shell_cmd": "x",
+     "working_dir": "x"
+    },
+    "changes": [
+     "panel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "OPENS_PANEL"
+    ],
+    "visual_change_pct": 2.82
+   }
+  },
+  "run_command": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"command required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "args": {},
+     "command": "x",
+     "index": 1,
+     "name": "D:\\st_bare_sandbox\\a.txt",
+     "scope": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "run_macro": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "run_syntax_tests": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "audiodg.exe"
+    ],
+    "new_windows": [
+     "#32770 | Sublime Text"
+    ],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.17
+   }
+  },
+  "save_all": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "save_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "sandbox_files:a.txt"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_FILES"
+    ],
+    "visual_change_pct": 0.18
+   },
+   "with_args": {
+    "args_used": {
+     "path": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [
+     "sandbox_files:a.txt"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_FILES"
+    ],
+    "visual_change_pct": 0.18
+   }
+  },
+  "scroll_to_bof": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "scroll_to_eof": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "select_all": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.27
+   }
+  },
+  "select_all_bookmarks": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "select_color_scheme": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP"
+    ],
+    "visual_change_pct": 13.58
+   }
+  },
+  "select_lines": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"begin required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "begin": 1,
+     "end": 1
+    },
+    "changes": [
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.51
+   }
+  },
+  "select_sheets": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"provide index/indices or id/ids\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "focus_id": 1,
+     "focus_index": 1,
+     "ids": [],
+     "indices": []
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"at least one sheet must be specified\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "select_theme": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP"
+    ],
+    "visual_change_pct": 13.59
+   }
+  },
+  "select_to_left": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "select_to_mark": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "select_to_right": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "send_to_view": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"text required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "index": 1,
+     "name": "D:\\st_bare_sandbox\\a.txt",
+     "text": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"no view matching 'D:\\\\\\\\st_bare_sandbox\\\\\\\\a.txt'\", \"open_views\": [\"a.txt\"]}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_encoding": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"encoding required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "encoding": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_indent_spaces": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_indent_tabs": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_layout": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"layout required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "layout": {}
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"layout required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_mark": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.01
+   }
+  },
+  "set_max_columns": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "stat.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "cols": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_setting": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"key required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "key": "x",
+     "scope": "x",
+     "value": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_sheet_index": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "stat.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"error\": \"group and sheet_index are required\"}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "group": 1,
+     "id": 1,
+     "index": 1,
+     "sheet_index": 1
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"index 1 out of range (have 1 sheets)\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_status": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "key": "x",
+     "value": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.28
+   }
+  },
+  "set_syntax": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"name required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "name": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"syntax not found: D:\\\\st_bare_sandbox\\\\a.txt\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "show_at_center": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "show_panel": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "panel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "OPENS_PANEL"
+    ],
+    "visual_change_pct": 2.82
+   },
+   "with_args": {
+    "args_used": {
+     "name": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "show_scope_name": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP"
+    ],
+    "visual_change_pct": 0.59
+   }
+  },
+  "shrink_selection": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "single_selection": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "sort_lines": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.47
+   },
+   "with_args": {
+    "args_used": {
+     "case_sensitive": false
+    },
+    "changes": [
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 1.47
+   }
+  },
+  "sort_selection": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "split_line": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "split_selection_into_lines": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "str_replace_based_edit_tool": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"path required\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "command": "x",
+     "file_text": "x",
+     "insert_line": 1,
+     "insert_text": "x",
+     "new_str": "x",
+     "old_str": "x",
+     "path": "D:\\st_bare_sandbox\\a.txt",
+     "view_range": []
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"error\": \"unknown command: 'x'. Use: str_replace, insert, create, view\"}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "swap_case": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.22
+   }
+  },
+  "swap_line_down": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.66
+   }
+  },
+  "swap_line_up": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "swap_with_mark": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.01
+   }
+  },
+  "switch_file": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "stat.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "syntax_definition_compatibility": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "tab": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.04
+   }
+  },
+  "title_case": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.19
+   }
+  },
+  "toggle_bookmark": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.01
+   }
+  },
+  "toggle_case": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.22
+   }
+  },
+  "toggle_comment": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   },
+   "with_args": {
+    "args_used": {
+     "block": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "toggle_distraction_free": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "sidebar",
+     "minimap"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": null
+   }
+  },
+  "toggle_full_screen": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "sidebar",
+     "minimap"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": null
+   }
+  },
+  "toggle_menu": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [
+     "StoreDesktopExtension.exe",
+     "backgroundTaskHost.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP",
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 5.84
+   }
+  },
+  "toggle_minimap": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "minimap"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.01
+   }
+  },
+  "toggle_record_macro": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "toggle_side_bar": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "toggle_sidebar": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "toggle_status_bar": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP"
+    ],
+    "visual_change_pct": 3.24
+   }
+  },
+  "toggle_tabs": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP"
+    ],
+    "visual_change_pct": 4.22
+   }
+  },
+  "transformer": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "transpose": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.18
+   }
+  },
+  "transpose_chars": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.18
+   }
+  },
+  "trim_trailing_white_space": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "trim_whitespace": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "trim_whitespaces": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "undo": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "unexpand_tabs": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.17
+   }
+  },
+  "unindent": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "unselect_others": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "unselect_to_left": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "unselect_to_right": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "upper_case": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.21
+   }
+  },
+  "view_resource": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP"
+    ],
+    "visual_change_pct": 14.35
+   },
+   "with_args": {
+    "args_used": {
+     "resource": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "wrap_block": {
+   "no_args": {
+    "args_used": {},
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "wrap_lines": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "size",
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.36
+   },
+   "with_args": {
+    "args_used": {
+     "width": 1
+    },
+    "changes": [
+     "size",
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.23
+   }
+  },
+  "yank": {
+   "no_args": {
+    "args_used": {},
+    "changes": [
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.16
+   }
+  }
+ }
+}

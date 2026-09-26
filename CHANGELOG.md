@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.10.0
+
+Two tools that work while a native dialog has blocked Sublime's main thread
+(Windows only): `list_native_windows` lists the dialogs, menus and windows of the
+Sublime Text process (title, buttons, message text, whether the main thread is
+blocked and which tool blocked it) and `dismiss_native_window` clicks Cancel / OK /
+a named button or closes the window. They run on the HTTP request thread and use
+Win32 through `lib/native_windows.py`, and act only on windows of the Sublime Text
+process. The "main-thread timeout" error now mentions them. Checked on a bare
+Sublime Text 4215 with `tools/verify_native_dialogs.py`: all 16 commands observed
+to block the main thread were opened through their tool, froze Sublime, were
+listed and dismissed with these tools, and Sublime answered again. The hand-written
+tools were probed like the command tools in 1.9.1 (`tools/st_hand_written_behavior.json`).
+The probe harness has no skip lists: every tool is run.
+
 ## 1.9.1
 
 The 160 Sublime Text command tools added in 1.9.0 were only warned about by

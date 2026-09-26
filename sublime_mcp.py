@@ -70,13 +70,14 @@ from urllib.parse import parse_qs, unquote, urlparse
 import sublime
 import sublime_plugin
 
+from .lib import native_windows
 from .lib.search_results import parse_find_results, search_is_complete
 
 # Single source of truth for the version this plugin advertises over MCP.
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.9.1"
+__version__ = "1.10.0"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -200,7 +201,10 @@ def _on_main(fn):
             "[sublime-mcp] _on_main TIMEOUT after 5s dispatching {}\nmain thread stack:\n{}"
             .format(label, _main_thread_stack())
         )
-        raise TimeoutError("main-thread timeout after 5s")
+        raise TimeoutError(
+            "main-thread timeout after 5s. A native dialog or menu blocks Sublime's main thread until it is "
+            "dismissed; list_native_windows and dismiss_native_window work while it is blocked."
+        )
     if exc[0]:
         raise exc[0]
     return result[0]
@@ -3821,6 +3825,59 @@ _POST["/search_packages"] = _search_packages
 _POST["/install_package"] = _install_package
 
 
+# ── Native windows (dialogs, menus): work while ST's main thread is blocked ──
+#
+# A command that opens a native OS dialog or menu (prompt_open_file, delete_file,
+# context_menu, ...) blocks ST's main thread until a person dismisses it, so every
+# tool that goes through _on_main() times out. These two handlers never touch the
+# main thread: they run on the HTTP request thread and call Win32 on this process's
+# own windows (lib/native_windows.py), so they keep working while ST is blocked.
+
+_BLOCKED_AFTER_SECONDS = 2.0
+
+
+def _sublime_process_id():
+    """Plugins run in a plugin-host process; the native windows belong to sublime_text.exe."""
+    return native_windows.sublime_pid(os.getpid(), os.getppid())
+
+
+def _list_native_windows(body):
+    if not native_windows.SUPPORTED:
+        return {"error": "list_native_windows is implemented for Windows only"}
+    started = _in_flight_dispatch.get("started")
+    label = _in_flight_dispatch.get("label")
+    running_for = round(time.time() - started, 1) if started else None
+    blocked = bool(running_for is not None and running_for > _BLOCKED_AFTER_SECONDS)
+    result = {
+        "windows": native_windows.list_windows(_sublime_process_id()),
+        "main_thread_blocked": blocked,
+        "dispatch_running_seconds": running_for,
+    }
+    if blocked:
+        result["blocked_by"] = label
+    return result
+
+
+def _dismiss_native_window(body):
+    if not native_windows.SUPPORTED:
+        return {"error": "dismiss_native_window is implemented for Windows only"}
+    hwnd = body.get("hwnd")
+    try:
+        hwnd = int(hwnd) if hwnd is not None else None
+    except (TypeError, ValueError):
+        return {"error": "hwnd must be an integer from list_native_windows"}
+    return native_windows.dismiss(
+        _sublime_process_id(),
+        hwnd=hwnd,
+        action=body.get("action") or "cancel",
+        button_text=body.get("button"),
+    )
+
+
+_POST["/list_native_windows"] = _list_native_windows
+_POST["/dismiss_native_window"] = _dismiss_native_window
+
+
 # (name, description, inputSchema, handler)
 _MCP_TOOLS = [
     # ── batch execution ───────────────────────────────────────────────────────
@@ -4416,6 +4473,24 @@ _MCP_TOOLS = [
      "Call this first if you are unsure how to save files, close tabs, or use eval_python.",
      {"type": "object", "properties": {}},
      _p("/get_help")),
+    ("list_native_windows",
+     "List the native OS windows, dialogs and menus of this Sublime Text process (Windows only): "
+     "kind (dialog, menu, editor_window, window), title, hwnd, and for dialogs their buttons and "
+     "message text. Works while a native dialog has BLOCKED Sublime's main thread (every other tool "
+     "then times out); the result says whether the main thread is blocked and which tool blocked it.",
+     {"type": "object", "properties": {}},
+     _p("/list_native_windows")),
+    ("dismiss_native_window",
+     "Dismiss a native dialog or menu of this Sublime Text process (Windows only), even while it "
+     "has blocked Sublime's main thread. action: 'cancel' (default; clicks Cancel/No or closes), "
+     "'ok' (clicks OK/Yes/the default button), 'button' (click the button named in 'button') or "
+     "'close'. hwnd defaults to the first dialog, then the first menu; take it from list_native_windows. "
+     "Acts only on windows of the Sublime Text process. 'ok' clicks OK/Yes/the default button.",
+     {"type": "object", "properties": {
+         "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first dialog, then first menu)."},
+         "action": {"type": "string", "enum": ["cancel", "ok", "button", "close"], "description": "What to do (default: cancel)."},
+         "button": {"type": "string", "description": "Button label for action 'button' (ignores case and & mnemonics)."}}},
+     _p("/dismiss_native_window")),
     # ── Phase B batch 1: view / tab / pane management ─────────────────────────
     ("new_file",
      "Create a new untitled file in the current window (File → New File).",
@@ -5099,7 +5174,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {"group": {"type": "integer", "description": "The index of the target group."}, "index": {"type": "integer", "description": "The index within the target group."}}},
      _p("/close_unselected")),
     ("close_window",
-     "Closes the active window. (WindowCommand) Observed on Sublime Text 4215: quits Sublime Text (which also stops this MCP server). Warning: closes the active window (unsaved buffers may prompt).",
+     "Closes the active window. (WindowCommand) Observed on Sublime Text 4215: quits Sublime Text (which also stops this MCP server).",
      {"type": "object", "properties": {}},
      _p("/close_window")),
     ("close_workspace",
@@ -5131,11 +5206,11 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/decrease_font_size")),
     ("delete_file",
-     "Deletes the given file(s) by moving the file(s) to the system trash/recycle bin. (WindowCommand) Observed on Sublime Text 4215: when given arguments: opens a native OS window (\"Delete File\") that blocks Sublime's main thread until a person dismisses it. Warning: moves the file(s) to the recycle bin.",
+     "Deletes the given file(s) by moving the file(s) to the system trash/recycle bin. (WindowCommand) Observed on Sublime Text 4215: when given arguments: opens a native OS window (\"Delete File\") that blocks Sublime's main thread until a person dismisses it.",
      {"type": "object", "properties": {"files": {"type": "array", "description": "The absolute path(s) to the given file(s) on disk."}, "prompt": {"type": "boolean", "description": "Whether to prompt the user to confirm the deletion by showing a dialog box."}}},
      _p("/delete_file")),
     ("delete_folder",
-     "Deletes the given folder(s) by moving the folder(s) to the system trash bin. (WindowCommand) Observed on Sublime Text 4215: when given arguments: opens a native OS window (\"Delete Folder\") that blocks Sublime's main thread until a person dismisses it. Warning: moves the folder(s) to the recycle bin.",
+     "Deletes the given folder(s) by moving the folder(s) to the system trash bin. (WindowCommand) Observed on Sublime Text 4215: when given arguments: opens a native OS window (\"Delete Folder\") that blocks Sublime's main thread until a person dismisses it.",
      {"type": "object", "properties": {"dirs": {"type": "array", "description": "The absolute path(s) to the given folder(s) on disk."}, "prompt": {"type": "boolean", "description": "Whether to prompt the user to confirm the deletion by showing a dialog box."}}},
      _p("/delete_folder")),
     ("delete_word",
@@ -5295,7 +5370,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/noop")),
     ("open_dir",
-     "Opens the specified dir in the default file manager application, optionally highlighting the specified file. (WindowCommand) Documented: opens the file manager (not run by the probe).",
+     "Opens the specified dir in the default file manager application, optionally highlighting the specified file. (WindowCommand)",
      {"type": "object", "properties": {"dir": {"type": "string", "description": "The absolute path to the directory to be opened in the default file manager application."}, "file": {"type": "string", "description": "The name of the file that is to be highlighted when the file manager application is launched, relative to the path of the directory."}}},
      _p("/open_dir")),
     ("open_project_or_workspace",
@@ -5315,7 +5390,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {"index": {"type": "integer", "description": "The index of the workspace as per recent_workspaces in the session file."}}},
      _p("/open_recent_project_or_workspace")),
     ("open_url",
-     "Opens the web browser to display the URL or the default application associated with the file/folder represented by the URL. (ApplicationCommand) Documented: opens the web browser or the default application (not run by the probe).",
+     "Opens the web browser to display the URL or the default application associated with the file/folder represented by the URL. (ApplicationCommand)",
      {"type": "object", "properties": {"url": {"type": "string", "description": "The URL to be opened."}}},
      _p("/open_url")),
     ("overwrite",
@@ -5379,7 +5454,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {"initial_directory": {"type": "string", "description": "An absolute folder path on disk, where the native dialog will initially open."}}},
      _p("/prompt_switch_project_or_workspace")),
     ("purchase_license",
-     "Navigates to the url https://www.sublimehq.com/store/text in the default browser to allow a user to purchase a license.. (ApplicationCommand) Documented: opens the web browser (not run by the probe).",
+     "Navigates to the url https://www.sublimehq.com/store/text in the default browser to allow a user to purchase a license.. (ApplicationCommand) Observed on Sublime Text 4215: starts another program (msedge.exe).",
      {"type": "object", "properties": {}},
      _p("/purchase_license")),
     ("redo_or_repeat",
@@ -5391,7 +5466,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/refresh_folder_list")),
     ("remove_license",
-     "Removes the license. This will cause Sublime Text/Merge to go into an unregistered state. (ApplicationCommand) Observed on Sublime Text 4215: opens a native OS window (\"Remove license key?\") that blocks Sublime's main thread until a person dismisses it. Warning: unregisters Sublime Text.",
+     "Removes the license. This will cause Sublime Text/Merge to go into an unregistered state. (ApplicationCommand) Observed on Sublime Text 4215: opens a native OS window (\"Remove license key?\") that blocks Sublime's main thread until a person dismisses it.",
      {"type": "object", "properties": {}},
      _p("/remove_license")),
     ("rename_path",
@@ -5435,15 +5510,15 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {"dirs": {"type": "array", "description": "The list of symlink directorie(s) to be resolved."}}},
      _p("/reveal_link_source")),
     ("revert",
-     "Reloads the file. (TextCommand) Warning: discards unsaved changes in the view.",
+     "Reloads the file. (TextCommand)",
      {"type": "object", "properties": {}},
      _p("/revert")),
     ("revert_hunk",
-     "Reverts a diff hunk. (TextCommand) Warning: discards the changes in the diff hunk.",
+     "Reverts a diff hunk. (TextCommand)",
      {"type": "object", "properties": {}},
      _p("/revert_hunk")),
     ("revert_modification",
-     "Reverts a single modification. (TextCommand) Warning: discards the modification.",
+     "Reverts a single modification. (TextCommand)",
      {"type": "object", "properties": {}},
      _p("/revert_modification")),
     ("right_delete",
@@ -5627,7 +5702,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/update_check")),
     ("upgrade_license",
-     "Navigates to https://www.sublimehq.com/store/upgrade, where you can upgrade an expired license. (ApplicationCommand) Observed on Sublime Text 4215: opens the web browser.",
+     "Navigates to https://www.sublimehq.com/store/upgrade, where you can upgrade an expired license. (ApplicationCommand)",
      {"type": "object", "properties": {}},
      _p("/upgrade_license")),
     # END GENERATED ST COMMAND TOOLS
