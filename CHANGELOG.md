@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.9.1
+
+The 160 Sublime Text command tools added in 1.9.0 were only warned about by
+keyword, which missed most of what they do. Every one has now been run on a
+disposable bare Sublime Text 4215 (no arguments, then sandbox arguments for the
+59 that take any) with `tools/probe_st_commands.py`; the results are in
+`tools/st_commands_behavior.json` and 44 tool descriptions now begin their
+"Observed on Sublime Text 4215:" note with what was seen: 16 commands block the
+main thread behind a native window (including `context_menu`, `delete_file`,
+`delete_folder`, `remove_license`, the `prompt_*` family), 3 quit Sublime
+(`exit`, `hot_exit`, `close_window`), 7 open a non-blocking window, 6 leave an
+in-app panel or popup open, `upgrade_license` opens the browser, and some
+write settings, files or the clipboard. `AGENT_GUIDE.md`, `docs/AGENT_GUIDE.md`
+and `docs/AGENTS.md` describe this. The 239 hand-written tools were not probed.
+
 ## 1.9.0
 
 Typed tools for every Sublime Text command in CommandsBrowser's command list.
