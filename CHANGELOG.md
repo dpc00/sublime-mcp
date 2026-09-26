@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+`discover_tools` walks a tree of categories: with no arguments it lists the 12 top-level categories, `category="editing"` lists that category's subcategories and `category="editing/lines"` lists the tools in it with their schemas; `query=` still searches all tools. The tree is `tool_tree.json` (built by `tools/build_tool_tree.py`; `test/test_tool_tree.py` checks that every hidden tool is in exactly one leaf).
+
+`AGENT_GUIDE.md` (served by `get_help`) was restructured from about 350 to 178 lines: a quick start with `batch` examples for a new text tab and for a file on disk, and the material about the generated command tools, known issues and developer notes moved to `docs/COMMAND_TOOLS.md`. Measured with a fresh omp agent (Grok Build) against the real sublime-mcp: the untitled-tab task went from 17+ `discover_tools` calls before any edit (first run, interrupted) to 4-5 calls in total, $0.02-0.05 a run; the file-on-disk task from about 6 `discover_tools` calls and reading `sublime_mcp.py` (interrupted) to 5 calls, $0.04-0.10 a run.
+
 ## 1.10.0
 
 Two tools that work while a native dialog has blocked Sublime's main thread

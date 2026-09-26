@@ -460,16 +460,23 @@ TOOLS = [   {   'name': 'add_directory',
                        'the server is dead.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'discover_tools',
-        'description': 'Search advanced Sublime capabilities hidden from the default tool surface. '
-                       'Returns matching names, descriptions, and schemas. Invoke a result through '
+        'description': 'Find advanced Sublime tools hidden from the default tool surface. With no '
+                       'arguments it lists the top-level categories; category=<path> opens a '
+                       'category (then a subcategory, which lists its tools with schemas); '
+                       'query=<words> searches all tools. Invoke a result through '
                        'batch(calls=[{tool: <name>, args: {...}}]), including for a single call.',
         'inputSchema': {   'type': 'object',
-                           'properties': {   'query': {   'type': 'string',
-                                                          'description': 'Capability to find, such '
-                                                                         'as bookmarks, tabs, '
+                           'properties': {   'category': {   'type': 'string',
+                                                             'description': 'Category path, such '
+                                                                            'as editing or '
+                                                                            'editing/lines. Empty '
+                                                                            'lists the '
+                                                                            'categories.'},
+                                             'query': {   'type': 'string',
+                                                          'description': 'Words to search for, '
+                                                                         'such as bookmarks, tabs, '
                                                                          'syntax, or commands.'},
-                                             'limit': {'type': 'integer', 'default': 10}},
-                           'required': ['query']}},
+                                             'limit': {'type': 'integer', 'default': 10}}}},
     {   'name': 'dismiss_native_window',
         'description': 'Dismiss a native dialog or menu of this Sublime Text process (Windows '
                        "only), even while it has blocked Sublime's main thread. action: 'cancel' "

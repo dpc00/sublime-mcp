@@ -12,7 +12,8 @@ to turn a one-time investigation into a small, reusable skill file instead.
 
 ## Toolset
 
-Seven workflow tools are advertised by default. `discover_tools` searches the
+Seven workflow tools are advertised by default. `discover_tools` lists a tree of
+categories (`category=`) or searches (`query=`) the
 complete internal catalog of 401 typed Sublime capabilities, and `batch` invokes
 discovered capabilities without flooding the model's initial tool context.
 
