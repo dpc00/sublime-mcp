@@ -28,7 +28,7 @@ produce an equivalent skill for any other package.
 
 | MCP            | Plugin dir | MCP SSE                         | HTTP bridge                     | Tools                          |
 | -------------- | ---------- | -------------------------------- | -------------------------------- | ------------------------------ |
-| **sublime-mcp**  | repo root | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | 7 default, 238 discoverable    |
+| **sublime-mcp**  | repo root | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | 7 default, 392 discoverable    |
 
 Ports are configured via `MCP Commander.sublime-settings` (`"mcp_port"` /
 `"http_port"`), overridable in `Packages/User/`. The proxy → HTTP bridge URL
@@ -222,7 +222,11 @@ live-invoke:
 
 - sublime-mcp: `prompt_goto_line`, `quick_panel`, `select_color_scheme`,
   `select_theme`, `open_in_browser`, `html_print`, `customize_*`,
-  `convert_*`, `edit_syntax_settings`
+  `convert_*`, `edit_syntax_settings`, and any generated command tool whose
+  description says it "blocks Sublime's main thread", "quits Sublime Text",
+  "opens the web browser" or starts with "Warning:" (`prompt_*`, `context_menu`,
+  `delete_file`, `exit`, `hot_exit`, `close_window`, `revert*`, ...; see "What the
+  command tools were observed to do" in `AGENT_GUIDE.md`)
 - debugger-mcp: `debugger_open` (unless you need the UI), `debugger_settings`,
   `debugger_install_adapters`, `debugger_change_configuration`,
   `debugger_edit_configurations`, `debugger_example_projects`,

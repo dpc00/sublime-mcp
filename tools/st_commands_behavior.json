@@ -1,0 +1,2591 @@
+{
+ "_meta": {
+  "app": "bare portable, MCP Commander only",
+  "method": "each command called with no arguments via its tool route; see tools/probe_st_commands.py",
+  "sublime_text_build": "4215"
+ },
+ "commands": {
+  "add_directory": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "add_jump_record": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "selection": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "add_where_snippet": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "snippet": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "add_word": {
+   "changes": [
+    "user_files:Preferences.sublime-settings"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "CHANGES_SETTINGS_OR_SESSION"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "word": "x"
+    },
+    "changes": [
+     "user_files:Preferences.sublime-settings"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_SETTINGS_OR_SESSION"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "append": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "characters": "x",
+     "disable_tab_translation": false,
+     "force": false,
+     "scroll_to_end": false
+    },
+    "changes": [
+     "size",
+     "dirty"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.25
+   }
+  },
+  "auto_complete": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "VISUAL_ONLY_OVERLAY_OR_POPUP"
+   ],
+   "visual_change_pct": 1.13,
+   "with_args": {
+    "args_used": {
+     "api_completions_only": false,
+     "auto_complete_commit_on_tab": false,
+     "default": "x",
+     "disable_auto_insert": false,
+     "mini": false,
+     "next_completion_if_showing": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "VISUAL_ONLY_OVERLAY_OR_POPUP"
+    ],
+    "visual_change_pct": 1.46
+   }
+  },
+  "auto_complete_open_link": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "auto_complete_prev": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "build": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.17,
+   "with_args": {
+    "args_used": {
+     "build_system": "x",
+     "choice_build_system": false,
+     "choice_variant": false,
+     "select": false,
+     "variant": "x"
+    },
+    "changes": [
+     "panel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "OPENS_PANEL"
+    ],
+    "visual_change_pct": 9.83
+   }
+  },
+  "cancel": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "cancel_build": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "cancel_find": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "chain": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "commands": [
+      [
+       "hide_overlay"
+      ]
+     ]
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "clear_location": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "clear_missing_recent_projects_and_workspaces": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "clear_recent_files": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "clear_recent_projects_and_workspaces": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "close": {
+   "changes": [
+    "views",
+    "file",
+    "size"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 1.41
+  },
+  "close_by_index": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "group": 0,
+     "index": 0
+    },
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 2.55
+   }
+  },
+  "close_deleted_files": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "group": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "close_folder_list": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "close_others_by_index": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "group": 0,
+     "index": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "close_selected": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "group": 0,
+     "index": 0
+    },
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 2.55
+   }
+  },
+  "close_tag": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "insert_slash": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "close_to_right_by_index": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "group": 0,
+     "index": 0
+    },
+    "changes": [],
+    "new_processes": [
+     "taskkill.exe"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "close_unmodified_to_right_by_index": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "group": 0,
+     "index": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "close_unselected": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "group": 0,
+     "index": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "close_window": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "EXITS_APP"
+   ]
+  },
+  "close_workspace": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "commit_completion": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "console_python_version": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "version": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "context_menu": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32768 | "
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.15
+  },
+  "copy_as_html": {
+   "changes": [
+    "clipboard"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "CHANGES_CLIPBOARD"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "enclosing_tags": false,
+     "font_size": false
+    },
+    "changes": [
+     "clipboard"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_CLIPBOARD"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "correct_spelling": {
+   "changes": [
+    "dirty"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.17,
+   "with_args": {
+    "args_used": {
+     "begin": 0,
+     "correction": "x",
+     "end": 0
+    },
+    "changes": [
+     "size",
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.67
+   }
+  },
+  "decrease_font_size": {
+   "changes": [
+    "user_files:Preferences.sublime-settings"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "CHANGES_SETTINGS_OR_SESSION"
+   ],
+   "visual_change_pct": 0.26
+  },
+  "delete_file": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "files": [
+      "D:\\st_bare_sandbox\\a.txt"
+     ],
+     "prompt": false
+    },
+    "changes": [
+     "views",
+     "file",
+     "size"
+    ],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Delete File"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 2.96
+   }
+  },
+  "delete_folder": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "dirs": [
+      "D:\\st_bare_sandbox\\sub"
+     ],
+     "prompt": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Delete Folder"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 0.42
+   }
+  },
+  "delete_word": {
+   "changes": [
+    "size",
+    "dirty"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.21,
+   "with_args": {
+    "args_used": {
+     "forward": false,
+     "sub_words": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "drag_select": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "additive": false,
+     "by": "x",
+     "event": {},
+     "subtractive": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "encode_html_entities": {
+   "changes": [
+    "dirty"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.17
+  },
+  "exit": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "EXITS_APP"
+   ]
+  },
+  "expand_snippet": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "find_all": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "close_panel": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.23
+   }
+  },
+  "find_all_under": {
+   "changes": [
+    "sel"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.31
+  },
+  "find_next": {
+   "changes": [
+    "sel"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.3
+  },
+  "find_prev": {
+   "changes": [
+    "sel"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.34
+  },
+  "find_under": {
+   "changes": [
+    "sel"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.3
+  },
+  "find_under_expand": {
+   "changes": [
+    "sel"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.38
+  },
+  "find_under_expand_skip": {
+   "changes": [
+    "sel"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.38
+  },
+  "find_under_prev": {
+   "changes": [
+    "sel"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.34
+  },
+  "focus_by_index": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "index": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "focus_side_bar": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "fold": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "fold_all": {
+   "changes": [
+    "folded"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.13
+  },
+  "fold_by_level": {
+   "changes": [],
+   "new_processes": [
+    "sleep.exe"
+   ],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "STARTED_PROCESS"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "level": 0
+    },
+    "changes": [
+     "folded"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.2
+   }
+  },
+  "fold_tag_attributes": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "goto_symbol_in_project": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "hide_auto_complete": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "hide_overlay": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "hide_panel": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "cancel": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "hide_popup": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "hot_exit": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "EXITS_APP"
+   ]
+  },
+  "ignore_word": {
+   "changes": [
+    "user_files:Preferences.sublime-settings"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "CHANGES_SETTINGS_OR_SESSION"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "word": "x"
+    },
+    "changes": [
+     "user_files:Preferences.sublime-settings"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_SETTINGS_OR_SESSION"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "increase_font_size": {
+   "changes": [
+    "user_files:Preferences.sublime-settings"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "CHANGES_SETTINGS_OR_SESSION"
+   ],
+   "visual_change_pct": 0.26
+  },
+  "left_delete": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "move": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "by": "x",
+     "empty_line": false,
+     "extend": false,
+     "forward": false,
+     "ignore_auto_complete": false,
+     "lines": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "move_to": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "extend": false,
+     "to": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "move_to_group": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "group": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "new_os_tab": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "new_window": {
+   "changes": [
+    "windows",
+    "views",
+    "file",
+    "size"
+   ],
+   "new_processes": [],
+   "new_windows": [
+    "PX_WINDOW_CLASS | untitled \u2022 - Sublime Text (UNREGISTERED)"
+   ],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "NEW_ST_WINDOW"
+   ],
+   "visual_change_pct": 0.17
+  },
+  "new_window_for_project": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "next_field": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "next_misspelling": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "next_modification": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "next_os_tab": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "noop": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "open_dir": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "open_project_or_workspace": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "file": "D:\\st_bare_sandbox\\a.txt",
+     "new_window": false
+    },
+    "changes": [
+     "views",
+     "file",
+     "size",
+     "sandbox_files:a.sublime-workspace"
+    ],
+    "new_processes": [
+     "audiodg.exe"
+    ],
+    "new_windows": [
+     "#32770 | Sublime Text"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD",
+     "STARTED_PROCESS",
+     "CHANGES_FILES"
+    ],
+    "visual_change_pct": 2.93
+   }
+  },
+  "open_recent_file": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "open_recent_folder": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "index": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "open_recent_project_or_workspace": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "index": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "open_url": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "overwrite": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "characters": "x"
+    },
+    "changes": [
+     "dirty",
+     "sel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [],
+    "visual_change_pct": 0.31
+   }
+  },
+  "paste_selection_clipboard": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "prev_field": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "prev_misspelling": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "prev_modification": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "prev_os_tab": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "primary_j_changed": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Sublime Text"
+   ],
+   "response": "error: TimeoutError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.32
+  },
+  "prompt_add_folder": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Select Folder"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.32,
+   "with_args": {
+    "args_used": {
+     "initial_directory": "x"
+    },
+    "changes": [],
+    "new_processes": [
+     "backgroundTaskHost.exe"
+    ],
+    "new_windows": [
+     "#32770 | Select Folder"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD",
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.42
+   }
+  },
+  "prompt_open": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "VISUAL_ONLY_OVERLAY_OR_POPUP"
+   ],
+   "visual_change_pct": 0.36,
+   "with_args": {
+    "args_used": {
+     "initial_directory": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "prompt_open_file": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Open"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.34,
+   "with_args": {
+    "args_used": {
+     "initial_directory": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Open"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 0.19
+   }
+  },
+  "prompt_open_folder": {
+   "changes": [],
+   "new_processes": [
+    "sppsvc.exe"
+   ],
+   "new_windows": [
+    "#32770 | Select Folder"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD",
+    "STARTED_PROCESS"
+   ],
+   "visual_change_pct": 0.51,
+   "with_args": {
+    "args_used": {
+     "initial_directory": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Select Folder"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 0.42
+   }
+  },
+  "prompt_open_project_or_workspace": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Open"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.32,
+   "with_args": {
+    "args_used": {
+     "initial_directory": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Open"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 0.42
+   }
+  },
+  "prompt_save_as": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Save As"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.15,
+   "with_args": {
+    "args_used": {
+     "initial_directory": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Save As"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 0.19
+   }
+  },
+  "prompt_select_workspace": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "PX_WINDOW_CLASS | Switch Project"
+   ],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NEW_OS_WINDOW"
+   ],
+   "visual_change_pct": 0.17
+  },
+  "prompt_switch_project_or_workspace": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Open"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.32,
+   "with_args": {
+    "args_used": {
+     "initial_directory": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Open"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 0.42
+   }
+  },
+  "purchase_license": {
+   "note": "opens the default web browser (documented)",
+   "tags": [
+    "NOT_EXECUTED"
+   ]
+  },
+  "redo_or_repeat": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "refresh_folder_list": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "remove_license": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Remove license key?"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.32
+  },
+  "rename_path": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "paths": [
+      "D:\\st_bare_sandbox\\a.txt"
+     ]
+    },
+    "changes": [
+     "panel"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "OPENS_PANEL"
+    ],
+    "visual_change_pct": 7.15
+   }
+  },
+  "reopen": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "encoding": "UTF-8"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "reopen_last_file": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "replace_all": {
+   "changes": [
+    "size",
+    "dirty"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.38
+  },
+  "replace_completion_with_auto_complete": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "VISUAL_ONLY_OVERLAY_OR_POPUP"
+   ],
+   "visual_change_pct": 0.78
+  },
+  "replace_next": {
+   "changes": [
+    "sel"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.34
+  },
+  "reset_font_size": {
+   "changes": [
+    "user_files:Preferences.sublime-settings"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "CHANGES_SETTINGS_OR_SESSION"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "resize_window": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": null,
+   "with_args": {
+    "args_used": {
+     "height": 600,
+     "width": 600
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": null
+   }
+  },
+  "reveal_in_side_bar": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "reveal_link_source": {
+   "changes": [],
+   "new_processes": [
+    "sleep.exe"
+   ],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "STARTED_PROCESS"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "dirs": [
+      "D:\\st_bare_sandbox\\sub"
+     ]
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "revert": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "revert_hunk": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "revert_modification": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "right_delete": {
+   "changes": [
+    "size",
+    "dirty"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [],
+   "visual_change_pct": 0.28
+  },
+  "run_macro_file": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "file": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.27
+   }
+  },
+  "save": {
+   "changes": [
+    "sandbox_files:a.txt"
+   ],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "CHANGES_FILES"
+   ],
+   "visual_change_pct": 0.24,
+   "with_args": {
+    "args_used": {
+     "async": false,
+     "encoding": "UTF-8",
+     "quiet": false
+    },
+    "changes": [
+     "sandbox_files:a.txt"
+    ],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "CHANGES_FILES"
+    ],
+    "visual_change_pct": 0.29
+   }
+  },
+  "save_macro": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "save_project_and_workspace_as": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Save As"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.19
+  },
+  "save_workspace_as": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Save As"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.19
+  },
+  "scroll_lines": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "amount": 1.0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "select": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "select_bookmark": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "index": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "select_by_index": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "index": 0
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_build_system": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "file": "D:\\st_bare_sandbox\\a.txt"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "set_file_type": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "syntax": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Sublime Text"
+    ],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NEW_OS_WINDOW"
+    ],
+    "visual_change_pct": 0.23
+   }
+  },
+  "set_line_ending": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "type": "x"
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "show_about_window": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "PX_WINDOW_CLASS | Sublime Text"
+   ],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NEW_OS_WINDOW"
+   ],
+   "visual_change_pct": 0.22
+  },
+  "show_changelog": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "PX_WINDOW_CLASS | Changelog"
+   ],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NEW_OS_WINDOW"
+   ],
+   "visual_change_pct": 0.22
+  },
+  "show_license_window": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "PX_WINDOW_CLASS | Enter License"
+   ],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NEW_OS_WINDOW"
+   ],
+   "visual_change_pct": 0.22
+  },
+  "show_progress_window": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "PX_WINDOW_CLASS | Indexing Status"
+   ],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NEW_OS_WINDOW"
+   ],
+   "visual_change_pct": 0.22
+  },
+  "slurp_find_string": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.23
+  },
+  "slurp_replace_string": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.22
+  },
+  "soft_redo": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "soft_undo": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "sublime_merge_blame_file": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Sublime Merge Not Found"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.19,
+   "with_args": {
+    "args_used": {
+     "files": [
+      "D:\\st_bare_sandbox\\a.txt"
+     ]
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Sublime Merge Not Found"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 0.28
+   }
+  },
+  "sublime_merge_file_history": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "#32770 | Sublime Merge Not Found"
+   ],
+   "response": "error: HTTPError",
+   "tags": [
+    "NEW_OS_WINDOW",
+    "BLOCKS_MAIN_THREAD"
+   ],
+   "visual_change_pct": 0.19,
+   "with_args": {
+    "args_used": {
+     "files": [
+      "D:\\st_bare_sandbox\\a.txt"
+     ]
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [
+     "#32770 | Sublime Merge Not Found"
+    ],
+    "response": "error: HTTPError",
+    "tags": [
+     "NEW_OS_WINDOW",
+     "BLOCKS_MAIN_THREAD"
+    ],
+    "visual_change_pct": 0.28
+   }
+  },
+  "sublime_merge_folder_history": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "paths": [
+      "D:\\st_bare_sandbox\\a.txt"
+     ]
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "sublime_merge_line_history": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "sublime_merge_open_repo": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "": []
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "syntax_definition_compatability": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_case_sensitive": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_highlight": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_in_selection": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_inline_diff": {
+   "changes": [],
+   "new_processes": [
+    "sleep.exe"
+   ],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "STARTED_PROCESS"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "prefer_hide": false
+    },
+    "changes": [],
+    "new_processes": [],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "NO_OBSERVABLE_EFFECT"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "toggle_overwrite": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.01
+  },
+  "toggle_preserve_case": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_regex": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_save_all_on_build": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_setting": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0,
+   "with_args": {
+    "args_used": {
+     "setting": "x"
+    },
+    "changes": [],
+    "new_processes": [
+     "chcp.com"
+    ],
+    "new_windows": [],
+    "response": "{\"ok\": true}",
+    "tags": [
+     "STARTED_PROCESS"
+    ],
+    "visual_change_pct": 0.0
+   }
+  },
+  "toggle_show_context": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_show_open_files": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "VISUAL_ONLY_OVERLAY_OR_POPUP"
+   ],
+   "visual_change_pct": 17.12
+  },
+  "toggle_use_buffer": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_use_gitignore": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_whole_word": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "toggle_wrap": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "unfold": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "unfold_all": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NO_OBSERVABLE_EFFECT"
+   ],
+   "visual_change_pct": 0.0
+  },
+  "update_check": {
+   "changes": [],
+   "new_processes": [],
+   "new_windows": [
+    "PX_WINDOW_CLASS | Update"
+   ],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "NEW_OS_WINDOW"
+   ],
+   "visual_change_pct": 0.22
+  },
+  "upgrade_license": {
+   "changes": [],
+   "new_processes": [
+    "chrome-native-host.exe",
+    "extension-host.exe",
+    "msedge.exe",
+    "smartscreen.exe"
+   ],
+   "new_windows": [],
+   "response": "{\"ok\": true}",
+   "tags": [
+    "STARTED_PROCESS"
+   ],
+   "visual_change_pct": 0.0
+  }
+ }
+}

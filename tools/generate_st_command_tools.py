@@ -35,16 +35,88 @@ KIND = {
     "application": ("_ac", "ApplicationCommand"),
 }
 
-# Commands that open a native OS dialog: the main thread blocks until it is
-# dismissed, so callers must be told.
-NATIVE_DIALOG_HINT = re.compile(r"\b(OS dialog|native [a-z ]*dialog)\b", re.I)
+BEHAVIOR = ROOT / "tools" / "st_commands_behavior.json"
+
+# Commands that were not executed by the probe because they open the person's
+# browser / file manager (see tools/probe_st_commands.py).
+EXTERNAL_NOT_RUN = {
+    # name: (text, observed)  - observed=True means the first probe pass saw it happen
+    "purchase_license": ("opens the web browser", False),
+    "upgrade_license": ("opens the web browser", True),
+    "open_url": ("opens the web browser or the default application", False),
+    "open_dir": ("opens the file manager", False),
+}
+
+
+def load_behavior():
+    if not BEHAVIOR.exists():
+        return {}
+    return json.loads(BEHAVIOR.read_text(encoding="utf-8")).get("commands", {})
+
+
+def _window_titles(rec):
+    titles = []
+    for w in (rec or {}).get("new_windows") or []:
+        cls, _, title = w.partition(" | ")
+        if cls == "#32768":
+            titles.append("native menu")
+        elif cls == "#32770":
+            titles.append(title.strip() or "dialog")
+        else:
+            titles.append(title.strip() or "window")
+    return titles
+
+
+def observed_note(name, behavior):
+    """One sentence stating what running the command was OBSERVED to do on a bare
+    Sublime Text 4215 (tools/probe_st_commands.py). Empty when nothing notable."""
+    if name in EXTERNAL_NOT_RUN:
+        text, seen = EXTERNAL_NOT_RUN[name]
+        if seen:
+            return "Observed on Sublime Text 4215: {}.".format(text)
+        return "Documented: {} (not run by the probe).".format(text)
+    rec = behavior.get(name)
+    if not rec:
+        return ""
+    passes = [("", rec), ("when given arguments: ", rec.get("with_args"))]
+    parts = []
+    for prefix, r in passes:
+        if not r:
+            continue
+        tags = set(r.get("tags") or [])
+        found = []
+        if "EXITS_APP" in tags:
+            found.append("quits Sublime Text (which also stops this MCP server)")
+        if "BLOCKS_MAIN_THREAD" in tags:
+            t = ", ".join('"{}"'.format(x) for x in _window_titles(r)[:2]) or "a native window"
+            found.append("opens a native OS window ({}) that blocks Sublime's main thread until a person "
+                         "dismisses it".format(t))
+        elif "NEW_OS_WINDOW" in tags and "NEW_ST_WINDOW" not in tags:
+            t = ", ".join('"{}"'.format(x) for x in _window_titles(r)[:2])
+            found.append("opens a separate window ({})".format(t))
+        if "NEW_ST_WINDOW" in tags:
+            found.append("opens a new Sublime Text window")
+        if tags & {"OPENS_PANEL", "VISUAL_ONLY_OVERLAY_OR_POPUP"} and not tags & {"BLOCKS_MAIN_THREAD", "NEW_OS_WINDOW"}:
+            found.append("shows an in-app panel, popup or overlay (dismiss with hide_overlay, hide_panel or hide_popup)")
+        if "CHANGES_FILES" in tags:
+            found.append("writes files")
+        if "CHANGES_SETTINGS_OR_SESSION" in tags:
+            found.append("writes Sublime Text settings")
+        if "CHANGES_CLIPBOARD" in tags:
+            found.append("changes the clipboard")
+        if found:
+            parts.append(prefix + "; ".join(found))
+    if not parts:
+        return ""
+    # de-duplicate an identical statement from both passes
+    if len(parts) == 2 and parts[1].split(": ", 1)[1] == parts[0]:
+        parts = parts[:1]
+    return "Observed on Sublime Text 4215: " + " | ".join(parts) + "."
 
 # Extra warnings for commands that end the session or discard data. They stay
 # available (use the `disabled_tools` setting to refuse them), but the tool
 # description says what they do.
 WARNINGS = {
-    "exit": "Warning: quits Sublime Text, which also stops this MCP server.",
-    "hot_exit": "Warning: quits Sublime Text, which also stops this MCP server.",
     "close_window": "Warning: closes the active window (unsaved buffers may prompt).",
     "remove_license": "Warning: unregisters Sublime Text.",
     "delete_file": "Warning: moves the file(s) to the recycle bin.",
@@ -130,7 +202,7 @@ def build_schema(args):
     return {"type": "object", "properties": props}
 
 
-def build_description(name, meta):
+def build_description(name, meta, behavior):
     _, kind_name = KIND[meta["command_type"]]
     doc = " ".join((meta.get("doc_string") or "").split())
     if not doc:
@@ -138,8 +210,9 @@ def build_description(name, meta):
     if doc[-1] not in ".!?":
         doc += "."
     doc += " ({})".format(kind_name)
-    if NATIVE_DIALOG_HINT.search(doc):
-        doc += " Opens a native OS dialog that blocks Sublime Text until it is dismissed."
+    note = observed_note(name, behavior)
+    if note:
+        doc += " " + note
     if name in WARNINGS:
         doc += " " + WARNINGS[name]
     return doc
@@ -148,6 +221,7 @@ def build_description(name, meta):
 def main():
     snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     commands = snapshot["commands"]
+    behavior = load_behavior()
     text = strip_blocks(SOURCE.read_text(encoding="utf-8"))
     tool_names, covered = existing_coverage(text)
 
@@ -164,7 +238,7 @@ def main():
         tool_lines.append(
             '    ({name},\n     {desc},\n     {schema},\n     _p("/{raw}")),'.format(
                 name=json.dumps(name),
-                desc=json.dumps(build_description(name, meta), ensure_ascii=True),
+                desc=json.dumps(build_description(name, meta, behavior), ensure_ascii=True),
                 schema=schema,
                 raw=name,
             )
