@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.11.0
 
 `discover_tools` walks a tree of categories: with no arguments it lists the 12 top-level categories, `category="editing"` lists that category's subcategories and `category="editing/lines"` lists the tools in it with their schemas; `query=` still searches all tools. The tree is `tool_tree.json` (built by `tools/build_tool_tree.py`; `test/test_tool_tree.py` checks that every hidden tool is in exactly one leaf).
 

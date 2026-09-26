@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.10.0"
+__version__ = "1.11.0"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
