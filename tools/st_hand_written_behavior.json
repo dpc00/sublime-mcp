@@ -1144,14 +1144,13 @@
     "changes": [
      "size",
      "dirty",
-     "sel",
-     "local_files:Auto Save Temp Session.sublime_session.tmp"
+     "sel"
     ],
     "new_processes": [],
     "new_windows": [],
     "response": "{\"ok\": true}",
     "tags": [
-     "CHANGES_SETTINGS_OR_SESSION"
+     "NO_OBSERVABLE_EFFECT"
     ],
     "visual_change_pct": 0.24
    }
