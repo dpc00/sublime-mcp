@@ -1,0 +1,3027 @@
+{
+ "_source": "Sublime Text command metadata from CommandsBrowser (https://github.com/Sublime-Instincts/CommandsBrowser, directory st_commands_metadata/), MIT License, Copyright 2021 Ashwin Shenoy. Used to generate typed tools; see tools/generate_st_command_tools.py.",
+ "_license": "MIT",
+ "_refresh": "Re-copy the merged st_commands_metadata/*.json into 'commands' and run: python tools/generate_st_command_tools.py",
+ "commands": {
+  "add_directory": {
+   "command_type": "find",
+   "doc_string": "Opens an OS dialog box to prompt for a folder to the 'Where' field in the 'Find in Files' panel.",
+   "type": "core"
+  },
+  "add_jump_record": {
+   "command_type": "text",
+   "doc_string": "Allows packages/plugins to add a jump point without changing the selection.",
+   "args": [
+    {
+     "name": "selection",
+     "doc_string": "The selection to be added to the jump history. Can be an integer, a list of 2 integers or a list of list of 2 integers.",
+     "type": "int | List[int] | List[List[int]]"
+    }
+   ],
+   "added": 4082,
+   "type": "default",
+   "location": "Default/history_list.py"
+  },
+  "add_to_kill_ring": {
+   "command_type": "text",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "forward",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "added": 2024,
+   "type": "default",
+   "location": "Default/kill_ring.py"
+  },
+  "add_where_snippet": {
+   "command_type": "find",
+   "doc_string": "Adds a snippet to the 'Where' field in the 'Find in Files' panel.",
+   "args": [
+    {
+     "name": "snippet",
+     "doc_string": "The string to be inserted into the 'Where' field in the 'Find in Files' panel. Supports snippet like variables.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "add_word": {
+   "command_type": "text",
+   "doc_string": "Adds the given word to the 'added_words' setting in the user preferences.",
+   "args": [
+    {
+     "name": "word",
+     "doc_string": "The word to be added.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "append": {
+   "command_type": "text",
+   "doc_string": "Appends the given text string to the end of the buffer.",
+   "args": [
+    {
+     "name": "characters",
+     "doc_string": "The string to be appended to the end of the text buffer.",
+     "type": "string"
+    },
+    {
+     "name": "force",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "scroll_to_end",
+     "doc_string": "Whether to scroll to the end of the buffer after appending.",
+     "type": "boolean"
+    },
+    {
+     "name": "disable_tab_translation",
+     "doc_string": "Whether to disable translating tabs to spaces.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "arithmetic": {
+   "command_type": "text",
+   "doc_string": "Evaluates the given expression. If the expression is not provided, it launches a TextInputHandler to gather the expression from the user.",
+   "args": [
+    {
+     "name": "expr",
+     "doc_string": "The expression to evaluate.",
+     "type": "string"
+    }
+   ],
+   "added": 3154,
+   "type": "default",
+   "location": "Default/arithmetic.py"
+  },
+  "auto_complete": {
+   "command_type": "text",
+   "doc_string": "Shows the auto completion popup.",
+   "args": [
+    {
+     "name": "api_completions_only",
+     "doc_string": "Whether to include completions from snippets/completions file in the AC panel.",
+     "type": "boolean"
+    },
+    {
+     "name": "disable_auto_insert",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "next_completion_if_showing",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "auto_complete_commit_on_tab",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "mini",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "default",
+     "doc_string": null,
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "auto_complete_goto_definition": {
+   "command_type": "window",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "symbol",
+     "doc_string": null,
+     "type": "string"
+    }
+   ],
+   "added": 4073,
+   "type": "default",
+   "location": "Default/symbol.py"
+  },
+  "auto_complete_open_link": {
+   "command_type": "text",
+   "doc_string": "Opens the first link in the details pane of the AC panel, when the AC panel is visible.",
+   "added": 4073,
+   "type": "core"
+  },
+  "auto_complete_prev": {
+   "command_type": "text",
+   "doc_string": "Goes to the previous entry in the AC panel, when the AC panel is visible.",
+   "type": "core"
+  },
+  "auto_indent_tag": {
+   "command_type": "text",
+   "doc_string": "Indents HTML & XML like tags.",
+   "type": "default",
+   "location": "Default/auto_indent_tag.py"
+  },
+  "build": {
+   "command_type": "window",
+   "doc_string": "Executes the provided build system or prompt for selection (select: true) and choose a default. build_system should be a resource path to a build system file or the name of a project-specific build system",
+   "args": [
+    {
+     "name": "select",
+     "doc_string": "Whether to prompt for selecting a build system.",
+     "type": "boolean"
+    },
+    {
+     "name": "build_system",
+     "doc_string": "A resource path to a .sublime-build file.",
+     "type": "string"
+    },
+    {
+     "name": "variant",
+     "doc_string": "The name of the variant present in the build system as specified by the 'name' key.",
+     "type": "string"
+    },
+    {
+     "name": "choice_build_system",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "choice_variant",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "cancel": {
+   "command_type": "window",
+   "doc_string": null,
+   "type": "core"
+  },
+  "cancel_build": {
+   "command_type": "window",
+   "doc_string": "Cancels the currently running build.",
+   "type": "core"
+  },
+  "cancel_find": {
+   "command_type": "find",
+   "doc_string": "Cancels the Find panel, closing it.",
+   "added": 4075,
+   "type": "core"
+  },
+  "chain": {
+   "command_type": "window",
+   "doc_string": "Runs a given set of command(s) sequentially, along with their argument(s) if any.",
+   "args": [
+    {
+     "name": "commands",
+     "doc_string": "The list of commands and their respective arguments.",
+     "type": "List[List[string, Dict[string, object]] | Dict[string, object]]"
+    }
+   ],
+   "added": 4103,
+   "type": "core"
+  },
+  "clear_bookmarks": {
+   "command_type": "text",
+   "doc_string": "Remove(s) all bookmark(s) in the current document.",
+   "args": [
+    {
+     "name": "mark",
+     "doc_string": null,
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "clear_fields": {
+   "command_type": "text",
+   "doc_string": "Clears the fields of the currently active snippet.",
+   "type": "core"
+  },
+  "clear_location": {
+   "command_type": "find",
+   "doc_string": "Clears the 'Where' field in the Find in Files panel.",
+   "type": "core"
+  },
+  "clear_missing_recent_projects_and_workspaces": {
+   "command_type": "window",
+   "doc_string": "Clears any deleted projects or workspaces from the session.",
+   "type": "core"
+  },
+  "clear_recent_files": {
+   "command_type": "window",
+   "doc_string": "Clears the list of recently opened files.",
+   "type": "core"
+  },
+  "clear_recent_projects_and_workspaces": {
+   "command_type": "window",
+   "doc_string": "Clears the list of recently opened projects and workspaces.",
+   "type": "core"
+  },
+  "clone_file": {
+   "command_type": "window",
+   "doc_string": "Creates a new view into the file.",
+   "args": [
+    {
+     "name": "add_to_selection",
+     "doc_string": "Whether to add the opened cloned file as a part of the current group's multiselected sheet(s).",
+     "type": "boolean"
+    },
+    {
+     "name": "group",
+     "doc_string": "The group number to open the cloned file to.",
+     "type": "int"
+    },
+    {
+     "name": "index",
+     "doc_string": "The index within the group to open the cloned file to.",
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "close": {
+   "command_type": "window",
+   "doc_string": "Closes the active view.",
+   "type": "core"
+  },
+  "close_all": {
+   "command_type": "window",
+   "doc_string": "Closes all views.",
+   "type": "core"
+  },
+  "close_by_index": {
+   "command_type": "window",
+   "doc_string": "Closes a view of the given group by it's index.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    },
+    {
+     "name": "index",
+     "doc_string": "The index within the target group.",
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "close_deleted_files": {
+   "command_type": "window",
+   "doc_string": "Closes all views into deleted files.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "close_file": {
+   "command_type": "window",
+   "doc_string": "Closes the active file.",
+   "type": "core"
+  },
+  "close_folder_list": {
+   "command_type": "window",
+   "doc_string": "Removes all the folder(s) from the sidebar and hides it.",
+   "type": "core"
+  },
+  "close_others_by_index": {
+   "command_type": "window",
+   "doc_string": "Closes all views of a group but the one identified by group and index.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    },
+    {
+     "name": "index",
+     "doc_string": "The index within the target group.",
+     "type": "int"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "close_pane": {
+   "command_type": "window",
+   "doc_string": "Closes a group, given by its index. A value of -1 indicates the active group.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    }
+   ],
+   "type": "default",
+   "location": "Default/pane.py"
+  },
+  "close_selected": {
+   "command_type": "window",
+   "doc_string": "Closes all selected views in a group.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    },
+    {
+     "name": "index",
+     "doc_string": "The index within the target group.",
+     "type": "int"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "close_tag": {
+   "command_type": "window",
+   "doc_string": "Close an HTML/XML tag.",
+   "args": [
+    {
+     "name": "insert_slash",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "close_to_right_by_index": {
+   "command_type": "window",
+   "doc_string": "Closes all views of a group right of the one identified by index.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    },
+    {
+     "name": "index",
+     "doc_string": "The index within the target group.",
+     "type": "int"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "close_transient": {
+   "command_type": "window",
+   "doc_string": "Closes all transient sheets and views.",
+   "added": 4050,
+   "type": "core"
+  },
+  "close_unmodified": {
+   "command_type": "window",
+   "doc_string": "Closes all unmodified views of a group.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    },
+    {
+     "name": "index",
+     "doc_string": "The index within the target group.",
+     "type": "int"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "close_unmodified_to_right_by_index": {
+   "command_type": "window",
+   "doc_string": "Closes all unmodified views of a group right of the one identified by index.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    },
+    {
+     "name": "index",
+     "doc_string": "The index within the target group.",
+     "type": "int"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "close_unselected": {
+   "command_type": "window",
+   "doc_string": "Closes all unselected views in a group.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    },
+    {
+     "name": "index",
+     "doc_string": "The index within the target group.",
+     "type": "int"
+    }
+   ],
+   "added": 4128,
+   "type": "core"
+  },
+  "close_window": {
+   "command_type": "window",
+   "doc_string": "Closes the active window.",
+   "type": "core"
+  },
+  "close_workspace": {
+   "command_type": "window",
+   "doc_string": "Closes the active workspace.",
+   "type": "core"
+  },
+  "commit_completion": {
+   "command_type": "text",
+   "doc_string": "Inserts the selected completion into the text and closes the AC panel.",
+   "type": "core"
+  },
+  "console_python_version": {
+   "command_type": "window",
+   "doc_string": "Switches the python interpreter version in console input.",
+   "args": [
+    {
+     "name": "version",
+     "doc_string": "The version of the python interpreter. Valid values are '3.3' or '3.8'.",
+     "type": "string"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "context_menu": {
+   "command_type": "window",
+   "doc_string": "Shows the context menu for the current view.",
+   "type": "core"
+  },
+  "convert_color_scheme": {
+   "command_type": "window",
+   "doc_string": "Converts a color scheme from the older '.tmTheme' format to the newer '.sublime-color-scheme' format provided the active view is a '.tmTheme' file.",
+   "args": [
+    {
+     "name": "use_variables",
+     "doc_string": "Indicates how the color values in the '.tmTheme' file has to be transformed. Valid values are 'hsl', 'yes', 'no'.",
+     "type": "string"
+    }
+   ],
+   "type": "default",
+   "location": "Default/convert_color_scheme.py"
+  },
+  "convert_ident_case": {
+   "command_type": "text",
+   "doc_string": "Transforms the target selection(s) based on the specified casing.",
+   "args": [
+    {
+     "name": "case",
+     "doc_string": "The target casing. Valid values are 'upper', 'lower' & 'title'.",
+     "type": "string"
+    },
+    {
+     "name": "first_case",
+     "doc_string": "The casing of the first word. Defaults to the value of the argument 'case', if not specified.",
+     "type": "string"
+    },
+    {
+     "name": "separator",
+     "doc_string": "The string to use to seperate words.",
+     "type": "string"
+    }
+   ],
+   "added": 4128,
+   "type": "default",
+   "location": "Default/transform.py"
+  },
+  "convert_syntax": {
+   "command_type": "window",
+   "doc_string": "Converts a syntax file from the older .tmLanguage format to the newer .sublime-syntax format, provided the active view is a .tmLanguage file.",
+   "added": 3084,
+   "type": "default",
+   "location": "Default/convert_syntax.py"
+  },
+  "copy": {
+   "command_type": "text",
+   "doc_string": "Copies the given selection(s) to the system clipboard.",
+   "type": "core"
+  },
+  "copy_as_html": {
+   "command_type": "text",
+   "doc_string": "Copies the contents of the current view as rich HTML to the system clipboard.",
+   "args": [
+    {
+     "name": "enclosing_tags",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "font_size",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "added": 4091,
+   "type": "core"
+  },
+  "copy_path": {
+   "command_type": "text",
+   "doc_string": "Copies the active view's file name to the clipboard, if the active view represents a file on disk.",
+   "type": "default",
+   "location": "Default/copy_path.py"
+  },
+  "correct_spelling": {
+   "command_type": "text",
+   "doc_string": "Corrects the incorrectly spelled word based on the incorrect word's region and the correction.",
+   "args": [
+    {
+     "name": "begin",
+     "doc_string": "The integer that represents the beginning of the region that spans the incorrect word.",
+     "type": "int"
+    },
+    {
+     "name": "end",
+     "doc_string": "The integer that represents the end of the region that spans the incorrect word.",
+     "type": "int"
+    },
+    {
+     "name": "correction",
+     "doc_string": "The string to be placed as a correction for the incorrect word.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "customize_color_scheme": {
+   "command_type": "window",
+   "doc_string": "Opens a new side by side window layout, with the current color scheme (default version) on the left & the user version on the right side. To make color scheme customization easier.",
+   "type": "default",
+   "location": "Default/ui.py"
+  },
+  "customize_theme": {
+   "command_type": "window",
+   "doc_string": "Opens a new side by side window layout, with the current theme (default version) on the left & the user version on the right side. To make theme customization easier.",
+   "type": "default",
+   "location": "Default/ui.py"
+  },
+  "cut": {
+   "command_type": "text",
+   "doc_string": "Cut(s) the given selection(s) to the system clipboard.",
+   "type": "core"
+  },
+  "decrease_font_size": {
+   "command_type": "application",
+   "doc_string": "Increases the global font size.",
+   "type": "default",
+   "location": "Default/font.py"
+  },
+  "delete_file": {
+   "command_type": "window",
+   "doc_string": "Deletes the given file(s) by moving the file(s) to the system trash/recycle bin.",
+   "args": [
+    {
+     "name": "files",
+     "doc_string": "The absolute path(s) to the given file(s) on disk.",
+     "type": "List[string]"
+    },
+    {
+     "name": "prompt",
+     "doc_string": "Whether to prompt the user to confirm the deletion by showing a dialog box.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "delete_folder": {
+   "command_type": "window",
+   "doc_string": "Deletes the given folder(s) by moving the folder(s) to the system trash bin.",
+   "args": [
+    {
+     "name": "dirs",
+     "doc_string": "The absolute path(s) to the given folder(s) on disk.",
+     "type": "List[str]"
+    },
+    {
+     "name": "prompt",
+     "doc_string": "Whether to prompt the user to confirm the deletion by showing a dialog box.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "delete_to_mark": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/mark.py"
+  },
+  "delete_word": {
+   "command_type": "text",
+   "doc_string": "Deletes the (sub-)word in front of or after each caret.",
+   "args": [
+    {
+     "name": "forward",
+     "doc_string": "Whether the forward (sub-)word should be deleted.",
+     "type": "boolean"
+    },
+    {
+     "name": "sub_words",
+     "doc_string": "Whether to delete subwords.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "detect_indentation": {
+   "command_type": "text",
+   "doc_string": "Guess the indentation settings for the active view from the text content.",
+   "args": [
+    {
+     "name": "show_message",
+     "doc_string": "Whether to show a message in the status bar about the guessed indentation settings.",
+     "type": "boolean"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "drag_select": {
+   "command_type": "text",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "by",
+     "doc_string": "The mode of selection. Valid values are 'words', 'columns' and 'lines'.",
+     "type": "string."
+    },
+    {
+     "name": "event",
+     "doc_string": "An object that consists of the x & y window coordinates & the button detail via the button key.",
+     "type": "object"
+    },
+    {
+     "name": "additive",
+     "doc_string": "Whether to add the selection to the existing selection(s).",
+     "type": "boolean"
+    },
+    {
+     "name": "subtractive",
+     "doc_string": "Whether to remove the existing selection(s) before adding the new selection.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "duplicate_line": {
+   "command_type": "text",
+   "doc_string": "Create a copy of each caret's line.",
+   "type": "core"
+  },
+  "echo": {
+   "command_type": "application",
+   "doc_string": "Prints any given arbitrary argument(s) to the console output.",
+   "type": "default",
+   "location": "Default/echo.py"
+  },
+  "edit_settings": {
+   "command_type": "application",
+   "doc_string": "Opens the default settings file and its user version in a split layout window.",
+   "args": [
+    {
+     "name": "base_file",
+     "doc_string": "A unicode string of the path to the base settings file. Typically this will be in the form: '${packages}/PackageName/Package.sublime-settings'",
+     "type": "string"
+    },
+    {
+     "name": "user_file",
+     "doc_string": "An optional file path to the users editable version of the settings file. If not provided, the filename from 'base_file' argument will be appended to '${packages}/User/'",
+     "type": "string"
+    },
+    {
+     "name": "default",
+     "doc_string": "An optional unicode string of the default contents if the user version of the settings file does not yet exist. Use '$0' to place the cursor.",
+     "type": "string"
+    }
+   ],
+   "type": "default",
+   "location": "Default/settings.py"
+  },
+  "edit_syntax_settings": {
+   "command_type": "window",
+   "doc_string": "Opens the syntax-specific settings file for the currently active view in a split window layout. The left handow window contains the default syntax specific settings & the right handow contains the user syntax specific settings.",
+   "type": "default",
+   "location": "Default/settings.py"
+  },
+  "encode_html_entities": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "HTML",
+   "location": "HTML/encode_html_entities.py"
+  },
+  "exec": {
+   "command_type": "window",
+   "doc_string": "Runs an external process asynchronously. This is the default target option for any build system.",
+   "args": [
+    {
+     "name": "cmd",
+     "doc_string": "The executable to run, plus any arguments to pass to it. Shell constructs such as piping and redirection are not supported.",
+     "type": "List[string]"
+    },
+    {
+     "name": "shell_cmd",
+     "doc_string": "A shell command to execute. Unlike the 'cmd' option, this does allow piping and redirection. Will use bash on Mac and Linux machine and cmd.exe on Windows.",
+     "type": "string"
+    },
+    {
+     "name": "file_regex",
+     "doc_string": "A regular expression to run on the build output to match file information. The matched file information is used to enable result navigation",
+     "type": "string"
+    },
+    {
+     "name": "line_regex",
+     "doc_string": "A regular expression to run on the build output to match line information. The matched file information is used to enable result navigation",
+     "type": "string"
+    },
+    {
+     "name": "working_dir",
+     "doc_string": "The absolute path to the directory where the build process has to be launched. The default value is an empty string, which means that the process will be launched in the active view's directory.",
+     "type": "string"
+    },
+    {
+     "name": "encoding",
+     "doc_string": "The encoding of the build system output. Defaults to 'utf-8'.",
+     "type": "string"
+    },
+    {
+     "name": "env",
+     "doc_string": "Any environment variables to be made available when the build launches.",
+     "type": "object"
+    },
+    {
+     "name": "quiet",
+     "doc_string": "Reduces the amount of output about the build system invocation.",
+     "type": "boolean"
+    },
+    {
+     "name": "kill",
+     "doc_string": "Whether to kill the running process. The default value is 'False'.",
+     "type": "boolean"
+    },
+    {
+     "name": "kill_previous",
+     "doc_string": "Whether to kill the previously running process before starting a new build.",
+     "type": "boolean"
+    },
+    {
+     "name": "update_annotations_only",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "word_wrap",
+     "doc_string": "Whether to apply word wrap on the build output. The default value is 'True'",
+     "type": "boolean"
+    },
+    {
+     "name": "syntax",
+     "doc_string": "The 'Packages/' relative path to a syntax file to be applied on the build output. The default value is 'Packages/Text/Plain text.tmLanguage'.",
+     "type": "string"
+    }
+   ],
+   "type": "default",
+   "location": "Default/exec.py"
+  },
+  "exit": {
+   "command_type": "application",
+   "doc_string": "Closes all windows and exists the application.",
+   "type": "core"
+  },
+  "expand_selection": {
+   "command_type": "text",
+   "doc_string": "Expands the current text caret selection(s) to the specified location.",
+   "args": [
+    {
+     "name": "to",
+     "doc_string": "The entity to expand the caret selection(s) to. Valid values can be 'line', 'scope', 'brackets', 'indentation', 'tag', 'bol', 'hardbol', 'eol', 'hardeol', 'bof', 'eof', 'brackets' and 'smart'.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "expand_selection_to_paragraph": {
+   "command_type": "text",
+   "doc_string": "Expands the current text caret selection(s) to the paragraph(s).",
+   "args": [
+    {
+     "name": "markup_aware",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "expand_snippet": {
+   "command_type": "text",
+   "doc_string": "Expands the snippet under the cursor.",
+   "added": 4050,
+   "type": "core"
+  },
+  "expand_tabs": {
+   "command_type": "text",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "set_translate_tabs",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "whole_buffer",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/indentation.py"
+  },
+  "find_all": {
+   "command_type": "find",
+   "doc_string": "Finds all the tokens which match the find pattern.",
+   "args": [
+    {
+     "name": "close_panel",
+     "doc_string": "Whether to close the Find panel after executing the Find All option. This argument holds good only for the Find & Replace panel.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "find_all_under": {
+   "command_type": "text",
+   "doc_string": "Searches and selects all text matches, which are the same as the selected text or the word under the caret.",
+   "type": "core"
+  },
+  "find_in_folder": {
+   "command_type": "window",
+   "doc_string": "Populates the 'Where' field of 'Find in Files' panel with the given directorie(s).",
+   "args": [
+    {
+     "name": "dirs",
+     "doc_string": "The list of absolute paths to the folders which should be searched.",
+     "type": "List[string]"
+    }
+   ],
+   "type": "default",
+   "location": "Default/side_bar.py"
+  },
+  "find_next": {
+   "command_type": "text",
+   "doc_string": "Jumps to the next occurrence of the text or pattern in the find buffer.",
+   "type": "core"
+  },
+  "find_prev": {
+   "command_type": "text",
+   "doc_string": "Jumps to the previous occurrence of the text or pattern in the find buffer.",
+   "type": "core"
+  },
+  "find_under": {
+   "command_type": "text",
+   "doc_string": "Finds the next occurrence of the current selection or the current word.",
+   "type": "core"
+  },
+  "find_under_expand": {
+   "command_type": "text",
+   "doc_string": "Adds a new selection based on the current selection or expands the selection to the current word.",
+   "type": "core"
+  },
+  "find_under_expand_skip": {
+   "command_type": "text",
+   "doc_string": "Adds a new selection based on the current selection or expands the selection to the current word while removing the current selection.",
+   "type": "core"
+  },
+  "find_under_prev": {
+   "command_type": "text",
+   "doc_string": "Finds the previous occurrence of the current selection or the current word.",
+   "type": "core"
+  },
+  "focus_by_index": {
+   "command_type": "window",
+   "doc_string": "Focus one of multiple selected views in the active group by its index.",
+   "args": [
+    {
+     "name": "index",
+     "doc_string": "The index number of the view to be focussed.",
+     "type": "int"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "focus_group": {
+   "command_type": "window",
+   "doc_string": "Set the focus to a view in an other group.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the group that has to be focused.",
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "focus_neighboring_group": {
+   "command_type": "window",
+   "doc_string": "Focus the neighboring group of the currently focused group.",
+   "args": [
+    {
+     "name": "forward",
+     "doc_string": "Whether the neighboring group should be the next group.",
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/pane.py"
+  },
+  "focus_side_bar": {
+   "command_type": "window",
+   "doc_string": "Focus the sidebar to enable navigation by keyboard.",
+   "type": "core"
+  },
+  "focus_to_left": {
+   "command_type": "window",
+   "doc_string": "Changes the focus to the left sheet (if any) of the current sheet in multi selected sheet(s).",
+   "type": "core",
+   "added": 4097
+  },
+  "focus_to_right": {
+   "command_type": "window",
+   "doc_string": "Changes the focus to the right sheet (if any) of the current sheet in multi selected sheet(s).",
+   "type": "core",
+   "added": 4097
+  },
+  "fold": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/fold.py"
+  },
+  "fold_all": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/fold.py"
+  },
+  "fold_by_level": {
+   "command_type": "text",
+   "doc_string": "Folds all the code at a given indentation level.",
+   "args": [
+    {
+     "name": "level",
+     "doc_string": "The indentation level of the code.",
+     "type": "int"
+    }
+   ],
+   "type": "default",
+   "location": "Default/fold.py"
+  },
+  "fold_tag_attributes": {
+   "command_type": "text",
+   "doc_string": "Fold(s) the html/xml tag attributes.",
+   "type": "core"
+  },
+  "fold_unfold": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/fold.py"
+  },
+  "goto_definition": {
+   "command_type": "window",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "symbol",
+     "doc_string": "The symbol information.",
+     "type": "string"
+    },
+    {
+     "name": "kind",
+     "doc_string": null,
+     "type": "sublime.KindId"
+    },
+    {
+     "name": "side_by_side",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/symbol.py"
+  },
+  "goto_line": {
+   "command_type": "text",
+   "doc_string": "Navigates to the specified line, additionally scrolling the viewport such that the given line is in the middle of the visible viewport.",
+   "args": [
+    {
+     "name": "line",
+     "doc_string": "The line number to navigate to.",
+     "type": "int"
+    }
+   ],
+   "type": "default",
+   "location": "Default/goto_line.py"
+  },
+  "goto_reference": {
+   "command_type": "window",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "symbol",
+     "doc_string": null,
+     "type": "string"
+    }
+   ],
+   "type": "default",
+   "location": "Default/symbol.py"
+  },
+  "goto_symbol_in_project": {
+   "command_type": "window",
+   "doc_string": "Open the Goto Symbol In Project quick panel.",
+   "type": "core"
+  },
+  "hide_auto_complete": {
+   "command_type": "text",
+   "doc_string": "Hides the AC popup, if visible.",
+   "type": "core"
+  },
+  "hide_overlay": {
+   "command_type": "window",
+   "doc_string": "Hides the currently visible overlay.",
+   "type": "core"
+  },
+  "hide_panel": {
+   "command_type": "window",
+   "doc_string": "Hides the currently visible panel.",
+   "args": [
+    {
+     "name": "cancel",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "hide_popup": {
+   "command_type": "text",
+   "doc_string": "Hides the popup window, if visible.",
+   "type": "core"
+  },
+  "hot_exit": {
+   "command_type": "application",
+   "doc_string": "Saves the session and exits the application even if the 'hot_exit' setting is disabled in preferences.",
+   "type": "core"
+  },
+  "html_print": {
+   "command_type": "text",
+   "doc_string": "Saves the current view as a temporary HTML file and sends it to the default browser for printing.",
+   "type": "default",
+   "location": "Default/html_print.py",
+   "added": 4091
+  },
+  "ignore_word": {
+   "command_type": "text",
+   "doc_string": "Adds the given word to the ignored_words setting.",
+   "args": [
+    {
+     "name": "word",
+     "doc_string": "The word to be ignored.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "increase_font_size": {
+   "command_type": "application",
+   "doc_string": "Increases the global font size.",
+   "type": "default",
+   "location": "Default/font.py"
+  },
+  "indent": {
+   "command_type": "text",
+   "doc_string": "Increase the indentation level of the text selection(s).",
+   "type": "core"
+  },
+  "insert": {
+   "command_type": "text",
+   "doc_string": "Insert the specified text into the document at the text caret location(s).",
+   "args": [
+    {
+     "name": "characters",
+     "doc_string": "The string to be inserted.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "insert_snippet": {
+   "command_type": "text",
+   "doc_string": "Insert the specified snippet content into the document at the text caret location(s).",
+   "args": [
+    {
+     "name": "contents",
+     "doc_string": "The snippet as a string to be inserted. Accepts snippet like variables, including built in ones. The backslashes have to be escaped like in case of every JSON string.",
+     "type": "string"
+    },
+    {
+     "name": "name",
+     "doc_string": "Relative path to a .sublime-snippet file, the contents of which will be inserted.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "install_package_control": {
+   "command_type": "application",
+   "doc_string": "Installs Package Control in a freshly installed application.",
+   "type": "default",
+   "location": "Default/install_package_control.py"
+  },
+  "invert_selection": {
+   "command_type": "text",
+   "doc_string": "Inverts the given selection(s) i.e the non selected region(s) are selected & the selected region(s) are removed from the selection.",
+   "added": 3014,
+   "type": "core"
+  },
+  "join_lines": {
+   "command_type": "text",
+   "doc_string": "Joins the current line with the following line.",
+   "type": "core"
+  },
+  "jump_back": {
+   "command_type": "text",
+   "doc_string": "Jumps back to the previous location in the jump history list.",
+   "added": 3014,
+   "type": "default",
+   "location": "Default/history_list.py"
+  },
+  "jump_forward": {
+   "command_type": "text",
+   "doc_string": "Jumps forward to the next location in the jump history list.",
+   "added": 3014,
+   "type": "default",
+   "location": "Default/history_list.py"
+  },
+  "left_delete": {
+   "command_type": "text",
+   "doc_string": "Deletes the character(s) to the left of the text selection caret(s).",
+   "type": "core"
+  },
+  "lower_case": {
+   "command_type": "text",
+   "doc_string": "Converts the word under the cursor(s) to lower case.",
+   "type": "default",
+   "location": "Default/transform.py"
+  },
+  "move": {
+   "command_type": "text",
+   "doc_string": "Moves the selection caret(s) by the specified unit.",
+   "args": [
+    {
+     "name": "by",
+     "doc_string": "The unit name. Valid values are 'chars', 'pages', 'lines', 'characters', 'words', 'word_ends', 'subwords', 'subword_ends' and 'stops'.",
+     "type": "string"
+    },
+    {
+     "name": "empty_line",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "forward",
+     "doc_string": "Whether to move in the forward direction.",
+     "type": "boolean"
+    },
+    {
+     "name": "extend",
+     "doc_string": "Whether to extend the selection as the caret(s) move.",
+     "type": "boolean"
+    },
+    {
+     "name": "lines",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "ignore_auto_complete",
+     "doc_string": "Whether to skip navigating the AC items when the AC is open.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "move_to": {
+   "command_type": "text",
+   "doc_string": "Moves the selection caret(s) to the specified relative location.",
+   "args": [
+    {
+     "name": "to",
+     "doc_string": "The relative location. Valid values are 'eol', 'bol', 'eof', 'bof' and 'brackets'.",
+     "type": "string"
+    },
+    {
+     "name": "extend",
+     "doc_string": "Whether to extend the selection while moving to the specified relative location.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "move_to_group": {
+   "command_type": "window",
+   "doc_string": "Moves the active tab to the specified layout group.",
+   "args": [
+    {
+     "name": "group",
+     "doc_string": "The index of the target group.",
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "move_to_neighboring_group": {
+   "command_type": "window",
+   "doc_string": "Moves the active tab to the neighboring group.",
+   "args": [
+    {
+     "name": "forward",
+     "doc_string": "Whether to move the tab in the forward direction.",
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/pane.py"
+  },
+  "new_build_system": {
+   "command_type": "window",
+   "doc_string": "Creates a new view and populates it with a simple build system boilerplate.",
+   "type": "default",
+   "location": "Default/new_templates.py"
+  },
+  "new_file": {
+   "command_type": "window",
+   "doc_string": "Create a new empty tab in the active window.",
+   "args": [
+    {
+     "name": "syntax",
+     "doc_string": "The syntax to be set for the newly opened tab. Should be a package relative path like 'Packages/Foo/Bar.sublime-syntax'. Currently, 'scope:' prefixed syntax names won't work.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "new_file_at": {
+   "command_type": "window",
+   "doc_string": "Creates a new empty tab in the active window.",
+   "args": [
+    {
+     "name": "dirs",
+     "doc_string": "A list of absolute directory paths were the new tab has to be saved. Only the first value is considered.",
+     "type": "List<string>"
+    }
+   ],
+   "type": "default",
+   "location": "Default/side_bar.py"
+  },
+  "new_folder": {
+   "command_type": "window",
+   "doc_string": "Creates a new folder in the given directory.",
+   "args": [
+    {
+     "name": "dirs",
+     "doc_string": "A list of absolute directory paths. Only the first is considered for creating the new folder.",
+     "type": "List<string>"
+    }
+   ],
+   "type": "default",
+   "location": "Default/side_bar.py"
+  },
+  "new_os_tab": {
+   "command_type": "window",
+   "doc_string": "Creates a new empty window in the os tab.",
+   "added": 4050,
+   "type": "core"
+  },
+  "new_pane": {
+   "command_type": "window",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "move",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/pane.py"
+  },
+  "new_plugin": {
+   "command_type": "window",
+   "doc_string": "Creates a new view and populates it with a simple plugin boilerplate.",
+   "type": "default",
+   "location": "Default/new_templates.py"
+  },
+  "new_snippet": {
+   "command_type": "window",
+   "doc_string": "Creates a new view and populates it with a simple snippet boilerplate.",
+   "type": "default",
+   "location": "Default/new_templates.py"
+  },
+  "new_syntax": {
+   "command_type": "window",
+   "doc_string": "Creates a new view and populates it with a simple syntax boilerplate.",
+   "added": 3084,
+   "type": "default",
+   "location": "Default/new_templates.py"
+  },
+  "new_window": {
+   "command_type": "application",
+   "doc_string": "Opens a new ST window.",
+   "type": "core"
+  },
+  "new_window_for_project": {
+   "command_type": "window",
+   "doc_string": "Clones the project into a new workspace.",
+   "type": "core"
+  },
+  "next_bookmark": {
+   "command_type": "text",
+   "doc_string": "Navigate to the next bookmark in the document.",
+   "type": "core"
+  },
+  "next_field": {
+   "command_type": "text",
+   "doc_string": "Navigate to the next field in the snippet.",
+   "type": "core"
+  },
+  "next_misspelling": {
+   "command_type": "text",
+   "doc_string": "Navigate to the next misspelling in the document.",
+   "type": "core"
+  },
+  "next_modification": {
+   "command_type": "text",
+   "doc_string": "Navigate to the next modification in the document.",
+   "type": "core"
+  },
+  "next_os_tab": {
+   "command_type": "window",
+   "doc_string": "Set the focus to the next window in the os tab.",
+   "added": 4050,
+   "type": "core"
+  },
+  "next_result": {
+   "command_type": "window",
+   "doc_string": "Jump to the next build result.",
+   "type": "core"
+  },
+  "next_view": {
+   "command_type": "window",
+   "doc_string": "Sets the focus to the next view by index.",
+   "type": "core",
+   "args": [
+    {
+     "name": "extend",
+     "doc_string": "Whether to add the next view to the current group's multi selected tabs.",
+     "type": "boolean"
+    }
+   ]
+  },
+  "next_view_in_stack": {
+   "command_type": "window",
+   "doc_string": "Set the focus to the next view in the stack of recent edited view.",
+   "type": "core"
+  },
+  "noop": {
+   "command_type": "window",
+   "doc_string": "A non existent command. Use this if you want to unbind any particular key binding & release it to the OS (ST 4117+).",
+   "type": "core"
+  },
+  "open_containing_folder": {
+   "command_type": "window",
+   "doc_string": "Opens the folder containing the given file in the default OS file manager.",
+   "args": [
+    {
+     "name": "files",
+     "doc_string": "The list of absolute file paths. Only the first value is considered.",
+     "type": "List[string]"
+    }
+   ],
+   "type": "default",
+   "location": "Default/side_bar.py"
+  },
+  "open_context_url": {
+   "command_type": "text",
+   "doc_string": "Opens the url under the mouse click in the default browser.",
+   "type": "default",
+   "location": "Default/open_context_url.py"
+  },
+  "open_dir": {
+   "command_type": "window",
+   "doc_string": "Opens the specified dir in the default file manager application, optionally highlighting the specified file.",
+   "args": [
+    {
+     "name": "dir",
+     "doc_string": "The absolute path to the directory to be opened in the default file manager application.",
+     "type": "string"
+    },
+    {
+     "name": "file",
+     "doc_string": "The name of the file that is to be highlighted when the file manager application is launched, relative to the path of the directory.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "open_file": {
+   "command_type": "window",
+   "doc_string": "Opens the specified file. Will dynamically open resource files from '.sublime-package' archives as read-only, if the specified override file does not exist.",
+   "args": [
+    {
+     "name": "file",
+     "doc_string": "Absolute path to the file to be opened. Also accepts snippet like variables like '$packages' which will be expanded.",
+     "type": "string"
+    },
+    {
+     "name": "contents",
+     "doc_string": "The contents to be put in the file, if the file doesn't exist.",
+     "type": "string"
+    },
+    {
+     "name": "group",
+     "doc_string": "The group to open the file into. The group needs to exist for this argument to work.",
+     "type": "int"
+    },
+    {
+     "name": "add_to_selection",
+     "doc_string": "Whether to add the opened file as a part of the current group's multiselected sheet(s).",
+     "type": "boolean"
+    },
+    {
+     "name": "encoded_position",
+     "doc_string": "Whether to open the file at the given line & column. The line & column information must be specified in the 'file' argument.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "open_file_settings": {
+   "command_type": "window",
+   "doc_string": "Opens the syntax specific setting file based on the syntax of the active view. This is deprecated and only kept for backwards compatibility.",
+   "type": "default",
+   "location": "Default/settings.py"
+  },
+  "open_folder": {
+   "command_type": "window",
+   "doc_string": "Opens the specified folder(s) in the OS file manager.",
+   "args": [
+    {
+     "name": "dirs",
+     "doc_string": "The list of absolute path(s) to the directorie(s) to be opened.",
+     "type": "List[string]"
+    }
+   ],
+   "type": "default",
+   "location": "Default/side_bar.py"
+  },
+  "open_in_browser": {
+   "command_type": "text",
+   "doc_string": "Opens the specified html file in the default browser using the file:// protocol.",
+   "type": "default",
+   "location": "Default/open_in_browser.py"
+  },
+  "open_project_or_workspace": {
+   "command_type": "window",
+   "doc_string": "Opens the specified project or workspace file, in a new window by default.",
+   "args": [
+    {
+     "name": "file",
+     "doc_string": "The absolute path to the project or workspace file.",
+     "type": "string"
+    },
+    {
+     "name": "new_window",
+     "doc_string": "Whether to open the specified project or workspace file in a new window.",
+     "type": "boolean"
+    }
+   ],
+   "added": 4050,
+   "type": "core"
+  },
+  "open_recent_file": {
+   "command_type": "window",
+   "doc_string": "Opens a recently opened file.",
+   "type": "core"
+  },
+  "open_recent_folder": {
+   "command_type": "window",
+   "doc_string": "Opens a recently opened folder.",
+   "args": [
+    {
+     "name": "index",
+     "doc_string": "The index of recent folder to be opened as per the folder_history in the session file.",
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "open_recent_project_or_workspace": {
+   "command_type": "window",
+   "doc_string": "Opens a recently opened project or workspace.",
+   "args": [
+    {
+     "name": "index",
+     "doc_string": "The index of the workspace as per recent_workspaces in the session file.",
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "open_symbol_definition": {
+   "command_type": "window",
+   "doc_string": "Opens the symbol defined in a file. Used internally by the auto_complete_goto_definition command.",
+   "args": [
+    {
+     "name": "path",
+     "doc_string": "The absolute path to the file where the symbol is defined.",
+     "type": "string"
+    },
+    {
+     "name": "new_tab",
+     "doc_string": "Whether to open the file (containing the symbol) in a new tab. The default value is 'False'.",
+     "type": "boolean"
+    },
+    {
+     "name": "hide_popup",
+     "doc_string": "Whether to hide the popup after navigating to the symbol. The default value is 'False'.",
+     "type": "boolean"
+    },
+    {
+     "name": "keep_auto_complete_open",
+     "doc_string": "Whether to preserve the state of the AC window when the view loses focus. The default value is 'False'.",
+     "type": "boolean"
+    },
+    {
+     "name": "add_jump_point",
+     "doc_string": "Whether to add the symbol navigation to the jump history list. The default value is -1, indicating that the navigation is not added.",
+     "type": "int"
+    }
+   ],
+   "added": 4073,
+   "type": "default",
+   "location": "Default/symbol.py"
+  },
+  "open_url": {
+   "command_type": "application",
+   "doc_string": "Opens the web browser to display the URL or the default application associated with the file/folder represented by the URL.",
+   "args": [
+    {
+     "name": "url",
+     "doc_string": "The URL to be opened.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "overwrite": {
+   "command_type": "text",
+   "doc_string": "Overwrites the selection(s) at the caret(s) location(s) with the given characters.",
+   "args": [
+    {
+     "name": "characters",
+     "doc_string": "The characters that will overwrite the selection(s).",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "paste": {
+   "command_type": "text",
+   "doc_string": "Pastes the text on the clipboard at the text selection location(s), replacing the selected text.",
+   "type": "core"
+  },
+  "paste_and_indent": {
+   "command_type": "text",
+   "doc_string": "Pastes the text on the clipboard at the text selection location(s), replacing the selected text, and making the base indentation level match that of the target location(s).",
+   "type": "core"
+  },
+  "paste_from_history": {
+   "command_type": "text",
+   "doc_string": "Opens a custom context menu, showing a maximum of 15 strings copied to clipboard, from which any one can be selected to be pasted at caret location(s).",
+   "type": "default",
+   "location": "Default/paste_from_history.py"
+  },
+  "paste_selection_clipboard": {
+   "command_type": "text",
+   "doc_string": "Linux only.",
+   "type": "core"
+  },
+  "permute_lines": {
+   "command_type": "text",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "operation",
+     "doc_string": null,
+     "type": "string"
+    }
+   ],
+   "type": "default",
+   "location": "Default/sort.py"
+  },
+  "permute_selection": {
+   "command_type": "text",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "operation",
+     "doc_string": null,
+     "type": "string"
+    }
+   ],
+   "type": "default",
+   "location": "Default/sort.py"
+  },
+  "prev_bookmark": {
+   "command_type": "text",
+   "doc_string": "Navigates to the previous bookmark in the document.",
+   "type": "core"
+  },
+  "prev_field": {
+   "command_type": "text",
+   "doc_string": "Navigates to the previous field in the snippet.",
+   "type": "core"
+  },
+  "prev_misspelling": {
+   "command_type": "text",
+   "doc_string": "Navigates to the previous misspelling in the document.",
+   "type": "core"
+  },
+  "prev_modification": {
+   "command_type": "text",
+   "doc_string": "Navigates to the previous modification in the document.",
+   "type": "core"
+  },
+  "prev_os_tab": {
+   "command_type": "window",
+   "doc_string": "Sets the focus to the previous window in the os tab.",
+   "added": 4050,
+   "type": "core"
+  },
+  "prev_result": {
+   "command_type": "window",
+   "doc_string": "Jumps to the previous build result.",
+   "type": "core"
+  },
+  "prev_view": {
+   "command_type": "window",
+   "doc_string": "Sets the focus to the previous view by index.",
+   "args": [
+    {
+     "name": "extend",
+     "doc_string": "Whether to add the previous view to the current group's multiselected sheet(s).",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "prev_view_in_stack": {
+   "command_type": "window",
+   "doc_string": "Sets the focus to the previous view in the stack of recent edited view.",
+   "type": "core"
+  },
+  "primary_j_changed": {
+   "command_type": "window",
+   "doc_string": "Shows a dialog stating about the change of keybindings for the join_lines command.",
+   "type": "default",
+   "location": "Default/keymap.py"
+  },
+  "profile_plugins": {
+   "command_type": "window",
+   "doc_string": "Generates a report on the time taken by each plugin to respond to an event.",
+   "type": "default",
+   "location": "Default/profile.py"
+  },
+  "profile_syntax_definition": {
+   "command_type": "window",
+   "doc_string": "Runs the syntax performance tests on the given view.",
+   "type": "default",
+   "location": "Default/run_syntax_tests.py"
+  },
+  "prompt_add_folder": {
+   "command_type": "window",
+   "doc_string": "Shows the OS native open dialog, so the user can choose what folder they want to add to the sidebar.",
+   "args": [
+    {
+     "name": "initial_directory",
+     "doc_string": "An absolute folder path on disk, where the native dialog will initially open.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "prompt_open": {
+   "command_type": "window",
+   "doc_string": "Shows the MacOS native open dialog, so that the user can choose what file they want to open.",
+   "args": [
+    {
+     "name": "initial_directory",
+     "doc_string": "An absolute folder path on disk, where the native dialog will initially open.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "prompt_open_file": {
+   "command_type": "window",
+   "doc_string": "Shows the OS native open dialog, so that the user can choose what file they want to open.",
+   "args": [
+    {
+     "name": "initial_directory",
+     "doc_string": "An absolute folder path on disk, where the native dialog will initially open.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "prompt_open_folder": {
+   "command_type": "window",
+   "doc_string": "Shows the OS native open dialog, so that the user can choose what folder they want to open.",
+   "args": [
+    {
+     "name": "initial_directory",
+     "doc_string": "An absolute folder path on disk, where the native dialog will initially open.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "prompt_open_project_or_workspace": {
+   "command_type": "window",
+   "doc_string": "Show the OS' native open dialog, so the user can choose what project they want to open.",
+   "args": [
+    {
+     "name": "initial_directory",
+     "doc_string": "An absolute folder path on disk, where the native dialog will initially open.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "prompt_save_as": {
+   "command_type": "window",
+   "doc_string": "Show the OS native save as dialog, so the user can choose the path where they want the file to be saved.",
+   "args": [
+    {
+     "name": "initial_directory",
+     "doc_string": "An absolute folder path on disk, where the native dialog will initially open.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "prompt_select_workspace": {
+   "command_type": "window",
+   "doc_string": "Opens the Quick Switch Project window.",
+   "type": "core"
+  },
+  "prompt_switch_project_or_workspace": {
+   "command_type": "window",
+   "doc_string": "Show the OS native open dialog, so the user can choose what project they want to switch to.",
+   "args": [
+    {
+     "name": "initial_directory",
+     "doc_string": "An absolute folder path on disk, where the native dialog will initially open.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "purchase_license": {
+   "command_type": "application",
+   "doc_string": "Navigates to the url https://www.sublimehq.com/store/text in the default browser to allow a user to purchase a license..",
+   "type": "core"
+  },
+  "quick_panel": {
+   "command_type": "window",
+   "doc_string": "Takes a list of objects with the given keys, caption, command & args. Selecting an option will execute that command with the given arguments.",
+   "args": [
+    {
+     "name": "items",
+     "doc_string": "The list of objects.",
+     "type": "object"
+    }
+   ],
+   "type": "default",
+   "location": "Default/quick_panel.py"
+  },
+  "redo": {
+   "command_type": "text",
+   "doc_string": "Redos the last undo.",
+   "type": "core"
+  },
+  "redo_or_repeat": {
+   "command_type": "text",
+   "doc_string": "Redos the last undo or repeats the last action if there is no undo to revert.",
+   "type": "core"
+  },
+  "refresh_folder_list": {
+   "command_type": "window",
+   "doc_string": "Refreshs the folder list in the sidebar from the filesystem.",
+   "type": "core"
+  },
+  "reindent": {
+   "command_type": "text",
+   "doc_string": "Reindents the line(s) at cursor location(s).",
+   "args": [
+    {
+     "name": "single_line",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "force_indent",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "remove_folder": {
+   "command_type": "window",
+   "doc_string": "Removes the given directorie(s) from the sidebar.",
+   "args": [
+    {
+     "name": "dirs",
+     "doc_string": "The list of directorie(s) to be removed.",
+     "type": "List[string]"
+    }
+   ],
+   "type": "core"
+  },
+  "remove_license": {
+   "command_type": "application",
+   "doc_string": "Removes the license. This will cause Sublime Text/Merge to go into an unregistered state.",
+   "type": "core"
+  },
+  "rename_file": {
+   "command_type": "window",
+   "doc_string": "Renames the file on disk. Uses a TextInputHandler if the 'new_name' argument is not provided.",
+   "args": [
+    {
+     "name": "new_name",
+     "doc_string": "The new name for the file.",
+     "type": "string"
+    }
+   ],
+   "added": 3155,
+   "type": "default",
+   "location": "Default/rename.py"
+  },
+  "rename_path": {
+   "command_type": "window",
+   "doc_string": "Renames the given file(s) on disk.",
+   "args": [
+    {
+     "name": "paths",
+     "doc_string": "A list of absolute file paths to be renamed.",
+     "type": "List[string]"
+    }
+   ],
+   "type": "default",
+   "location": "Default/side_bar.py"
+  },
+  "reopen": {
+   "command_type": "text",
+   "doc_string": "Reopens the file with a given encoding.",
+   "args": [
+    {
+     "name": "encoding",
+     "doc_string": "The encoding to be used when the file is reopened.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "reopen_last_file": {
+   "command_type": "window",
+   "doc_string": "Reopens the most recently closed file.",
+   "type": "core"
+  },
+  "replace_all": {
+   "command_type": "find",
+   "doc_string": "Replaces all tokens in the view, which matches the pattern in the Find input field.",
+   "type": "core"
+  },
+  "replace_completion_with_auto_complete": {
+   "command_type": "text",
+   "doc_string": "Replaces the most recently inserted completion with the next result provided by the auto completion engine.",
+   "type": "core"
+  },
+  "replace_next": {
+   "command_type": "find",
+   "doc_string": "Replaces the next token in the view, which matches the pattern in the Find input field.",
+   "type": "core"
+  },
+  "reset_font_size": {
+   "command_type": "application",
+   "doc_string": "Resets the font size to the default value.",
+   "type": "default",
+   "location": "Default/font.py"
+  },
+  "resize_window": {
+   "command_type": "window",
+   "doc_string": "Resizes the window's external bounds to the specified width and height.",
+   "args": [
+    {
+     "name": "width",
+     "doc_string": "The external width of the window.",
+     "type": "int"
+    },
+    {
+     "name": "height",
+     "doc_string": "The external height of the window.",
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "reveal_in_side_bar": {
+   "command_type": "window",
+   "doc_string": "Reveals the active view's file in the sidebar.",
+   "type": "core"
+  },
+  "reveal_link_source": {
+   "command_type": "window",
+   "doc_string": "Resolves a symlink to expand the folder it represents.",
+   "args": [
+    {
+     "name": "dirs",
+     "doc_string": "The list of symlink directorie(s) to be resolved.",
+     "type": "List[string]"
+    }
+   ],
+   "type": "core"
+  },
+  "revert": {
+   "command_type": "text",
+   "doc_string": "Reloads the file.",
+   "type": "core"
+  },
+  "revert_hunk": {
+   "command_type": "text",
+   "doc_string": "Reverts a diff hunk.",
+   "added": 4053,
+   "type": "core"
+  },
+  "revert_modification": {
+   "command_type": "text",
+   "doc_string": "Reverts a single modification.",
+   "type": "core"
+  },
+  "right_delete": {
+   "command_type": "text",
+   "doc_string": "Deletes the character to the right of the text selection caret(s).",
+   "type": "core"
+  },
+  "rot13": {
+   "command_type": "text",
+   "doc_string": "Uses the Rot13 algorithm to encode the given selection at caret location(s).",
+   "type": "default",
+   "location": "Default/transform.py"
+  },
+  "run_macro": {
+   "command_type": "text",
+   "doc_string": "Runs the last recorded macro.",
+   "type": "core"
+  },
+  "run_macro_file": {
+   "command_type": "text",
+   "doc_string": "Runs a macro saved in a macro file.",
+   "args": [
+    {
+     "name": "file",
+     "doc_string": "The 'Packages/' relative path to the '.sublime-macro' file.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "run_syntax_tests": {
+   "command_type": "window",
+   "doc_string": "Runs all the syntax test(s) associated with a given '.sublime-syntax' or '.tmLanguage' file or a single syntax test file if the active view's file name starts with 'syntax_test'",
+   "args": [
+    {
+     "name": "find_all",
+     "doc_string": "Whether to run the syntax test for all files that begin with 'syntax_test'. The default value is 'False', indicating that the syntax test is run only for the active 'syntax_test' file.",
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/run_syntax_tests.py"
+  },
+  "save": {
+   "command_type": "text",
+   "doc_string": "Saves the active view/document.",
+   "args": [
+    {
+     "name": "async",
+     "doc_string": "Whether to save the file asynchronously.",
+     "type": "boolean"
+    },
+    {
+     "name": "encoding",
+     "doc_string": "The encoding, to save the file as.",
+     "type": "string"
+    },
+    {
+     "name": "quiet",
+     "doc_string": "Whether to suppress dialogs if the file save fails or requires elevated permissions on the host OS.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "save_all": {
+   "command_type": "window",
+   "doc_string": "Save all the open documents in the active window.",
+   "type": "core"
+  },
+  "save_macro": {
+   "command_type": "window",
+   "doc_string": "Save the recorded macro to a file.",
+   "type": "core"
+  },
+  "save_project_and_workspace_as": {
+   "command_type": "window",
+   "doc_string": "Opens the OS dialog window to save the active project.",
+   "type": "core"
+  },
+  "save_workspace_as": {
+   "command_type": "window",
+   "doc_string": "Opens the OS dialog window to save the active workspace.",
+   "type": "core"
+  },
+  "scroll_lines": {
+   "command_type": "text",
+   "doc_string": "Scroll the active view by the specified number of lines. A negative number means to scroll in an upwards direction.",
+   "args": [
+    {
+     "name": "amount",
+     "doc_string": "The specified amount by which the view has to be scrolled.",
+     "type": "float"
+    }
+   ],
+   "type": "core"
+  },
+  "scroll_to_bof": {
+   "command_type": "text",
+   "doc_string": "Scrolls the file to show the beginning of the file.",
+   "type": "default",
+   "location": "Default/scroll.py"
+  },
+  "scroll_to_eof": {
+   "command_type": "text",
+   "doc_string": "Scrolls the file to show the end of the file.",
+   "type": "default",
+   "location": "Default/scroll.py"
+  },
+  "select": {
+   "command_type": "window",
+   "doc_string": null,
+   "added": 4082,
+   "type": "core"
+  },
+  "select_all": {
+   "command_type": "text",
+   "doc_string": "Selects the entire contents of the document.",
+   "type": "core"
+  },
+  "select_all_bookmarks": {
+   "command_type": "text",
+   "doc_string": "Select(s) all the bookmark(s) in the current document.",
+   "type": "core"
+  },
+  "select_bookmark": {
+   "command_type": "text",
+   "doc_string": "Select a specific bookmark (by index) in the current document.",
+   "args": [
+    {
+     "name": "index",
+     "doc_string": null,
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "select_by_index": {
+   "command_type": "window",
+   "doc_string": "Focus a view in the active group based on its index.",
+   "args": [
+    {
+     "name": "index",
+     "doc_string": "The index of the view to focus. The first view will have an index of 0 and so on.",
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "select_color_scheme": {
+   "command_type": "window",
+   "doc_string": "Sets the color scheme. If the arguments are not provided, opens a ListInputHandler for the user to choose.",
+   "args": [
+    {
+     "name": "name",
+     "doc_string": "The package specific path of the color scheme. If the value is 'auto', then a light and a dark variant needs to be specified.",
+     "type": "string"
+    },
+    {
+     "name": "light",
+     "doc_string": "The package specific path of the color scheme that would be applied for OS light mode.",
+     "type": "string"
+    },
+    {
+     "name": "dark",
+     "doc_string": "The package specific path of the color scheme that would be applied for OS dark mode.",
+     "type": "string"
+    }
+   ],
+   "type": "default",
+   "location": "Default/ui.py"
+  },
+  "select_lines": {
+   "command_type": "text",
+   "doc_string": "Adds a new selection (cursor) to the line above or below.",
+   "args": [
+    {
+     "name": "forward",
+     "doc_string": "Whether to add the new selection (cursor) below the line.",
+     "type": "boolean"
+    }
+   ],
+   "type": "core"
+  },
+  "select_theme": {
+   "command_type": "window",
+   "doc_string": "Sets the theme. If the arguments are not provided, opens a ListInputHandler for the user to choose.",
+   "args": [
+    {
+     "name": "name",
+     "doc_string": "The package specific path of the theme. If the value is 'auto', then a light and a dark variant needs to be specified.",
+     "type": "string"
+    },
+    {
+     "name": "light",
+     "doc_string": "The package specific path of the theme that would be applied for OS light mode.",
+     "type": "string"
+    },
+    {
+     "name": "dark",
+     "doc_string": "The package specific path of the theme that would be applied for OS dark mode.",
+     "type": "string"
+    }
+   ],
+   "type": "default",
+   "location": "Default/ui.py"
+  },
+  "select_to_left": {
+   "command_type": "window",
+   "doc_string": "Adds the sheet to the left of the active one to the active groups multiselected sheets.",
+   "type": "core",
+   "added": 4097
+  },
+  "select_to_mark": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/mark.py"
+  },
+  "select_to_right": {
+   "command_type": "window",
+   "doc_string": "Adds the sheet to the right of the active one to the active groups multiselected sheets.",
+   "type": "core",
+   "added": 4097
+  },
+  "set_build_system": {
+   "command_type": "window",
+   "doc_string": "Sets the given build system based on the build file.",
+   "args": [
+    {
+     "name": "file",
+     "doc_string": "Accepts a 'Packages/' relative path to a sublime build file to set as the current build system. An empty string will set it to the 'Automatic' option as seen in 'Tools -> Build System'.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "set_encoding": {
+   "command_type": "text",
+   "doc_string": "Sets the encoding of the currently open view/document.",
+   "args": [
+    {
+     "name": "encoding",
+     "doc_string": "The encoding to be set.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "set_file_type": {
+   "command_type": "text",
+   "doc_string": "Sets the syntax for the active view.",
+   "args": [
+    {
+     "name": "syntax",
+     "doc_string": "The syntax to be set for the active view. Can either be a package relative path like 'Packages/Foo/Bar.sublime-syntax' or 'scope:' prefixed syntax name.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "set_layout": {
+   "command_type": "window",
+   "doc_string": "Sets the layout of the current window based on the structure specified in the args.",
+   "args": [
+    {
+     "name": "cols",
+     "doc_string": null,
+     "type": "List[float]"
+    },
+    {
+     "name": "rows",
+     "doc_string": null,
+     "type": "List[float]"
+    },
+    {
+     "name": "cells",
+     "doc_string": null,
+     "type": "List[List[int]]"
+    }
+   ],
+   "type": "core"
+  },
+  "set_line_ending": {
+   "command_type": "text",
+   "doc_string": "Sets the line endings for the files.",
+   "args": [
+    {
+     "name": "type",
+     "doc_string": "The platform type. Valid values are 'windows', 'unix' & 'cr'.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "set_mark": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/mark.py"
+  },
+  "set_max_columns": {
+   "command_type": "window",
+   "doc_string": "Readjusts the current layout to have atmost, the specified columns.",
+   "args": [
+    {
+     "name": "columns",
+     "doc_string": "The number of columns to restrict the layout to.",
+     "type": "int"
+    }
+   ],
+   "type": "default",
+   "location": "Default/pane.py"
+  },
+  "set_setting": {
+   "command_type": "text",
+   "doc_string": "Modifies a view setting.",
+   "args": [
+    {
+     "name": "setting",
+     "doc_string": "The name of the setting to be modified.",
+     "type": "string"
+    },
+    {
+     "name": "value",
+     "doc_string": "The value of the setting.",
+     "type": "any"
+    }
+   ],
+   "type": "core"
+  },
+  "show_about_window": {
+   "command_type": "application",
+   "doc_string": "Displays the about dialog.",
+   "type": "core"
+  },
+  "show_at_center": {
+   "command_type": "text",
+   "doc_string": "Scrolls the file to show the middle of the active viewport.",
+   "type": "default",
+   "location": "Default/scroll.py"
+  },
+  "show_changelog": {
+   "command_type": "application",
+   "doc_string": "Displays the changelog dialog.",
+   "type": "core"
+  },
+  "show_license_window": {
+   "command_type": "application",
+   "doc_string": "Displays the license dialog. This will only work if you are running an unregistered copy of Sublime Text.",
+   "type": "core"
+  },
+  "show_overlay": {
+   "command_type": "window",
+   "doc_string": "Shows the overlay from the argument.",
+   "args": [
+    {
+     "name": "overlay",
+     "doc_string": "The name of the overlay. Valid values are 'goto' & 'command_palette'.",
+     "type": "string"
+    },
+    {
+     "name": "text",
+     "doc_string": "The initial text to put in the input widget of the overlay when it is invoked.",
+     "type": "string"
+    },
+    {
+     "name": "show_files",
+     "doc_string": "Whether to show files in the overlay. Only makes sense when 'name' is set to 'goto'.",
+     "type": "boolean"
+    },
+    {
+     "name": "command",
+     "doc_string": "The name of the command. Only makes sense when 'overlay' is set to 'command_palette'",
+     "type": "string"
+    },
+    {
+     "name": "args",
+     "doc_string": "Arguments to be passed on to the command, if any.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "show_panel": {
+   "command_type": "window",
+   "doc_string": "Shows the panel from the argument.",
+   "args": [
+    {
+     "name": "panel",
+     "doc_string": "The name of the panel. Valid built in values are 'find', 'incremental_find', 'find_in_files', 'replace', 'console'. Any API created panels can also be opened.",
+     "type": "string"
+    },
+    {
+     "name": "toggle",
+     "doc_string": "Whether to toggle the visibility of said panel.",
+     "type": "boolean"
+    },
+    {
+     "name": "reverse",
+     "doc_string": "Whether to search the buffer for a given find text in a backwards manner.",
+     "type": "boolean"
+    },
+    {
+     "name": "regex",
+     "doc_string": "Whether to activate the 'Regular Expression' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "case_sensitive",
+     "doc_string": "Whether to activate the 'Case sensitive' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "whole_word",
+     "doc_string": "Whether to activate the 'Whole word' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "wrap",
+     "doc_string": "Whether to activate the 'Wrap' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "in_selection",
+     "doc_string": "Whether to activate the 'In selection' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "highlight",
+     "doc_string": "Whether to activate the 'Highlight matches' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "preserve_case",
+     "doc_string": "Whether to activate the 'Preserve Case' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "show_context",
+     "doc_string": "Whether to activate the 'Show Context' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "use_buffer",
+     "doc_string": "Whether to activate the 'Use Buffer' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "use_gitignore",
+     "doc_string": "Whether to activate the 'Use gitignore' option.",
+     "type": "boolean"
+    },
+    {
+     "name": "where",
+     "doc_string": "The text to be populated in the 'Where' field of 'Find in Files' panel. Only makes sense when the 'panel' equals 'find_in_files'.",
+     "type": "string"
+    },
+    {
+     "name": "pattern",
+     "doc_string": "The text to be populated in the 'Find' field.",
+     "type": "string"
+    },
+    {
+     "name": "replace_pattern",
+     "doc_string": "The text to be populated in the 'Replace' field.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "show_progress_window": {
+   "command_type": "application",
+   "doc_string": "Displays the indexing status dialog.",
+   "added": 3128,
+   "type": "core"
+  },
+  "show_scope_name": {
+   "command_type": "text",
+   "doc_string": "Shows the scope name(s) at the given cursor location, additionally giving the user the ability to copy the scope names.",
+   "type": "default",
+   "location": "Default/show_scope_name.py"
+  },
+  "single_selection": {
+   "command_type": "text",
+   "doc_string": "Switches to the first selection.",
+   "type": "core"
+  },
+  "slurp_find_string": {
+   "command_type": "window",
+   "doc_string": "Uses the current selection as the find string.",
+   "type": "core"
+  },
+  "slurp_replace_string": {
+   "command_type": "window",
+   "doc_string": "Uses the current selection as the replacement string.",
+   "type": "core"
+  },
+  "soft_redo": {
+   "command_type": "text",
+   "doc_string": "Redos the last move or action, which has been undone.",
+   "type": "core"
+  },
+  "soft_undo": {
+   "command_type": "text",
+   "doc_string": "Undos the last move or action.",
+   "type": "core"
+  },
+  "sort_lines": {
+   "command_type": "text",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "case_sensitive",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "reverse",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "remove_duplicates",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/sort.py"
+  },
+  "sort_selection": {
+   "command_type": "text",
+   "doc_string": "Sorts the selection(s) in the current buffer.",
+   "args": [
+    {
+     "name": "case_sensitive",
+     "doc_string": "Whether to do a case sensitive sort.",
+     "type": "boolean"
+    },
+    {
+     "name": "reverse",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "remove_duplicates",
+     "doc_string": "Whether to remove any duplicates while sorting.",
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/sort.py"
+  },
+  "split_selection_into_lines": {
+   "command_type": "text",
+   "doc_string": "Splits each selection into individual lines.",
+   "type": "core"
+  },
+  "sublime_merge_blame_file": {
+   "command_type": "window",
+   "doc_string": "Git blame selected file(s) with Sublime Merge.",
+   "args": [
+    {
+     "name": "files",
+     "doc_string": null,
+     "type": "List[string]"
+    }
+   ],
+   "added": 3181,
+   "type": "core"
+  },
+  "sublime_merge_file_history": {
+   "command_type": "window",
+   "doc_string": "Show the history of the selected file(s) in Sublime Merge.",
+   "args": [
+    {
+     "name": "files",
+     "doc_string": null,
+     "type": "List[string]"
+    }
+   ],
+   "added": 3181,
+   "type": "core"
+  },
+  "sublime_merge_folder_history": {
+   "command_type": "window",
+   "doc_string": "Show the history of the selected folder(s) in Sublime Merge.",
+   "args": [
+    {
+     "name": "paths",
+     "doc_string": null,
+     "type": "List[string]"
+    }
+   ],
+   "added": 3181,
+   "type": "core"
+  },
+  "sublime_merge_line_history": {
+   "command_type": "text",
+   "doc_string": "Shows the history of the selected line(s) in Sublime Merge.",
+   "added": 3181,
+   "type": "core"
+  },
+  "sublime_merge_open_repo": {
+   "command_type": "window",
+   "doc_string": "Open the repository of the selected file/folder in Sublime Merge.",
+   "args": [
+    {
+     "names": "paths",
+     "doc_string": null,
+     "type": "List[string]"
+    }
+   ],
+   "added": 3181,
+   "type": "core"
+  },
+  "swap_case": {
+   "command_type": "text",
+   "doc_string": "Convert uppercase characters to lowercase and vice versa.",
+   "type": "default",
+   "location": "Default/transform.py"
+  },
+  "swap_line_down": {
+   "command_type": "text",
+   "doc_string": "Moves each caret(s) line down by one.",
+   "type": "core"
+  },
+  "swap_line_up": {
+   "command_type": "text",
+   "doc_string": "Moves each caret(s) line up by one.",
+   "type": "core"
+  },
+  "swap_with_mark": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/mark.py"
+  },
+  "switch_file": {
+   "command_type": "window",
+   "doc_string": "Switches between files having the same name and the specified extensions, additionally opening the file if it's not already open.",
+   "args": [
+    {
+     "name": "extensions",
+     "doc_string": "The list of allowed extensions.",
+     "type": "List[string]"
+    },
+    {
+     "name": "side_by_side",
+     "doc_string": "Whether to add the file to the group's multiselected sheets while switching.",
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/switch_file.py"
+  },
+  "syntax_definition_compatability": {
+   "command_type": "window",
+   "doc_string": "Checks to see the syntax compatability of the currently active <b>.sublime-syntax</b> file. Any incompatible regex patterns (which doesn't conform to sregex) is shown in an output panel.",
+   "type": "default",
+   "location": "Default/run_syntax_tests.py"
+  },
+  "tab": {
+   "command_type": "text",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "set_translate_tabs",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "whole_buffer",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "default",
+   "location": "Default/indentation.py"
+  },
+  "title_case": {
+   "command_type": "text",
+   "doc_string": "Converts the selection at caret location(s) to title case.",
+   "type": "default",
+   "location": "Default/transform.py"
+  },
+  "toggle_bookmark": {
+   "command_type": "text",
+   "doc_string": "Toggles the bookmarked state for each selection.",
+   "type": "core"
+  },
+  "toggle_case_sensitive": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'Case sensitive' flag in the Find/Replace/Incremental Find/Find in Files panel.",
+   "type": "core"
+  },
+  "toggle_comment": {
+   "command_type": "text",
+   "doc_string": "Toggles the comment for the particular scope based on the metadata file.",
+   "args": [
+    {
+     "name": "block",
+     "doc_string": "Whether the comment to be toggled should be a block comment.",
+     "type": "boolean"
+    },
+    {
+     "name": "variant",
+     "doc_string": "The line/block comment variant to pick from the preferences file. As an example, 'TM_COMMENT_START_2' - variant of 2, 'TM_COMMENT_START_3' - variant of 3 and so on.",
+     "type": "int"
+    }
+   ],
+   "type": "default",
+   "location": "Default/comment.py"
+  },
+  "toggle_distraction_free": {
+   "command_type": "window",
+   "doc_string": "Toggles the distraction free mode.",
+   "type": "core"
+  },
+  "toggle_full_screen": {
+   "command_type": "window",
+   "doc_string": "Toggles whether the current Sublime Text window is in full screen mode.",
+   "type": "core"
+  },
+  "toggle_highlight": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'Highlight matches' flag in the Find/Replace/Incremental Find panel.",
+   "type": "core"
+  },
+  "toggle_in_selection": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'In selection' flag in the Find/Replace/Incremental Find panel.",
+   "type": "core"
+  },
+  "toggle_inline_diff": {
+   "command_type": "text",
+   "doc_string": "Toggles whether the inline diff of the modifications under the cursor location(s) is displayed.",
+   "args": [
+    {
+     "name": "prefer_hide",
+     "doc_string": "Whether to hide the other visible diffs, while showing the ones under the cursor location(s).",
+     "type": "boolean"
+    }
+   ],
+   "added": 3206,
+   "type": "core"
+  },
+  "toggle_menu": {
+   "command_type": "window",
+   "doc_string": "Toggles the visibility of the menu bar.",
+   "type": "core"
+  },
+  "toggle_minimap": {
+   "command_type": "window",
+   "doc_string": "Toggles the visibility of the minimap.",
+   "type": "core"
+  },
+  "toggle_overwrite": {
+   "command_type": "text",
+   "doc_string": "Toggles whether the caret is in insert mode or overwrite mode.",
+   "type": "core"
+  },
+  "toggle_preserve_case": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'Preserve case' flag in the Replace panel.",
+   "type": "core"
+  },
+  "toggle_record_macro": {
+   "command_type": "text",
+   "doc_string": "Start or stop to record a macro.",
+   "type": "core"
+  },
+  "toggle_regex": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'Regular expression' flag in the Find/Replace/Incremental Find/Find in Files panel.",
+   "type": "core"
+  },
+  "toggle_save_all_on_build": {
+   "command_type": "window",
+   "doc_string": "Enables/Disables saving all open files before running a build command.",
+   "type": "core"
+  },
+  "toggle_setting": {
+   "command_type": "text",
+   "doc_string": "Toggles the specified boolean setting.",
+   "args": [
+    {
+     "name": "setting",
+     "doc_string": "The boolean setting to toggle.",
+     "type": "string"
+    }
+   ],
+   "type": "core"
+  },
+  "toggle_show_context": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'Show Context' flag in the Find in Files panel.",
+   "type": "core"
+  },
+  "toggle_show_open_files": {
+   "command_type": "window",
+   "doc_string": "Toggles the visibility of the list of open files in the sidebar.",
+   "type": "core"
+  },
+  "toggle_side_bar": {
+   "command_type": "window",
+   "doc_string": "Toggles the visibility of the side bar.",
+   "type": "core"
+  },
+  "toggle_status_bar": {
+   "command_type": "window",
+   "doc_string": "Toggles the visibility of the status bar.",
+   "type": "core"
+  },
+  "toggle_tabs": {
+   "command_type": "window",
+   "doc_string": "Toggles the visibility of the tabs.",
+   "type": "core"
+  },
+  "toggle_use_buffer": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'Use Buffer' flag in the Find in Files panel.",
+   "type": "core"
+  },
+  "toggle_use_gitignore": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'Use gitignore' flag in the Find in Files panel.",
+   "added": 4072,
+   "type": "core"
+  },
+  "toggle_whole_word": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'Whole word' flag in the Find/Replace/Incremental Find/Find in Files panel.",
+   "type": "core"
+  },
+  "toggle_wrap": {
+   "command_type": "find",
+   "doc_string": "Toggles the 'Wrap' flag in Find/Replace/Incremental Find panel.",
+   "type": "core"
+  },
+  "transformer": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/transform.py"
+  },
+  "transpose": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/transpose.py"
+  },
+  "trim_trailing_white_space": {
+   "command_type": "text",
+   "doc_string": "Deletes trailing whitespace from all lines.",
+   "added": 4050,
+   "type": "core"
+  },
+  "undo": {
+   "command_type": "text",
+   "doc_string": "Undos the last action.",
+   "type": "core"
+  },
+  "unexpand_tabs": {
+   "command_type": "text",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "set_translate_tabs",
+     "doc_string": null,
+     "type": "boolean"
+    },
+    {
+     "name": "whole_buffer",
+     "doc_string": null,
+     "type": "boolean"
+    }
+   ],
+   "type": "core",
+   "location": "Default/indentation.py"
+  },
+  "unfold": {
+   "command_type": "text",
+   "doc_string": "Unfolds all folded region(s) at the given caret location(s).",
+   "type": "default",
+   "location": "Default/fold.py"
+  },
+  "unfold_all": {
+   "command_type": "text",
+   "doc_string": "Unfolds all folded region(s) in the given buffer.",
+   "type": "default",
+   "location": "Default/fold.py"
+  },
+  "unindent": {
+   "command_type": "text",
+   "doc_string": "Unindents the selection at caret location(s) by one level.",
+   "type": "core"
+  },
+  "unselect_others": {
+   "command_type": "window",
+   "doc_string": "Deselects all of the multi selected tabs.",
+   "type": "core",
+   "added": 4097
+  },
+  "unselect_to_left": {
+   "command_type": "window",
+   "doc_string": "Deselects all of the multi selected tabs to the left of the currently focussed tab.",
+   "type": "core",
+   "added": 4097
+  },
+  "unselect_to_right": {
+   "command_type": "window",
+   "doc_string": "Deselects all of the multi selected tabs to the right of the currently focussed tab.",
+   "type": "core",
+   "added": 4097
+  },
+  "update_check": {
+   "command_type": "application",
+   "doc_string": "Opens the update dialog box of Sublime Text.",
+   "type": "core"
+  },
+  "upgrade_license": {
+   "command_type": "application",
+   "doc_string": "Navigates to https://www.sublimehq.com/store/upgrade, where you can upgrade an expired license.",
+   "type": "core"
+  },
+  "upper_case": {
+   "command_type": "text",
+   "doc_string": "Converts the given selection at caret location(s) to upper case.",
+   "type": "default",
+   "location": "Default/transform.py"
+  },
+  "view_resource": {
+   "command_type": "window",
+   "doc_string": "Shows the given resource file in a read only mode (unless the respective package name is present in 'Packages/'). If the resource path is not given via 'name', a ListInputHandler is shown to allow the user to pick a resource file.",
+   "args": [
+    {
+     "name": "name",
+     "doc_string": "The path to the resource file, relative to the package name.",
+     "type": "string"
+    }
+   ],
+   "added": 3154,
+   "type": "default",
+   "location": "Default/ui.py"
+  },
+  "wrap_block": {
+   "command_type": "text",
+   "doc_string": null,
+   "args": [
+    {
+     "name": "begin",
+     "doc_string": null,
+     "type": "string"
+    },
+    {
+     "name": "end",
+     "doc_string": null,
+     "type": "string"
+    }
+   ],
+   "type": "default",
+   "location": "Default/block.py"
+  },
+  "wrap_lines": {
+   "command_type": "text",
+   "doc_string": "Hard wraps all lines at the ruler.",
+   "args": [
+    {
+     "name": "width",
+     "doc_string": "The column at which the lines should be hard wraped.",
+     "type": "int"
+    }
+   ],
+   "type": "core"
+  },
+  "yank": {
+   "command_type": "text",
+   "doc_string": null,
+   "type": "default",
+   "location": "Default/kill_ring.py"
+  }
+ }
+}
