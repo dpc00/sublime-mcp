@@ -36,6 +36,10 @@ is the one remaining env var: `SUBLIME_MCP_BASE`.
 
 Guide (also served by `get_help`): `AGENT_GUIDE.md` (repo root).
 
+Since 1.9.0, 160 tools are generated wrappers for Sublime Text commands
+(`tools/generate_st_command_tools.py`); since 1.10.0, `list_native_windows` and
+`dismiss_native_window` (Windows) work while a native dialog blocks the main thread.
+
 **Coordinates:** sublime-mcp tools are **1-based**. LSP requests (per the
 lsp-control skill) are **0-based** — convert when crossing
 (`lsp_line = st_line - 1`).

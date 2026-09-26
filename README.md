@@ -16,6 +16,15 @@ Seven workflow tools are advertised by default. `discover_tools` searches the
 complete internal catalog of 401 typed Sublime capabilities, and `batch` invokes
 discovered capabilities without flooding the model's initial tool context.
 
+Since 1.9.0, 160 of those tools are generated wrappers named after Sublime Text's
+own commands (`tools/generate_st_command_tools.py`, data in
+`tools/st_commands_metadata.json`); what each was observed to do on a bare
+Sublime Text 4215 is in `tools/st_commands_behavior.json`, and the hand-written
+tools' behaviour is in `tools/st_hand_written_behavior.json`. Since 1.10.0,
+`list_native_windows` and `dismiss_native_window` (Windows) list and dismiss a
+native dialog or menu while it blocks Sublime's main thread. See
+[AGENT_GUIDE.md](AGENT_GUIDE.md).
+
 Agent how-to: [AGENT_GUIDE.md](AGENT_GUIDE.md) (also served live by
 `get_help`). Release history: [CHANGELOG.md](CHANGELOG.md).
 
