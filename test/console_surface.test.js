@@ -15,6 +15,9 @@ test('console capture is reload-safe and does not wrap stdout', async () => {
 
 test('Windows console capture restores user-visible state', async () => {
   const source = await readFile(pluginUrl, 'utf8');
+  assert.match(source, /_visible_console_capture_lock\.acquire\(timeout=10\.0\)/);
+  assert.match(source, /return _capture_console_win\(params\)/);
+  assert.match(source, /_visible_console_capture_lock\.release\(\)/);
   assert.match(source, /previous_panel = snapshot\["panel"\]/);
   assert.match(source, /focus_view\(previous_view\)/);
   assert.match(source, /SetCursorPos\(cursor\.x, cursor\.y\)/);

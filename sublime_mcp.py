@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.11.0"
+__version__ = "1.11.1"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -320,6 +320,7 @@ def _clean_phantom_text(text):
 _CONSOLE_CAPTURE_STATE_KEY = "_sublime_mcp_console_capture_state"
 _CONSOLE_CAPTURE_LIMIT = 10000
 _console_state = None
+_visible_console_capture_lock = threading.Lock()
 
 
 def _closure_value(fn, name):
@@ -934,6 +935,18 @@ def _get_console_full(params):
     return _get_console_win(params)
 
 def _get_console_win(params):
+    # This capture temporarily changes the visible panel, editor focus, and
+    # clipboard. Serialize requests so concurrent captures cannot snapshot
+    # another capture's temporary console panel as the user's prior state.
+    if not _visible_console_capture_lock.acquire(timeout=10.0):
+        return {"error": "another visible-console capture is still in progress"}
+    try:
+        return _capture_console_win(params)
+    finally:
+        _visible_console_capture_lock.release()
+
+
+def _capture_console_win(params):
     """Capture the visible console on Windows and restore user UI state."""
     if sys.platform != "win32":
         return {"error": "get_console_win is Windows-only"}

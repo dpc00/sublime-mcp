@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.1
+
+Bug fix: `get_console_win` (and its `get_console_full`/`get_console(mode='visible'/'auto')` aliases) captures the visible console by temporarily changing the panel, editor focus, cursor position, and clipboard, then restoring them -- all through raw Win32 calls that are not safe to run concurrently. An agent issuing several of these calls at once from separate threads raced on clipboard access and hard-crashed Sublime Text. `_get_console_win` now serializes through a module-level lock (10s timeout, clean error on contention) before entering the capture; `test/console_surface.test.js` checks the lock/release calls are present in source.
+
+Also fixed `server.json`: it declared a `pypi` package with no `repository.subfolder`, so registries building from source (Glama's automated build check, in this case) looked for `pyproject.toml` at the repo root and found nothing -- the real package lives in `packages/python-proxy/`. Added `"subfolder": "packages/python-proxy"`.
+
 ## 1.11.0
 
 `discover_tools` walks a tree of categories: with no arguments it lists the 12 top-level categories, `category="editing"` lists that category's subcategories and `category="editing/lines"` lists the tools in it with their schemas; `query=` still searches all tools. The tree is `tool_tree.json` (built by `tools/build_tool_tree.py`; `test/test_tool_tree.py` checks that every hidden tool is in exactly one leaf).
