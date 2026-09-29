@@ -34,3 +34,7 @@ tests/
 venv/
 campaign_tools/
 .package_skill_test_log.md
+# Campaign scratch notes (working memory, not part of the project)
+.package_skill_baton.md
+.buildview_ghostshell_study.md
+.mcp.json.bak.*
