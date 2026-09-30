@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.11.1"
+__version__ = "1.11.2"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -2774,7 +2774,7 @@ def _edit_file(body):
 def _get_mcp_tools(params):
     """Return the focused tool surface, or the full catalog on request."""
     with _mcp_tools_lock:
-        snapshot = list(_MCP_TOOLS)
+        snapshot = [tool for tool in _MCP_TOOLS if tool[0] not in _DISABLED_TOOLS]
     surface = (params.get("surface", ["default"])[0] if isinstance(params, dict)
                else "default")
     if surface != "all":
@@ -3286,6 +3286,9 @@ class _Handler(BaseHTTPRequestHandler):
         if not _check_auth(self):
             _deny_auth_json(self)
             return
+        if parsed.path in _PLATFORM_UNAVAILABLE_ROUTES:
+            self._json({"error": "'{}' is only available on Windows".format(parsed.path.lstrip("/"))}, 403)
+            return
         params = parse_qs(parsed.query)
         handler = _GET.get(parsed.path)
         if handler:
@@ -3302,6 +3305,9 @@ class _Handler(BaseHTTPRequestHandler):
             return
         parsed = urlparse(self.path)
         tool_name = parsed.path.lstrip("/")
+        if parsed.path in _PLATFORM_UNAVAILABLE_ROUTES:
+            self._json({"error": "'{}' is only available on Windows".format(tool_name)}, 403)
+            return
         if tool_name in _DISABLED_TOOLS:
             self._json(_tool_disabled_error(tool_name), 403)
             return
@@ -3362,7 +3368,19 @@ _AUTH_TOKEN = ""
 # independently -- a check added to only one of them is not a real
 # restriction, confirmed by reading _batch's own tools_by_name lookup,
 # which bypasses _mcp_dispatch entirely.
-_DISABLED_TOOLS = set()
+# Tools that need Win32 and cannot work on any other platform. Off Windows they
+# are gated exactly like a tool named in disabled_tools: not listed, not
+# discoverable, and refused on every call path (tools/call, batch, and the
+# direct GET/POST routes).
+_WINDOWS_ONLY_TOOLS = frozenset({
+    "get_console_full", "get_console_win", "list_native_windows", "dismiss_native_window",
+})
+_WINDOWS_ONLY_ROUTES = frozenset({
+    "/console_full", "/console_win", "/list_native_windows", "/dismiss_native_window",
+})
+_PLATFORM_UNAVAILABLE_TOOLS = _WINDOWS_ONLY_TOOLS if sys.platform != "win32" else frozenset()
+_PLATFORM_UNAVAILABLE_ROUTES = _WINDOWS_ONLY_ROUTES if sys.platform != "win32" else frozenset()
+_DISABLED_TOOLS = set(_PLATFORM_UNAVAILABLE_TOOLS)
 
 
 def _check_auth(handler):
@@ -3387,6 +3405,8 @@ def _deny_auth_json(handler):
 
 
 def _tool_disabled_error(name):
+    if name in _PLATFORM_UNAVAILABLE_TOOLS:
+        return {"error": "tool '{}' is only available on Windows".format(name)}
     return {"error": "tool '{}' is disabled by this server's settings (disabled_tools)".format(name)}
 
 
@@ -3400,7 +3420,7 @@ def _load_ports():
     _BIND_HOST = "0.0.0.0" if settings.get("allow_lan_access", False) else "127.0.0.1"
     _AUTH_TOKEN = str(settings.get("auth_token", "") or "")
     disabled = settings.get("disabled_tools", [])
-    _DISABLED_TOOLS = set(disabled) if isinstance(disabled, list) else set()
+    _DISABLED_TOOLS = (set(disabled) if isinstance(disabled, list) else set()) | _PLATFORM_UNAVAILABLE_TOOLS
 
 _EXTENSION_TEMPLATE = """\
 Place this file in Packages/<YourPackage>/<yourpackage>_mcp_tools.py.
@@ -3578,7 +3598,7 @@ def _discover_by_category(category):
         return {"error": "unknown category {!r}".format(category),
                 "subcategories": sorted(parts[0] + "/" + n for n in node["children"])}
     with _mcp_tools_lock:
-        snapshot = list(_MCP_TOOLS)
+        snapshot = [tool for tool in _MCP_TOOLS if tool[0] not in _DISABLED_TOOLS]
     tools = [d for d in (_tool_definition(n, snapshot) for n in child["tools"]) if d]
     return {"path": category.strip("/"), "description": child["description"],
             "tools": tools, "usage": usage}
@@ -3592,7 +3612,7 @@ def _discover_tools(args):
     limit = max(1, min(int(args.get("limit", 10)), 25))
     terms = [term for term in re.split(r"[^a-z0-9_]+", query) if term]
     with _mcp_tools_lock:
-        snapshot = list(_MCP_TOOLS)
+        snapshot = [tool for tool in _MCP_TOOLS if tool[0] not in _DISABLED_TOOLS]
     ranked = []
     for name, desc, schema, _handler in snapshot:
         if name in _MCP_DEFAULT_TOOL_NAMES:
