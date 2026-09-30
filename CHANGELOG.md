@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.2
+
+Windows-only tools are now gated off on other platforms. `get_console_full`, `get_console_win`, `list_native_windows` and `dismiss_native_window` use Win32 and cannot work on Linux or macOS; until now they were still listed there and only failed when called. Off Windows they are handled like a tool named in `disabled_tools`: not listed by `tools/list` or the tool endpoint, not found by `discover_tools`, and refused with "only available on Windows" on every call path (`tools/call`, `batch`, and the direct GET/POST routes `/console_full`, `/console_win`, `/list_native_windows`, `/dismiss_native_window`). The gate survives a settings reload, and on Windows nothing changes. Found while putting the current plugin into a Linux Sublime Text (WSL). `test/test_platform_gating.py` checks the gate is applied everywhere.
+
 ## 1.11.1
 
 Bug fix: `get_console_win` (and its `get_console_full`/`get_console(mode='visible'/'auto')` aliases) captures the visible console by temporarily changing the panel, editor focus, cursor position, and clipboard, then restoring them -- all through raw Win32 calls that are not safe to run concurrently. An agent issuing several of these calls at once from separate threads raced on clipboard access and hard-crashed Sublime Text. `_get_console_win` now serializes through a module-level lock (10s timeout, clean error on contention) before entering the capture; `test/console_surface.test.js` checks the lock/release calls are present in source.
