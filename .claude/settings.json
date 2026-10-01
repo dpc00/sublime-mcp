@@ -20,7 +20,32 @@
       "Bash(where *)",
       "Bash(python -m py_compile *)",
       "Bash(npm view *)",
-      "Bash(claude mcp list)"
+      "Bash(claude mcp list)",
+      "Bash(*)",
+      "mcp__sublime-mcp__batch",
+      "mcp__sublime-mcp-wsl__batch",
+      "mcp__computer-use-mcp__list_apps",
+      "mcp__computer-use-mcp__get_window_state",
+      "mcp__screenshot__list_windows",
+      "mcp__screenshot__screenshot_window",
+      "mcp__sublime-mcp__get_console",
+      "mcp__sublime-mcp__project_search",
+      "mcp__sublime-mcp-portable__discover_tools",
+      "mcp__sublime-mcp-portable__get_help",
+      "mcp__sublime-mcp-portable__get_active_file",
+      "mcp__sublime-mcp-portable__project_search",
+      "mcp__github__search_issues",
+      "mcp__github__get_issue",
+      "mcp__github__list_issues",
+      "mcp__github__get_file_contents",
+      "mcp__github__list_pull_requests",
+      "mcp__github__get_pull_request",
+      "mcp__github__get_pull_request_comments",
+      "mcp__github__get_pull_request_status",
+      "mcp__github__search_code",
+      "mcp__claude_ai_Gmail__get_message",
+      "mcp__deepwiki__ask_wiki_question",
+      "mcp__deepwiki__read_wiki_structure"
     ]
   }
 }
