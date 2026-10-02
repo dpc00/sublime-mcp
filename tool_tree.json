@@ -1,6 +1,14 @@
 {
  "app": {
   "children": {
+   "coordination": {
+    "description": "Claims that let several agents share one Sublime Text",
+    "tools": [
+     "claim_resource",
+     "list_claims",
+     "release_resource"
+    ]
+   },
    "exit": {
     "description": "Commands that quit Sublime",
     "tools": [

@@ -65,6 +65,7 @@ DESCRIPTIONS = {
     "app": "The Sublime Text application and its windows",
     "app/windows": "Windows, OS tabs and full screen",
     "app/native_dialogs": "Native dialogs and menus that block Sublime",
+    "app/coordination": "Claims that let several agents share one Sublime Text",
     "app/prompts": "Commands that open a file or folder chooser",
     "app/license_and_updates": "License, about, changelog, update check",
     "app/exit": "Commands that quit Sublime",
@@ -161,6 +162,7 @@ put("packages_and_dev/diagnostics", "profile_plugins profile_syntax_definition s
     "syntax_definition_compatability run_syntax_tests diagnostics main_thread_stack")
 put("app/windows", "new_window close_window resize_window")
 put("app/native_dialogs", "list_native_windows dismiss_native_window")
+put("app/coordination", "claim_resource release_resource list_claims")
 put("app/prompts", "prompt_open_file prompt_save_as")
 put("app/license_and_updates", "purchase_license upgrade_license remove_license show_license_window "
     "show_about_window show_changelog update_check")

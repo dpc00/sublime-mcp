@@ -272,6 +272,41 @@
       }
     },
     {
+      "name": "claim_resource",
+      "description": "Announce intent to use a shared Sublime Text singleton (the native input panel, the Control Panel, or any other resource name agents agree on) for a short multi-step sequence, so other agents sharing this Sublime Text instance can avoid colliding with it. Advisory only -- nothing enforces it except callers checking it, the same trust level as every other tool here. Returns {error: 'busy', holder, note, expires_in} if already claimed; call release_resource as soon as the sequence finishes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string",
+            "description": "Name of the shared resource, e.g. 'input_panel' or 'control_panel'."
+          },
+          "holder": {
+            "type": "string",
+            "description": "A short, stable label identifying who is claiming it."
+          },
+          "note": {
+            "type": "string",
+            "description": "What the holder is doing, e.g. 'filling Goto Line'."
+          },
+          "ttl_seconds": {
+            "type": "number",
+            "default": 60,
+            "description": "Auto-expiry; max 600."
+          },
+          "force": {
+            "type": "boolean",
+            "default": false,
+            "description": "Take the claim even if already held (recovery only)."
+          }
+        },
+        "required": [
+          "resource",
+          "holder"
+        ]
+      }
+    },
+    {
       "name": "clear_bookmarks",
       "description": "Clear all bookmarks in the active view.",
       "inputSchema": {
@@ -847,7 +882,7 @@
     },
     {
       "name": "drive_input_panel",
-      "description": "Fill and/or submit or cancel Sublime's currently open input panel (window.show_input_panel), e.g. a package's 'Enter a path...' prompt.\nInput panels have no reachable View through normal APIs and Enter is a native keybinding, not a scriptable insert -- this reaches both, and works even when the panel belongs to a legacy Python 3.3-hosted package in a different plugin_host process, since it drives the panel through Sublime's own built-in commands rather than that package's code.\ntext (optional): replace the panel's current content before acting. action: 'submit' (default, fires on_done) or 'cancel' (fires on_cancel). Errors if no input panel is currently open.",
+      "description": "Fill and/or submit or cancel Sublime's currently open input panel (window.show_input_panel), e.g. a package's 'Enter a path...' prompt.\nInput panels have no reachable View through normal APIs and Enter is a native keybinding, not a scriptable insert -- this reaches both, and works even when the panel belongs to a legacy Python 3.3-hosted package in a different plugin_host process, since it drives the panel through Sublime's own built-in commands rather than that package's code.\ntext (optional): replace the panel's current content before acting. action: 'submit' (default, fires on_done) or 'cancel' (fires on_cancel). Errors if no input panel is currently open.\nIf several agents share this Sublime Text, call claim_resource with resource='input_panel' before opening the panel and release_resource when you are done, so another agent does not take the panel in between.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2045,6 +2080,14 @@
       }
     },
     {
+      "name": "list_claims",
+      "description": "List every currently live (non-expired) resource claim, so an agent can check whether a shared singleton is in use before starting its own multi-step sequence on it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
       "name": "list_native_windows",
       "description": "List the native OS windows, dialogs and menus of this Sublime Text process (Windows only): kind (dialog, menu, editor_window, window), title, hwnd, and for dialogs their buttons and message text. Works while a native dialog has BLOCKED Sublime's main thread (every other tool then times out); the result says whether the main thread is blocked and which tool blocked it.",
       "inputSchema": {
@@ -2971,6 +3014,25 @@
       "inputSchema": {
         "type": "object",
         "properties": {}
+      }
+    },
+    {
+      "name": "release_resource",
+      "description": "Release a claim taken with claim_resource before its TTL expires. Only the current holder (same 'holder' value) can release it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string"
+          },
+          "holder": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource",
+          "holder"
+        ]
       }
     },
     {

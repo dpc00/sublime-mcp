@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.11.2"
+__version__ = "1.12.0"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -212,6 +212,152 @@ def _on_main(fn):
 
 def _active_view():
     return sublime.active_window().active_view()
+
+
+# ── resource claims (multi-agent coordination) ───────────────────────────────
+#
+# Problem: a handful of tools touch a single global, singleton piece of ST UI
+# state across *more than one* HTTP request -- the native input panel
+# (open via some command, then filled/submitted later by drive_input_panel)
+# and the Control Panel view/phantom. Each individual request is already
+# atomic on ST's main thread (sublime.set_timeout callbacks run one at a
+# time, strictly FIFO -- two requests cannot interleave *inside* one
+# dispatch), so most tools need nothing extra. But the *gap* between two
+# separate requests belonging to one logical multi-step task is not atomic:
+# a second, unrelated agent can run an unrelated tool call in that gap and
+# mutate the same singleton out from under the first agent.
+#
+# A lock can't fix this on its own, because the thing that opens the input
+# panel is not necessarily a sublime-mcp tool call at all -- it can be any
+# ST command, from any agent, or a person. There is no reliable hook to
+# acquire a lock "when the panel opens". What *is* reliable: agents can
+# announce intent before starting a multi-step sequence, and check for a
+# live announcement before starting their own. This is a cooperative lease,
+# not an OS-level lock: nothing enforces it except every caller checking it,
+# the same trust model MCP tool calls already have (an agent could call
+# eval_python and do anything anyway). Claims expire on their own after
+# `ttl_seconds` so a crashed or forgetful agent can't wedge the resource
+# forever.
+_CLAIM_DEFAULT_TTL_SECONDS = 60.0
+_CLAIM_MAX_TTL_SECONDS = 600.0
+_claims_lock = threading.Lock()
+_claims = {}  # resource (str) -> {"holder": str, "note": str, "expires": float}
+
+
+def _claims_prune_locked():
+    """Drop expired claims. Caller must hold _claims_lock."""
+    now = time.time()
+    expired = [name for name, claim in _claims.items() if claim["expires"] <= now]
+    for name in expired:
+        del _claims[name]
+
+
+def _claim_resource(body):
+    """Announce that `holder` is about to do a multi-step sequence touching a
+    shared singleton (the input panel, the Control Panel, or any other
+    resource name agents agree on by convention). Other agents should check
+    `list_claims` or expect a `busy` error from `claim_resource` before
+    starting their own sequence on the same resource, and should call
+    `release_resource` as soon as their sequence finishes rather than
+    waiting for the TTL.
+
+    This is advisory, not an OS lock: nothing stops a tool call that never
+    checks claims. It exists so agents sharing one Sublime Text instance
+    through sublime-mcp can coordinate instead of racing silently.
+
+    Body params:
+      resource (required): a short name identifying what's being claimed,
+        e.g. "input_panel" or "control_panel". Free-form, but agents must
+        agree on the name to coordinate -- these two are used by sublime-mcp
+        itself (drive_input_panel's docstring says to claim "input_panel"
+        first) and are good defaults for ST's two native singleton widgets.
+      holder (required): a short, stable label for who is claiming it (e.g.
+        a session or agent id) -- shown to whoever hits the busy error.
+      note (optional): a short human-readable description of what the holder
+        is doing, e.g. "filling Goto Line".
+      ttl_seconds (optional, default 60, max 600): auto-expiry. Keep this
+        close to how long the real sequence actually takes; a long TTL on a
+        claim nobody releases blocks everyone else for that long.
+      force (optional, default false): take the claim even if another
+        holder has it. Only for recovering from a holder that crashed
+        without releasing -- prefer waiting out the TTL when possible.
+    """
+    resource = (body.get("resource") or "").strip()
+    holder = (body.get("holder") or "").strip()
+    if not resource:
+        return {"error": "resource required"}
+    if not holder:
+        return {"error": "holder required"}
+    note = body.get("note") or ""
+    try:
+        ttl = float(body.get("ttl_seconds", _CLAIM_DEFAULT_TTL_SECONDS))
+    except (TypeError, ValueError):
+        return {"error": "ttl_seconds must be a number"}
+    ttl = max(1.0, min(ttl, _CLAIM_MAX_TTL_SECONDS))
+    force = bool(body.get("force", False))
+
+    with _claims_lock:
+        _claims_prune_locked()
+        existing = _claims.get(resource)
+        if existing and not force:
+            return {
+                "error": "busy",
+                "resource": resource,
+                "holder": existing["holder"],
+                "note": existing.get("note", ""),
+                "expires_in": round(existing["expires"] - time.time(), 1),
+            }
+        _claims[resource] = {
+            "holder": holder, "note": note, "expires": time.time() + ttl,
+        }
+    return {"ok": True, "resource": resource, "holder": holder, "ttl_seconds": ttl}
+
+
+def _release_resource(body):
+    """Release a claim taken with claim_resource, before its TTL expires.
+    Only the current holder can release (pass the same `holder` value); a
+    mismatched holder returns an error rather than silently releasing
+    someone else's claim. Releasing an already-expired or unclaimed resource
+    is not an error -- it just confirms nothing is held."""
+    resource = (body.get("resource") or "").strip()
+    holder = (body.get("holder") or "").strip()
+    if not resource:
+        return {"error": "resource required"}
+    if not holder:
+        return {"error": "holder required"}
+    with _claims_lock:
+        _claims_prune_locked()
+        existing = _claims.get(resource)
+        if existing is None:
+            return {"ok": True, "resource": resource, "was_claimed": False}
+        if existing["holder"] != holder:
+            return {
+                "error": "held by a different holder",
+                "resource": resource,
+                "holder": existing["holder"],
+            }
+        del _claims[resource]
+    return {"ok": True, "resource": resource, "was_claimed": True}
+
+
+def _list_claims(body):
+    """List every currently live (non-expired) resource claim. Call this
+    before starting a multi-step sequence on a shared singleton to see
+    whether another agent already has it, as an alternative to just calling
+    claim_resource and handling the busy error."""
+    with _claims_lock:
+        _claims_prune_locked()
+        now = time.time()
+        return {
+            "claims": [
+                {
+                    "resource": resource, "holder": claim["holder"],
+                    "note": claim.get("note", ""),
+                    "expires_in": round(claim["expires"] - now, 1),
+                }
+                for resource, claim in _claims.items()
+            ]
+        }
 
 
 def _command_name_from_class(cls):
@@ -2907,6 +3053,9 @@ _POST = {
     "/run_command": _run_command,
     "/run_build": _run_build,
     "/set_status": _set_status,
+    "/claim_resource": _claim_resource,
+    "/release_resource": _release_resource,
+    "/list_claims": _list_claims,
     "/save_file": _save_file,
     "/save_all": _save_all,
     "/close_file": _close_file,
@@ -4026,6 +4175,34 @@ _MCP_TOOLS = [
          "show_panel": {"type": "boolean", "default": False},
      }, "required": ["pattern"]},
      _project_search),
+    ("claim_resource",
+     "Announce intent to use a shared Sublime Text singleton (the native input panel, the "
+     "Control Panel, or any other resource name agents agree on) for a short multi-step "
+     "sequence, so other agents sharing this Sublime Text instance can avoid colliding with "
+     "it. Advisory only -- nothing enforces it except callers checking it, the same trust "
+     "level as every other tool here. Returns {error: 'busy', holder, note, expires_in} if "
+     "already claimed; call release_resource as soon as the sequence finishes.",
+     {"type": "object", "properties": {
+         "resource": {"type": "string", "description": "Name of the shared resource, e.g. 'input_panel' or 'control_panel'."},
+         "holder": {"type": "string", "description": "A short, stable label identifying who is claiming it."},
+         "note": {"type": "string", "description": "What the holder is doing, e.g. 'filling Goto Line'."},
+         "ttl_seconds": {"type": "number", "default": 60, "description": "Auto-expiry; max 600."},
+         "force": {"type": "boolean", "default": False, "description": "Take the claim even if already held (recovery only)."},
+     }, "required": ["resource", "holder"]},
+     _p("/claim_resource")),
+    ("release_resource",
+     "Release a claim taken with claim_resource before its TTL expires. Only the current "
+     "holder (same 'holder' value) can release it.",
+     {"type": "object", "properties": {
+         "resource": {"type": "string"},
+         "holder": {"type": "string"},
+     }, "required": ["resource", "holder"]},
+     _p("/release_resource")),
+    ("list_claims",
+     "List every currently live (non-expired) resource claim, so an agent can check whether "
+     "a shared singleton is in use before starting its own multi-step sequence on it.",
+     {"type": "object", "properties": {}},
+     _p("/list_claims")),
     # ── no-parameter GET tools ────────────────────────────────────────────────
     ("get_active_file",
      "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name.",
@@ -4452,7 +4629,10 @@ _MCP_TOOLS = [
      "through Sublime's own built-in commands rather than that package's code.\n"
      "text (optional): replace the panel's current content before acting. "
      "action: 'submit' (default, fires on_done) or 'cancel' (fires on_cancel). "
-     "Errors if no input panel is currently open.",
+     "Errors if no input panel is currently open.\n"
+     "If several agents share this Sublime Text, call claim_resource with "
+     "resource='input_panel' before opening the panel and release_resource when "
+     "you are done, so another agent does not take the panel in between.",
      {"type": "object", "properties": {
          "text": {"type": "string"},
          "action": {"type": "string", "default": "submit"},
