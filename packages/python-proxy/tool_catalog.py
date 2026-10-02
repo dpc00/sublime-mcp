@@ -175,6 +175,38 @@ TOOLS = [   {   'name': 'add_directory',
                            'properties': {   'commands': {   'description': 'The list of commands '
                                                                             'and their respective '
                                                                             'arguments.'}}}},
+    {   'name': 'claim_resource',
+        'description': 'Announce intent to use a shared Sublime Text singleton (the native input '
+                       'panel, the Control Panel, or any other resource name agents agree on) for '
+                       'a short multi-step sequence, so other agents sharing this Sublime Text '
+                       'instance can avoid colliding with it. Advisory only -- nothing enforces it '
+                       'except callers checking it, the same trust level as every other tool here. '
+                       "Returns {error: 'busy', holder, note, expires_in} if already claimed; call "
+                       'release_resource as soon as the sequence finishes.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'resource': {   'type': 'string',
+                                                             'description': 'Name of the shared '
+                                                                            'resource, e.g. '
+                                                                            "'input_panel' or "
+                                                                            "'control_panel'."},
+                                             'holder': {   'type': 'string',
+                                                           'description': 'A short, stable label '
+                                                                          'identifying who is '
+                                                                          'claiming it.'},
+                                             'note': {   'type': 'string',
+                                                         'description': 'What the holder is doing, '
+                                                                        "e.g. 'filling Goto "
+                                                                        "Line'."},
+                                             'ttl_seconds': {   'type': 'number',
+                                                                'default': 60,
+                                                                'description': 'Auto-expiry; max '
+                                                                               '600.'},
+                                             'force': {   'type': 'boolean',
+                                                          'default': False,
+                                                          'description': 'Take the claim even if '
+                                                                         'already held (recovery '
+                                                                         'only).'}},
+                           'required': ['resource', 'holder']}},
     {   'name': 'clear_bookmarks',
         'description': 'Clear all bookmarks in the active view.',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -536,7 +568,10 @@ TOOLS = [   {   'name': 'add_directory',
                        "own built-in commands rather than that package's code.\n"
                        "text (optional): replace the panel's current content before acting. "
                        "action: 'submit' (default, fires on_done) or 'cancel' (fires on_cancel). "
-                       'Errors if no input panel is currently open.',
+                       'Errors if no input panel is currently open.\n'
+                       'If several agents share this Sublime Text, call claim_resource with '
+                       "resource='input_panel' before opening the panel and release_resource when "
+                       'you are done, so another agent does not take the panel in between.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'text': {'type': 'string'},
                                              'action': {'type': 'string', 'default': 'submit'}}}},
@@ -1093,6 +1128,11 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Deletes the character(s) to the left of the text selection caret(s). '
                        '(TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
+    {   'name': 'list_claims',
+        'description': 'List every currently live (non-expired) resource claim, so an agent can '
+                       'check whether a shared singleton is in use before starting its own '
+                       'multi-step sequence on it.',
+        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'list_native_windows',
         'description': 'List the native OS windows, dialogs and menus of this Sublime Text process '
                        '(Windows only): kind (dialog, menu, editor_window, window), title, hwnd, '
@@ -1603,6 +1643,13 @@ TOOLS = [   {   'name': 'add_directory',
         'description': "Re-indent the current selection(s) so each line's indentation matches its "
                        'nesting depth.',
         'inputSchema': {'type': 'object', 'properties': {}}},
+    {   'name': 'release_resource',
+        'description': 'Release a claim taken with claim_resource before its TTL expires. Only the '
+                       "current holder (same 'holder' value) can release it.",
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'resource': {'type': 'string'},
+                                             'holder': {'type': 'string'}},
+                           'required': ['resource', 'holder']}},
     {   'name': 'remove_folder',
         'description': 'Remove a folder from the current project by path.',
         'inputSchema': {   'type': 'object',

@@ -14,7 +14,7 @@ to turn a one-time investigation into a small, reusable skill file instead.
 
 Seven workflow tools are advertised by default. `discover_tools` lists a tree of
 categories (`category=`) or searches (`query=`) the
-complete internal catalog of 401 typed Sublime capabilities, and `batch` invokes
+complete internal catalog of 404 typed Sublime capabilities, and `batch` invokes
 discovered capabilities without flooding the model's initial tool context.
 
 Since 1.9.0, 160 of those tools are generated wrappers named after Sublime Text's
