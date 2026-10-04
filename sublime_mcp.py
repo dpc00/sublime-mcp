@@ -1107,8 +1107,18 @@ def _capture_console_win(params):
     kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
 
     foreground = user32.GetForegroundWindow()
+    # Plugins run in a plugin_host child process; the windows belong to its
+    # parent, sublime_text.exe.
+    own_pids = {os.getpid(), os.getppid()}
     _hwnd = [None]
     def _enum(h, _):
+        # Only windows of this Sublime process: another Sublime instance (or any
+        # window titled "Sublime Text") must never receive the synthetic click,
+        # Ctrl+A and Ctrl+C below.
+        pid = ctypes.wintypes.DWORD()
+        user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+        if pid.value not in own_pids or not user32.IsWindowVisible(h):
+            return True
         buf = ctypes.create_unicode_buffer(256)
         user32.GetWindowTextW(h, buf, 256)
         if "Sublime Text" in buf.value:
@@ -1171,12 +1181,54 @@ def _capture_console_win(params):
         snapshot["window"].run_command("show_panel", {"panel": "console"})
         sublime.set_timeout(do_click, 300)
 
+    def own_window_has_focus():
+        """True only if this Sublime's window has the keyboard focus.
+
+        Every synthetic click or key below is global input, so it must never be
+        sent unless our own window is the foreground window; otherwise it would
+        land in whatever window the user is working in (for example a terminal,
+        where Ctrl+C cancels the running command).
+        """
+        return user32.GetForegroundWindow() == hwnd
+
+    def force_focus():
+        # Runs on a worker thread, never on the plugin host's main thread:
+        # ShowWindow/SetForegroundWindow on our own window send a message to
+        # Sublime's UI thread, which can be waiting on that main thread.
+        fg = user32.GetForegroundWindow()
+        fg_thread = user32.GetWindowThreadProcessId(fg, None) if fg else 0
+        my_thread = kernel32.GetCurrentThreadId()
+        attached = bool(fg_thread and fg_thread != my_thread
+                        and user32.AttachThreadInput(my_thread, fg_thread, True))
+        try:
+            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+            user32.BringWindowToTop(hwnd)
+            user32.SwitchToThisWindow(hwnd, True)
+            user32.SetForegroundWindow(hwnd)
+        finally:
+            if attached:
+                user32.AttachThreadInput(my_thread, fg_thread, False)
+
+    def abort_no_focus():
+        result["error"] = ("could not give the Sublime Text window the keyboard focus; "
+                           "no input was sent")
+        restore_ui()
+
     def do_click():
         if cleanup["cancelled"]:
             restore_ui()
             return
+        threading.Thread(target=force_focus, daemon=True).start()
+        sublime.set_timeout(do_click_focused, 250)
+
+    def do_click_focused():
+        if cleanup["cancelled"]:
+            restore_ui()
+            return
+        if not own_window_has_focus():
+            abort_no_focus()
+            return
         INP = _INP()
-        user32.SetForegroundWindow(hwnd)
         user32.SetCursorPos(cx, cy)
         dn = INP(type=0); dn._u.mi.dwFlags = 0x0002
         up = INP(type=0); up._u.mi.dwFlags = 0x0004
@@ -1188,6 +1240,9 @@ def _capture_console_win(params):
         if cleanup["cancelled"]:
             restore_ui()
             return
+        if not own_window_has_focus():
+            abort_no_focus()
+            return
         INP = _INP()
         def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
         def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
@@ -1197,6 +1252,9 @@ def _capture_console_win(params):
     def do_ctrl_c():
         if cleanup["cancelled"]:
             restore_ui()
+            return
+        if not own_window_has_focus():
+            abort_no_focus()
             return
         INP = _INP()
         def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
