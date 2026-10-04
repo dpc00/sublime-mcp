@@ -1110,6 +1110,7 @@ def _capture_console_win(params):
     # Plugins run in a plugin_host child process; the windows belong to its
     # parent, sublime_text.exe.
     own_pids = {os.getpid(), os.getppid()}
+    force_focus_requested = str((params.get("force_focus") or ["0"])[0]).lower() in ("1", "true", "yes")
     _hwnd = [None]
     def _enum(h, _):
         # Only windows of this Sublime process: another Sublime instance (or any
@@ -1155,10 +1156,21 @@ def _capture_console_win(params):
     sentinel = "sublime-mcp-console-copy-{}-{}".format(
         threading.get_ident(), id(snapshot)
     )
+    marker = "[sublime-mcp] console capture marker {}".format(int(time.time() * 1000))
 
     result = {"text": None, "error": None}
     cleanup = {"cancelled": False, "restore_started": False}
     done = threading.Event()
+    trace_path = os.environ.get("SUBLIME_MCP_CAPTURE_TRACE")
+
+    def tr(step):
+        """Debug aid: log each step to the file named in SUBLIME_MCP_CAPTURE_TRACE."""
+        if trace_path:
+            try:
+                with open(trace_path, "a") as f:
+                    f.write("{:.3f} {}\n".format(time.time(), step))
+            except Exception:
+                pass
 
     def _INP():
         class MI(ctypes.Structure):
@@ -1177,7 +1189,12 @@ def _capture_console_win(params):
         if cleanup["cancelled"]:
             restore_ui()
             return
+        # A line only the console can contain: the copied text must include it,
+        # otherwise the copy came from somewhere else (e.g. the editor).
+        print(marker)
+        tr("do_show: set sentinel clipboard")
         sublime.set_clipboard(sentinel)
+        tr("do_show: show console panel")
         snapshot["window"].run_command("show_panel", {"panel": "console"})
         sublime.set_timeout(do_click, 300)
 
@@ -1189,52 +1206,85 @@ def _capture_console_win(params):
         land in whatever window the user is working in (for example a terminal,
         where Ctrl+C cancels the running command).
         """
-        return user32.GetForegroundWindow() == hwnd
+        if user32.GetForegroundWindow() != hwnd:
+            return False
+        # The front window must also be the Sublime window being read, not just
+        # another window of this process (e.g. one holding a terminal tab).
+        # Sublime titles a window "<tab name or file> - Sublime Text".
+        buf = ctypes.create_unicode_buffer(512)
+        user32.GetWindowTextW(hwnd, buf, 512)
+        view = snapshot["view"]
+        name = (view.name() or os.path.basename(view.file_name() or "")) if view else ""
+        name = re.sub(r"^\W+", "", name)  # status glyphs such as a spinner change while we run
+        if not name:
+            # An unsaved tab is titled "untitled" when empty, otherwise by its first line.
+            first_line = view.substr(view.line(0)).strip() if view else ""
+            first_line = re.sub(r"^\W+", "", first_line)[:20]
+            return ("untitled" in buf.value.lower()
+                    or buf.value.strip().lower().startswith("sublime text")
+                    or bool(first_line and first_line in buf.value))
+        return name in buf.value
 
     def force_focus():
         # Runs on a worker thread, never on the plugin host's main thread:
         # ShowWindow/SetForegroundWindow on our own window send a message to
         # Sublime's UI thread, which can be waiting on that main thread.
-        fg = user32.GetForegroundWindow()
-        fg_thread = user32.GetWindowThreadProcessId(fg, None) if fg else 0
-        my_thread = kernel32.GetCurrentThreadId()
-        attached = bool(fg_thread and fg_thread != my_thread
-                        and user32.AttachThreadInput(my_thread, fg_thread, True))
-        try:
-            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-            user32.BringWindowToTop(hwnd)
-            user32.SwitchToThisWindow(hwnd, True)
-            user32.SetForegroundWindow(hwnd)
-        finally:
-            if attached:
-                user32.AttachThreadInput(my_thread, fg_thread, False)
+        #
+        # Only used with force_focus=true. Measured on Windows 11 with portable
+        # Sublime Text builds 4200 and 4215 (12 captures per variant): every way
+        # of raising a background Sublime window sometimes crashes it in
+        # CoreMessaging.dll. Minimize + restore (no AttachThreadInput) gets the
+        # focus most reliably and crashes least (about 1 run in 6); the
+        # AttachThreadInput + BringWindowToTop route crashed 25-67% of runs; the
+        # variants without a real raise never crash but never get the focus.
+        tr("force_focus: minimize + restore")
+        user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+        user32.SetForegroundWindow(hwnd)
 
-    def abort_no_focus():
+    def abort_no_focus(hint=""):
         result["error"] = ("could not give the Sublime Text window the keyboard focus; "
-                           "no input was sent")
+                           "no input was sent" + hint)
         restore_ui()
 
     def do_click():
         if cleanup["cancelled"]:
             restore_ui()
             return
+        if own_window_has_focus():
+            # Already in front (e.g. the user's own Sublime): no focus calls at all.
+            tr("do_click: window already has focus")
+            sublime.set_timeout(do_click_focused, 0)
+            return
+        if not force_focus_requested:
+            # Not in front. Raising another instance's window can crash it, so
+            # that only happens when the caller explicitly asks for it.
+            tr("do_click: window not in front and force_focus not requested")
+            abort_no_focus("; this Sublime window is not in front. Bring it to the front "
+                           "yourself, or pass force_focus=true to raise it (a portable "
+                           "Sublime Text may crash when raised)")
+            return
+        tr("do_click: start focus thread")
         threading.Thread(target=force_focus, daemon=True).start()
-        sublime.set_timeout(do_click_focused, 250)
+        sublime.set_timeout(do_click_focused, 400)
 
     def do_click_focused():
         if cleanup["cancelled"]:
             restore_ui()
             return
         if not own_window_has_focus():
+            tr("do_click_focused: window does not have focus; no input sent")
             abort_no_focus()
             return
         INP = _INP()
+        tr("do_click_focused: cursor + click")
         user32.SetCursorPos(cx, cy)
         dn = INP(type=0); dn._u.mi.dwFlags = 0x0002
         up = INP(type=0); up._u.mi.dwFlags = 0x0004
         user32.SendInput(1, ctypes.byref(dn), ctypes.sizeof(INP))
         user32.SendInput(1, ctypes.byref(up), ctypes.sizeof(INP))
-        sublime.set_timeout(do_ctrl_a, 300)
+        tr("do_click_focused: click sent")
+        sublime.set_timeout(do_ctrl_a, 400)
 
     def do_ctrl_a():
         if cleanup["cancelled"]:
@@ -1246,7 +1296,9 @@ def _capture_console_win(params):
         INP = _INP()
         def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
         def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        tr("do_ctrl_a: keys")
         kd(0x11); kd(0x41); ku(0x41); ku(0x11)
+        tr("do_ctrl_a: keys sent")
         sublime.set_timeout(do_ctrl_c, 250)
 
     def do_ctrl_c():
@@ -1259,7 +1311,9 @@ def _capture_console_win(params):
         INP = _INP()
         def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
         def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
+        tr("do_ctrl_c: keys")
         kd(0x11); kd(0x43); ku(0x43); ku(0x11)
+        tr("do_ctrl_c: keys sent")
         sublime.set_timeout(read_clip, 400)
 
     def read_clip():
@@ -1267,6 +1321,7 @@ def _capture_console_win(params):
             restore_ui()
             return
         CF_UNICODETEXT = 13
+        tr("read_clip: open clipboard")
         if user32.OpenClipboard(0):
             h = user32.GetClipboardData(CF_UNICODETEXT)
             if h:
@@ -1275,6 +1330,9 @@ def _capture_console_win(params):
                     text = ctypes.wstring_at(ptr)
                     if text == sentinel:
                         result["error"] = "console copy did not update the clipboard"
+                    elif marker not in text:
+                        result["error"] = ("the copied text is not the console (it lacks the "
+                                           "capture marker); the console did not have the focus")
                     else:
                         result["text"] = text
                     kernel32.GlobalUnlock(h)
@@ -1285,12 +1343,14 @@ def _capture_console_win(params):
             user32.CloseClipboard()
         else:
             result["error"] = "OpenClipboard failed"
+        tr("read_clip: done")
         restore_ui()
 
     def restore_ui():
         if cleanup["restore_started"]:
             return
         cleanup["restore_started"] = True
+        tr("restore_ui: start")
         # Restore the visible panel before focusing the prior view; panel
         # transitions can otherwise steal focus back from the editor.
         previous_panel = snapshot["panel"]
@@ -1298,17 +1358,22 @@ def _capture_console_win(params):
             snapshot["window"].run_command("show_panel", {"panel": previous_panel})
         else:
             snapshot["window"].run_command("hide_panel")
+        tr("restore_ui: panel restored")
         sublime.set_clipboard(snapshot["clipboard"])
         user32.SetCursorPos(cursor.x, cursor.y)
+        tr("restore_ui: clipboard + cursor restored")
         sublime.set_timeout(restore_focus, 150)
 
     def restore_focus():
+        tr("restore_focus: start")
         previous_view = snapshot["view"]
         if previous_view and previous_view.is_valid():
             snapshot["window"].focus_view(previous_view)
         previous_foreground = snapshot["foreground"]
         if previous_foreground and previous_foreground != hwnd:
+            tr("restore_focus: SetForegroundWindow(previous)")
             user32.SetForegroundWindow(previous_foreground)
+        tr("restore_focus: done")
         done.set()
 
     sublime.set_timeout(do_show, 0)
@@ -4401,10 +4466,13 @@ _MCP_TOOLS = [
      "Read Sublime Text's built-in console. mode='auto' prefers a complete visible-console "
      "capture and falls back to the reload-safe prospective capture; mode='visible' requires "
      "a complete capture; mode='captured' is non-invasive but contains only messages observed "
-     "since capture began. Results include source and complete metadata.",
+     "since capture began. Results include source and complete metadata. The visible capture "
+     "clicks in the console and copies it, so it only runs when this Sublime window is in front; "
+     "force_focus=true raises it first, which can crash a portable Sublime Text.",
      {"type": "object", "properties": {
          "mode": {"type": "string", "enum": ["auto", "visible", "captured"], "default": "auto"},
          "tail": {"type": "integer", "default": 200},
+         "force_focus": {"type": "boolean", "default": False},
      }},
      _g("/console")),
     ("get_console_log",
