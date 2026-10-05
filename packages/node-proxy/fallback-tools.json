@@ -1490,7 +1490,7 @@
     },
     {
       "name": "get_console",
-      "description": "Read Sublime Text's built-in console. mode='auto' prefers a complete visible-console capture and falls back to the reload-safe prospective capture; mode='visible' requires a complete capture; mode='captured' is non-invasive but contains only messages observed since capture began. Results include source and complete metadata.",
+      "description": "Read Sublime Text's built-in console. mode='auto' prefers a complete visible-console capture and falls back to the reload-safe prospective capture; mode='visible' requires a complete capture; mode='captured' is non-invasive but contains only messages observed since capture began. Results include source and complete metadata. The visible capture clicks in the console and copies it, so it only runs when this Sublime window is in front; force_focus=true raises it first, which can crash a portable Sublime Text.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1506,6 +1506,10 @@
           "tail": {
             "type": "integer",
             "default": 200
+          },
+          "force_focus": {
+            "type": "boolean",
+            "default": false
           }
         }
       }
