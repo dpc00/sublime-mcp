@@ -3655,11 +3655,35 @@ _PLATFORM_UNAVAILABLE_ROUTES = _WINDOWS_ONLY_ROUTES if sys.platform != "win32" e
 _DISABLED_TOOLS = set(_PLATFORM_UNAVAILABLE_TOOLS)
 
 
+_LOOPBACK_NAMES = frozenset({"localhost", "127.0.0.1", "[::1]", "::1"})
+
+
+def _host_name(value):
+    value = value.strip().lower()
+    if value.startswith("["):
+        return value.split("]")[0] + "]"
+    return value.split(":")[0]
+
+
+def _is_loopback_request(handler):
+    origin = handler.headers.get("Origin")
+    if origin is not None:
+        if origin == "null" or _host_name(origin.split("://", 1)[-1]) not in _LOOPBACK_NAMES:
+            return False
+    if _BIND_HOST == "127.0.0.1":
+        host = handler.headers.get("Host")
+        if host is not None and _host_name(host) not in _LOOPBACK_NAMES:
+            return False  # DNS rebinding
+    return True
+
+
 def _check_auth(handler):
-    """True if this request may proceed. Always True when auth_token is
-    unset (default) -- opt-in only, see _AUTH_TOKEN above."""
+    """True if this request may proceed. Without an auth_token (default) only
+    browser-borne requests are refused: a webpage can POST text/plain JSON to
+    127.0.0.1 without a CORS preflight, so an Origin or Host header naming
+    anything but loopback is rejected. CLI/desktop MCP clients send no Origin."""
     if not _AUTH_TOKEN:
-        return True
+        return _is_loopback_request(handler)
     got = handler.headers.get("Authorization", "")
     if got.startswith("Bearer "):
         got = got[7:]
