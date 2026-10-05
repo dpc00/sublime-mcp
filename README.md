@@ -117,27 +117,22 @@ Restart Sublime Text after linking so the plugin loads.
 
 ### 2. Configure your agent
 
-**Node:**
-```bash
-cd packages/node-proxy
-npm install .
-npx sublime-mcp
-```
-
-**Python:**
-```bash
-cd packages/python-proxy
-pip install .
-sublime-mcp
-```
-
-For Codex, use its native streamable-HTTP configuration; no `mcp-remote`
-wrapper is required:
+Point your agent straight at the server the plugin starts inside Sublime Text.
+No helper program is needed. Use the streamable-HTTP URL if your client
+supports it (Codex example; no `mcp-remote` wrapper is required):
 
 ```toml
 [mcp_servers.sublime-mcp]
 type = "http"
 url = "http://127.0.0.1:9502/mcp"
+```
+
+**Optional proxies.** Only for clients that cannot connect to a URL directly,
+a small Node or Python proxy can sit in between:
+
+```bash
+cd packages/node-proxy && npm install . && npx sublime-mcp      # Node
+cd packages/python-proxy && pip install . && sublime-mcp        # Python
 ```
 
 Restart or open a new Codex session after changing MCP configuration. Verify
