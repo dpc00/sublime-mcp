@@ -847,12 +847,17 @@ TOOLS = [   {   'name': 'add_directory',
                        'visible-console capture and falls back to the reload-safe prospective '
                        "capture; mode='visible' requires a complete capture; mode='captured' is "
                        'non-invasive but contains only messages observed since capture began. '
-                       'Results include source and complete metadata.',
+                       'Results include source and complete metadata. The visible capture clicks '
+                       'in the console and copies it, so it only runs when this Sublime window is '
+                       'in front; force_focus=true raises it first, which can crash a portable '
+                       'Sublime Text.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'mode': {   'type': 'string',
                                                          'enum': ['auto', 'visible', 'captured'],
                                                          'default': 'auto'},
-                                             'tail': {'type': 'integer', 'default': 200}}}},
+                                             'tail': {'type': 'integer', 'default': 200},
+                                             'force_focus': {   'type': 'boolean',
+                                                                'default': False}}}},
     {   'name': 'get_console_full',
         'description': 'Compatibility alias for a complete visible-console capture.\n'
                        "Currently supported on Windows; prefer get_console(mode='visible').",
