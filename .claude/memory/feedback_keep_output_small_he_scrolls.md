@@ -12,4 +12,4 @@ Donald said he scrolls a lot "to put everything in view or to read your oversize
 
 **Why:** big tool outputs (whole PATH dumps, JSON blobs, full console logs, long file listings) and long answers push the tab up and make him hunt for the command line.
 
-**How to apply:** cap every tool output (`| head`, `| tail`, `cut -c`, `--jq` filters, grep the one line); never print environment/PATH/secrets; read big files in slices; keep replies to a few short lines; put detail in a file, not the chat. Related: [[feedback_plain_short_answers_no_menus]], [[feedback_ghostshell_follow_patch]] (see [[project_ghostshell_follow_patch_2026_10_03]]).
+**How to apply:** cap every tool output (`| head`, `| tail`, `cut -c`, `--jq` filters, grep the one line); never print environment/PATH/secrets; read big files in slices; keep replies to a few short lines; put detail in a file, not the chat. Related: [[feedback_plain_short_answers_no_menus]], feedback_ghostshell_follow_patch (note not found; see project_ghostshell_follow_patch_2026_10_03 in the GhostShell repo) (see [[project_ghostshell_follow_patch_2026_10_03]]).

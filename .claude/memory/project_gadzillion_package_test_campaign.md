@@ -35,8 +35,8 @@ clear_chat) that introspection alone never surfaces.
 
 Log lives at `C:\Users\donal\projects\sublime-mcp\.package_skill_test_log.md`
 (gitignored, not committed -- a working log, not a deliverable). Skills
-generated go to `~/.claude/skills/<package>-control/SKILL.md` as they're
-verified. A CronCreate job (session-scoped, dies if the session/terminal
+were meant to go to `~/.claude/skills/<package>-control/SKILL.md` as they're
+verified [CHECK 2026-10-05: that folder holds only three, `debugger-control`, `lsp-control` and `openuri-control`, so most packages tested in this campaign never got a skill file; this note is the historical 2026-09-09 plan, and the later audit campaign works differently]. A CronCreate job (session-scoped, dies if the session/terminal
 closes, auto-expires after 7 days per the platform's own limit) was set
 up to continue picking 2-3 new random packages daily -- but cron jobs in
 this harness are NOT durable across session restarts, so if a new
@@ -106,8 +106,8 @@ GhostShell's own `ai_terminal` panel is meant to replace -- verified
 live (real spawned `cmd.exe`, real PTY write/read round-trip via
 `terminus_send_string`). Confirmed working correctly. Worth remembering
 for [[project_ghostshell_secrets_hardening]] or any future GhostShell/
-ai_terminal comparison work: Terminus panels are Sublime *output
-panels*, not regular views, so sublime-mcp's `get_view_content`/
+ai_terminal comparison work: Terminus terminals opened as a panel are Sublime *output
+panels*, not regular views (Terminus can also open them as tabs; this was the panel case), so sublime-mcp's `get_view_content`/
 `run_command` name-targeting (even post-1.7.4) can't reach them --
 needs `eval_python` + `window.find_output_panel(name)` directly. A
 `get_panel_content`-style tool would be a real, useful sublime-mcp

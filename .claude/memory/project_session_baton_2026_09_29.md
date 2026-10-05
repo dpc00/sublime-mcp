@@ -12,4 +12,4 @@ Donald relaunched Claude after a DOS-level logout/login because the claude.ai Gm
 
 **Why:** he asked for a comprehensive baton before relaunch; also an email "is making a request" that I could not read.
 
-**How to apply:** read that section first; retry Gmail (or ask him to paste the email) before continuing the campaign; say the overall campaign count (~716), not just the queue-v2 position ([[project-campaign-queue-order-flaw]], [[where-campaign-records-live]]).
+**How to apply:** read that section first; retry Gmail (or ask him to paste the email) before continuing the campaign; say the overall campaign count (~716), not just the queue-v2 position ([[project-campaign-queue-order-flaw]], [[reference_where_campaign_records_live]]).
