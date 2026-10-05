@@ -1,20 +1,14 @@
-﻿---
+---
 name: qwen-pr-10720-followup
-description: "QwenLM/qwen-code PR #10720 (Ctrl+C exit warning) - conflict fixed 2026-10-04; reviewer's change and tests still open"
+description: "CLOSED 2026-10-05 at Donald's request: he wants Qwen out of his life; PR #10720 closed, CLI removed, working copy recycled. Do not work on Qwen or mention it in checks"
 metadata:
-  node_type: memory
   type: project
-  originSessionId: fcb54aa2-1c5d-45af-9d39-81632204ff55
-  modified: 2026-10-04T22:20:10.490Z
 ---
 
-PR https://github.com/QwenLM/qwen-code/pull/10720 (fork dpc00/qwen-code, branch fix/ctrl-c-exit-warning-overflow). 2026-10-04: I replayed the 2 commits onto latest upstream (only Footer.tsx conflicted: kept upstream's executionSandbox block plus our statusRowCount check) and force-pushed with Donald's OK; now MERGEABLE, head 3bb93ee. Working copy: C:\Users\donal\tools\qwen_pr (partial clone, branch fix-rebased).
+**Final state (2026-10-05):** Donald said "I want to get rid of qwen from my life" and approved "all of it". Done that day: PR https://github.com/QwenLM/qwen-code/pull/10720 closed with a short note ("I will not be continuing work on it. Thank you for the reviews, and sorry for the noise."); global npm `@qwen-code/qwen-code` 0.23.0 uninstalled; the standalone install `%LOCALAPPDATA%\qwen-code` and the working copy `C:\Users\donal\tools\qwen_pr` (288 MB) sent to the Recycle Bin; the half-hour check no longer looks at Qwen.
 
-**Still open:** (1) DONE 2026-10-04 (commit 3e32d8d, shared helper statusLineWrappedRows; untested); (2) tests never run (needs full npm install, hundreds of MB, ask first); (3) check the 10 GitHub CI checks. My stray comment "C:/Program Files/Git/review" is on the PR (mangled /review, see [[feedback_git_bash_slash_args_mangled]]).
+**Why:** the qwen-code review bot (qwen3.8-max) kept producing new findings every round (round 3 on 2026-10-05 had 10, two critical, among them 8 `Footer.test.tsx` tests broken by my untested commit 3e32d8d), Donald found the volume overwhelming, and fixing needed a full npm install of hundreds of MB.
 
-**Why:** Donald forgets things I do not tell him plainly and in sequence; he said "if you do things that way, I will forget".
+**Not removed (he did not list them, so ask before touching):** the config/history folder `C:\Users\donal\.qwen`, the fork `dpc00/qwen-code` on GitHub, and the Qwen mentions in older notes. Earlier history: conflict fixed 2026-10-04 by rebase and force-push, which the repo bot objected to ([[feedback_git_bash_slash_args_mangled]] for the mangled `/review` comment).
 
-**How to apply:** at each half-hour check, report this PR's state in one sentence until it is merged or closed. See [[reference_gh_status_board]].
-
-
-**Rule learned 2026-10-04:** qwen-code's bot objects to rebase/force-push on an active PR (invalidates review comments; bots squash on merge). My force-push triggered the reminder. Only add normal commits to this PR; to resolve future conflicts merge upstream into the branch instead of rebasing. CI checks after the push: mostly pass/skipping, delay-automatic-review pending.
+**How to apply:** never reopen the PR, never reinstall Qwen, never mention it in progress reports; if Qwen mail arrives, ignore it. See [[feedback_dont_hand_technical_decisions_to_donald]] and [[feedback_no_retests_no_big_downloads]].

@@ -95,8 +95,11 @@ Dated notes from long agent sessions. Check a note's date and whether the situat
 - [Never use Bash](feedback_never_use_bash_tool.md) — 2026-10-03 hard rule; calls shown on screen hurt to read; use…
 - [Keep output small, he scrolls](feedback_keep_output_small_he_scrolls.md) — cap tool output and replies; his scrolling explains the small…
 - [update_check needs a licence](reference_update_check_needs_license.md) — forum+staff: ignored when UNREGISTERED; close 4200's Update window with updatecloser.ps1
-- [Qwen PR 10720 follow-up](project_qwen_pr_10720_followup.md) — conflict fixed 2026-10-04; reviewer's duplicate-row-count change, tests, CI still open; report each check until merged
+- [Audit PAUSED until kaste replies](project_package_audit_paused_until_kaste.md) — 2026-10-05 he quit the audit; no installs/tests/issues; check only watches for kaste's forum reply
+- [Qwen: CLOSED, removed](project_qwen_pr_10720_followup.md) — 2026-10-05 he wants Qwen out of his life: PR closed, CLI + working copy gone; never mention or reopen
 - [ccstatusline-editor promotion](project_ccstatusline_editor_promotion.md) — topics added + Discussions #656 posted 2026-10-04; Reddit/forums/Discord/Show HN left for Donald to paste
 - [Name the package; screenshot after every command](feedback_name_package_and_screenshot_after_each_command.md) — 2026-10-05: say 'Testing: X' first; look at the window after each command; name and fix any panel/dialog
 - [feedback_no_portable_sublime](feedback_no_portable_sublime.md)
+- [His keyboard activity = permission prompts](feedback_keyboard_activity_is_permission_prompts.md) — 2026-10-05: don't hold back focus steps on an idle check; he said don't let that stop you
+- [npm install needs its own package.json](feedback_npm_install_needs_own_package_json.md) — 2026-10-05: install in an empty tools folder went to the home folder and pruned the node proxy's deps; repaired
 - [Write notes into the applicable repo](feedback_write_notes_into_the_applicable_repo.md) — 2026-10-05: each note goes in its repo's .claude/memory (sublime-mcp, GhostShell, AgentIDE) with an index line; global copy optional
