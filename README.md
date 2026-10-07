@@ -76,9 +76,13 @@ following are keys in `MCP Commander.sublime-settings`:
   to remove the two tools with the broadest reach while keeping the rest
   of the server usable.
 
-There is no cross-origin access at all: the real tool-call endpoints send
-no `Access-Control-Allow-Origin` header, so a webpage's JavaScript running
-in a browser cannot reach them even if it's running on the same machine.
+Browsers are kept out in two ways. The real tool-call endpoints send no
+`Access-Control-Allow-Origin` header, and, because a missing CORS header does
+not stop a request from being sent, with no `auth_token` and the default
+loopback bind they also refuse any request whose `Origin` or `Host` header
+names something other than loopback (including `Origin: null`). Command-line and desktop MCP clients send no `Origin` and are
+not affected. This does not protect against another process on the same
+machine: set `auth_token` for that.
 
 ## Installation
 
