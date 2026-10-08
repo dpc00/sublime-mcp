@@ -7,7 +7,9 @@ Seven workflow tools are shown by default; the complete typed catalog (404
 tools) remains available through `discover_tools` and `batch`. Prefer a named capability over
 `run_command`, which often opens UI that steals focus from the agent chat.
 
-On the first Sublime operation, call `get_help` once.
+On the first Sublime operation, call `get_help` once. The guide is long (about 16 KB):
+`get_help(section="console")` returns only the sections whose heading contains that word, and
+every `get_help` result lists the section headings.
 
 ST tools use **1-based** line/column (`get_active_file`, `open_file`,
 `goto_line`, `replace_lines`). lsp-mcp uses **0-based**. Subtract 1 when
@@ -173,7 +175,7 @@ drive_input_panel(text="Terminus", action="submit")   # fill and submit/cancel a
 - `context_menu` opens a native menu that blocks the main thread; see the next
   section.
 
-## Removing packages, deleting files, reading the console, making folders
+## Removing packages, making folders, saving to disk
 
 Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
 
@@ -184,6 +186,15 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   type the package name to filter the list and check the highlighted entry before
   confirming. A list opened right after a removal is stale until the status bar
   says "Package X successfully removed".
+- **Make a folder:** there is no tool that creates a folder at a path.
+  `run_command(command="new_folder", args={"dirs": ["<parent>"]})` then
+  `drive_input_panel(text="<name>", action="submit")` does it. `str_replace_based_edit_tool`
+  `create` does not create missing folders.
+- **Files reach the disk only after `save_file`** (or `save_all`); `create` alone leaves an
+  unsaved tab.
+
+## Deleting files and folders
+
 - **Delete files and folders:** pass `files` to `delete_file` and `dirs` (a list) to
   `delete_folder`; any other argument name, such as `path`, is dropped and the call still
   returns ok without deleting. Check the disk afterwards. As with the Side Bar menu, the
@@ -192,39 +203,17 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   item, block the main thread until it is answered, and can stall at "99% complete".
   Use `list_native_windows`, then answer each dialog. `dismiss_native_window` does
   not see the Windows progress window.
-- **Make a folder:** there is no tool that creates a folder at a path.
-  `run_command(command="new_folder", args={"dirs": ["<parent>"]})` then
-  `drive_input_panel(text="<name>", action="submit")` does it. `str_replace_based_edit_tool`
-  `create` does not create missing folders.
-- **Files reach the disk only after `save_file`** (or `save_all`); `create` alone leaves an
-  unsaved tab.
+- **Tabs of deleted files:** if files vanish while they are open (for example because a package
+  folder was removed), closing each tab raises a "Save Deleted File?" dialog; answer No.
+
+## Reading the console
+
 - **Read the console:** `get_console` with the default mode, and `mode="captured"`, can miss
   Sublime's own output (load errors such as a plugin's SyntaxError). `mode="visible"`
   returns the console (the last 200 lines by default; `tail=N` for N lines, `tail=0` for all, and
   the result says `lines_total` and `truncated`) but needs the window in front. If the window
   is not in front it fails at once with a clear message and changes nothing. Then open the
   panel with `run_command(command="show_panel", args={"panel": "console"})` and read the screen.
-- **`run_command` returns `{"ok": true}` even when the command does not exist** or the
-  package that provides it did not load. Check for a visible effect.
-- **A "main-thread timeout" says what it found.** On Windows the message now lists the native
-  dialog, menu or window that is open ("A native window blocks Sublime's main thread ...:
-  "Delete File" (dialog)"), or says that none is open and the main thread is busy, for example
-  while a large package loads or installs, or right after the `exit` command. Answer a dialog with
-  `dismiss_native_window`; for a busy thread call again in a few seconds. Off Windows the message
-  can only say a dialog may be blocking. (Before this change every timeout blamed a dialog.)
-  The tool may still have worked: a `create` or `save_file` that timed out while a package was
-  installing had in fact gone through, so check the state before repeating it.
-- **Tabs of deleted files:** if files vanish while they are open (for example because a package
-  folder was removed), closing each tab raises a "Save Deleted File?" dialog; answer No.
-- **Language-server wrappers (`LSP-*`) installed during a session** start their server only
-  after Sublime restarts, and many need a separate syntax package and a Node or binary
-  download, so the status can read "(installing...)" for minutes.
-- **Installs can take minutes, and the status text does not tell you when they end.** Large
-  packages (SublimeCodeIntel has hundreds of files) and packages with libraries (EasyClangComplete
-  fetches seven, one by one) keep "Installing package ..." in the status bar until the very
-  end. Watch the real state instead: the package folder or `.sublime-package`, its
-  `package-metadata.json`, and `get_command_palette(package=...)`, which stays empty until the
-  commands are registered. Package Control logs "Package X successfully installed" last.
 - **The console is only partly readable.** `get_console` in the default and `captured` modes
   misses Sublime's own error output (tracebacks printed after an install, `ImportError`);
   `mode="visible"` needs the window in front and often cannot get it, even after a click on the
@@ -235,9 +224,36 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   into the console; one that fails for lack of focus now leaves nothing behind. `show_panel`
   console and reading the screen shows only the last four lines. The last N lines are available
   from `get_console(mode="visible", tail=N)` whenever the window is in front.
-- **Unknown arguments are dropped silently.** `get_commands` ignored `query` and returned all
-  commands (58 KB); `delete_file` with `path` returned ok and deleted nothing (it takes `files`).
-  Check the tool's schema in `discover_tools` and check the result.
+
+## Silent failures and timeouts
+
+- **`run_command` returns `{"ok": true}` even when the command does not exist** or the
+  package that provides it did not load. Check for a visible effect.
+- **A "main-thread timeout" says what it found.** On Windows the message now lists the native
+  dialog, menu or window that is open ("A native window blocks Sublime's main thread ...:
+  "Delete File" (dialog)"), or says that none is open and the main thread is busy, for example
+  while a large package loads or installs, or right after the `exit` command. Answer a dialog with
+  `dismiss_native_window`; for a busy thread call again in a few seconds. Off Windows the message
+  can only say a dialog may be blocking. (Before this change every timeout blamed a dialog.)
+  The tool may still have worked: a `create` or `save_file` that timed out while a package was
+  installing had in fact gone through, so check the state before repeating it.
+- **Unknown arguments used to be dropped silently.** `delete_file` with `path` returned ok and
+  deleted nothing (it takes `files`), and `get_commands(query=...)` returned all commands
+  (58 KB) because its filters are `package` and `command`. A result now carries a `warning`
+  that names the argument and lists the valid ones, but a command that the tool only passes on
+  to Sublime can still drop one, so check the result and the tool's schema in `discover_tools`.
+
+## Installs, restarts and quick panels
+
+- **Language-server wrappers (`LSP-*`) installed during a session** start their server only
+  after Sublime restarts, and many need a separate syntax package and a Node or binary
+  download, so the status can read "(installing...)" for minutes.
+- **Installs can take minutes, and the status text does not tell you when they end.** Large
+  packages (SublimeCodeIntel has hundreds of files) and packages with libraries (EasyClangComplete
+  fetches seven, one by one) keep "Installing package ..." in the status bar until the very
+  end. Watch the real state instead: the package folder or `.sublime-package`, its
+  `package-metadata.json`, and `get_command_palette(package=...)`, which stays empty until the
+  commands are registered. Package Control logs "Package X successfully installed" last.
 - **After `run_command exit` and a new start,** three things happen. A Package Control dialog
   "Sublime Text needs to be restarted for installed or updated libraries" can open (answer OK);
   an "Update Available" window can open and disable the main window (close it; its buttons are
