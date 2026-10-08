@@ -269,7 +269,7 @@ class ClickMenuItemTest(unittest.TestCase):
 
     def test_a_guessed_scope_is_flagged_and_a_known_one_is_not(self):
         got = self.ns["_click_menu_item"]({"path": "Tools > Build"})
-        self.assertIn("guess", got["note"])
+        self.assertIn("scope not detected", got["note"])
         self.plugin.window_command_classes.append(types.SimpleNamespace(name="build"))
         self.assertNotIn("note", self.ns["_click_menu_item"]({"path": "Tools > Build"}))
         self.assertNotIn("note", self.ns["_click_menu_item"]({"path": "Tools > Build", "scope": "window"}))
