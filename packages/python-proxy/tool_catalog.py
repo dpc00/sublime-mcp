@@ -232,9 +232,11 @@ TOOLS = [   {   'name': 'add_directory',
         'description': "Run an installed menu item by its caption path, e.g. path='Tools > Command "
                        "Palette...' (the end of the path is enough if it is unique). Reads the "
                        "*.sublime-menu resources and runs the item's command and args, as a click "
-                       'would; the native menu is never opened. Errors with the candidates if '
-                       'several items match. The result names the scope used (window, text or '
-                       'application); pass scope to override it for built-in commands.',
+                       'would; the native menu is never opened. Most built-in items have no '
+                       "caption in the menu file; address them by command name, e.g. 'Selection > "
+                       "select_all'. Errors with the candidates if several items match. The result "
+                       'names the scope used (window, text or application); pass scope to override '
+                       'it for built-in commands.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'path': {   'type': 'string',
                                                          'description': "Captions joined by '>', "

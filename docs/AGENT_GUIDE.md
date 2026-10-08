@@ -166,7 +166,8 @@ drive_input_panel(text="Terminus", action="submit")   # fill and submit/cancel a
 ```
 
 - `click_menu_item` runs an installed menu item by caption path, e.g.
-  `path="Tools > Command Palette..."`; the end of the path is enough when it is unique.
+  `path="Tools > Command Palette..."`; the end of the path is enough when it is unique. Most
+  built-in items have no caption in the menu file, so use the command name: `Selection > select_all`.
   (Or find the item with `get_menu_items` and `run_command` its command and args.)
 - `quick_panel` only opens Goto Anything. To open the command palette use
   `run_command` with `show_overlay` as above.

@@ -1762,15 +1762,27 @@ def _click_menu_item(body):
     def fn():
         found = []
         for e in _collect_menu_entries():
+            if not e["command"]:
+                continue
             have = [_menu_caption_key(c) for c in e["path"]]
-            if e["command"] and have[-len(wanted):] == wanted:
+            if e["caption"]:
+                candidates = [have]
+            else:
+                # Sublime writes the text of most built-in items itself (Selection > Select All has
+                # no caption in the menu file): address those by the command name, spaced or not.
+                command = e["command"]
+                candidates = [have + [_menu_caption_key(command.replace("_", " "))],
+                              have + [_menu_caption_key(command)]]
+            if any(c[-len(wanted):] == wanted for c in candidates):
                 found.append(e)
         if not found:
-            return {"error": "no menu item with a command matches %r" % body.get("path")}
+            return {"error": "no menu item with a command matches %r; items with no caption of "
+                             "their own match by command name, e.g. 'Selection > select_all'"
+                             % body.get("path")}
         if len(found) > 1:
             return {"error": "%d menu items match; give more of the path" % len(found),
-                    "matches": [{"path": " > ".join(e["path"]), "command": e["command"],
-                                 "resource": e["resource"]} for e in found]}
+                    "matches": [{"path": " > ".join(e["path"]), "caption": e["caption"],
+                                 "command": e["command"], "resource": e["resource"]} for e in found]}
         e = found[0]
         cmd, args = e["command"], e["args"] or {}
         scope = body.get("scope")
@@ -1792,7 +1804,8 @@ def _click_menu_item(body):
             sublime.run_command(cmd, args)
         else:
             w.run_command(cmd, args)
-        return {"ok": True, "clicked": " > ".join(e["path"]), "command": cmd, "args": args, "scope": scope}
+        return {"ok": True, "clicked": " > ".join(e["path"]) + ("" if e["caption"] else " > " + cmd),
+                "command": cmd, "args": args, "scope": scope}
 
     return _on_main(fn)
 
@@ -4823,7 +4836,8 @@ _MCP_TOOLS = [
      "Run an installed menu item by its caption path, e.g. path='Tools > Command Palette...' "
      "(the end of the path is enough if it is unique). Reads the *.sublime-menu resources and "
      "runs the item's command and args, as a click would; the native menu is never opened. "
-     "Errors with the candidates if several items match. The result names the scope used "
+     "Most built-in items have no caption in the menu file; address them by command name, e.g. "
+     "'Selection > select_all'. Errors with the candidates if several items match. The result names the scope used "
      "(window, text or application); pass scope to override it for built-in commands.",
      {"type": "object", "properties": {
          "path": {"type": "string", "description": "Captions joined by '>', e.g. 'Tools > Command Palette...'."},
