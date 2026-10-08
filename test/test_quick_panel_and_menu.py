@@ -92,6 +92,19 @@ class QuickPanelTest(unittest.TestCase):
         got = self.ns["_get_quick_panel"]({})
         self.assertEqual(got["items"], ["a", ["b", "second"], {"trigger": "t", "details": "d", "annotation": "a"}])
 
+    def test_a_big_panel_comes_back_as_a_filtered_page(self):
+        self._open(["pkg%d" % n for n in range(5000)] + [["LSP-tombi", "desc"], "LSP-zuban"])
+        got = self.ns["_get_quick_panel"]({})
+        self.assertEqual((len(got["items"]), got["total"], got["matched"]), (100, 5002, 5002))
+        got = self.ns["_get_quick_panel"]({"text": "LSP-"})
+        self.assertEqual(got["indexes"], [5000, 5001])
+        self.assertEqual(got["items"], [["LSP-tombi", "desc"], "LSP-zuban"])
+        self.assertEqual(got["matched"], 2)
+        got = self.ns["_get_quick_panel"]({"limit": 3, "offset": 4999})
+        self.assertEqual(got["indexes"], [4999, 5000, 5001])
+        self.assertEqual(self.ns["_get_quick_panel"]({"text": "nothing like this"})["items"], [])
+        self.assertIn("error", self.ns["_get_quick_panel"]({"limit": "many"}))
+
     def test_no_panel_gives_an_error(self):
         self.assertIn("error", self.ns["_get_quick_panel"]({}))
         self.assertIn("error", self.ns["_pick_quick_panel"]({"index": 0}))
