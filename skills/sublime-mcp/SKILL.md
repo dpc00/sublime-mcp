@@ -27,6 +27,20 @@ Case commands act on the selection (`select_all` first); `insert` types at the c
 closing a modified untitled tab opens a native "Save Changes?" dialog. `get_help`
 has the details.
 
+For packages, menus, the command palette and input prompts without `eval_python`
+(`search_packages`, `install_package`, `get_menu_items`, `get_command_palette`,
+`drive_input_panel`, and `run_command` with `show_overlay`), see "Packages, menus,
+palette and input panels" in `get_help`. Do not reach for `eval_python` or scripts
+for these.
+
+To remove a package use `run_command remove_package` (not the palette text), and
+expect a Windows confirmation dialog for every `delete_file` / `delete_folder` item;
+"Removing packages, deleting files, reading the console, making folders" in `get_help`
+has the details and the console-reading workaround. `run_command` reports ok even for a
+command that does not exist, so check for a visible effect; unknown arguments are dropped
+silently too. Package installs can run for minutes with an unchanging status text, and the
+console cannot be read reliably through the tools (see the same guide section).
+
 `list_native_windows` and `dismiss_native_window` (Windows) work while a native dialog
 or menu has blocked Sublime's main thread and the other tools time out; call them
 through `batch`.
