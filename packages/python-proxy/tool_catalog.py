@@ -228,6 +228,23 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Clears the list of recently opened projects and workspaces. '
                        '(WindowCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
+    {   'name': 'click_menu_item',
+        'description': "Run an installed menu item by its caption path, e.g. path='Tools > Command "
+                       "Palette...' (the end of the path is enough if it is unique). Reads the "
+                       "*.sublime-menu resources and runs the item's command and args, as a click "
+                       'would; the native menu is never opened. Errors with the candidates if '
+                       'several items match. The result names the scope used (window, text or '
+                       'application); pass scope to override it for built-in commands.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'path': {   'type': 'string',
+                                                         'description': "Captions joined by '>', "
+                                                                        "e.g. 'Tools > Command "
+                                                                        "Palette...'."},
+                                             'scope': {   'type': 'string',
+                                                          'enum': [   'window',
+                                                                      'text',
+                                                                      'application']}},
+                           'required': ['path']}},
     {   'name': 'clone_file',
         'description': 'Create a clone of the active view (opens the same file in a new tab, '
                        'sharing the buffer).',
@@ -529,7 +546,8 @@ TOOLS = [   {   'name': 'add_directory',
                                                                        'button',
                                                                        'close'],
                                                            'description': 'What to do (default: '
-                                                                          'cancel).'},
+                                                                          'cancel, or button when '
+                                                                          "'button' is given)."},
                                              'button': {   'type': 'string',
                                                            'description': 'Button label for action '
                                                                           "'button' (ignores case "
@@ -849,8 +867,10 @@ TOOLS = [   {   'name': 'add_directory',
                        'non-invasive but contains only messages observed since capture began. '
                        'Results include source and complete metadata. The visible capture clicks '
                        'in the console and copies it, so it only runs when this Sublime window is '
-                       'in front; force_focus=true raises it first, which can crash a portable '
-                       'Sublime Text.',
+                       'in front (otherwise it fails at once and changes nothing); '
+                       'force_focus=true raises it first, which can crash a portable Sublime Text. '
+                       'tail=N keeps the last N entries (captured) or the last N lines (visible; '
+                       'the result then has lines_total and truncated); tail=0 returns everything.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'mode': {   'type': 'string',
                                                          'enum': ['auto', 'visible', 'captured'],
@@ -889,8 +909,15 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'get_help',
         'description': 'Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how '
                        'to use sublime-mcp tools correctly. Call this first if you are unsure how '
-                       'to save files, close tabs, or use eval_python.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+                       'to save files, close tabs, or use eval_python. The full guide is about 12 '
+                       'KB; section=<words from a heading> returns only the matching section(s), '
+                       'and every result lists the section headings.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'section': {   'type': 'string',
+                                                            'description': 'Return only the '
+                                                                           'sections whose heading '
+                                                                           'contains this text, '
+                                                                           "e.g. 'console'."}}}},
     {   'name': 'get_layout',
         'description': 'Return the current window layout (groups, cells) and which files are in '
                        'each group.',
@@ -954,6 +981,13 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'get_project_folders',
         'description': "Return the project's root folder paths.",
+        'inputSchema': {'type': 'object', 'properties': {}}},
+    {   'name': 'get_quick_panel',
+        'description': 'List the items of the quick panel that a package opened with '
+                       'window.show_quick_panel (e.g. the Install Package picker), plus its flags '
+                       'and preselected index. Only sees panels opened by packages in the same '
+                       'plugin host as sublime-mcp; the command palette, Goto Anything and panels '
+                       'from the other host are not visible and give an error.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'get_scope_at_cursor',
         'description': 'Return the full syntax scope string at the cursor position.',
@@ -1448,6 +1482,18 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'permute_selection',
         'description': 'Permute (shuffle) the selections themselves into a random order.',
         'inputSchema': {'type': 'object', 'properties': {}}},
+    {   'name': 'pick_quick_panel',
+        'description': 'Pick an item of the quick panel shown by get_quick_panel: by index, or by '
+                       "text (case-insensitive match on the item's first line; must match exactly "
+                       "one item). index -1 cancels. Closes the panel and runs the package's own "
+                       'selection callback.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'index': {   'type': 'integer',
+                                                          'description': 'Item index, or -1 to '
+                                                                         'cancel.'},
+                                             'text': {   'type': 'string',
+                                                         'description': 'Text of the item to '
+                                                                        'pick.'}}}},
     {   'name': 'play_macro',
         'description': 'Alias of run_macro — play back the most recently recorded macro.',
         'inputSchema': {'type': 'object', 'properties': {}}},

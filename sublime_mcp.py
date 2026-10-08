@@ -1719,22 +1719,80 @@ def _get_menu_items(params):
     command_filter = params.get("command", [""])[0].strip().lower()
 
     def fn():
-        entries = []
-        resources = sorted(sublime.find_resources("*.sublime-menu"))
-        for resource in resources:
-            filename = resource.rsplit("/", 1)[-1].lower()
-            if menu_filter and menu_filter not in filename:
-                continue
-            try:
-                data = sublime.decode_value(sublime.load_resource(resource))
-            except Exception as e:
-                entries.append({"resource": resource, "error": str(e)})
-                continue
-            if isinstance(data, list):
-                _walk_menu_items(
-                    data, resource, [], caption_filter, command_filter, entries
-                )
+        entries = _collect_menu_entries(menu_filter, caption_filter, command_filter, True)
         return {"entries": entries, "count": len(entries)}
+
+    return _on_main(fn)
+
+
+def _collect_menu_entries(menu_filter="", caption_filter="", command_filter="", report_errors=False):
+    """Every item of the installed *.sublime-menu resources (see _walk_menu_items)."""
+    entries = []
+    for resource in sorted(sublime.find_resources("*.sublime-menu")):
+        filename = resource.rsplit("/", 1)[-1].lower()
+        if menu_filter and menu_filter not in filename:
+            continue
+        try:
+            data = sublime.decode_value(sublime.load_resource(resource))
+        except Exception as e:
+            if report_errors:
+                entries.append({"resource": resource, "error": str(e)})
+            continue
+        if isinstance(data, list):
+            _walk_menu_items(data, resource, [], caption_filter, command_filter, entries)
+    return entries
+
+
+def _menu_caption_key(caption):
+    """Lower case, '&' mnemonics dropped, the ellipsis character written as three dots."""
+    return str(caption).replace("&", "").replace("…", "...").strip().lower()
+
+
+def _click_menu_item(body):
+    """Run the command of an installed menu item picked by its caption path,
+    e.g. "Tools > Command Palette...". Uses the *.sublime-menu resources, so it
+    never opens the native menu."""
+    wanted = [_menu_caption_key(p) for p in str(body.get("path", "")).split(">") if p.strip()]
+    if not wanted:
+        return {"error": "path required, e.g. 'Tools > Command Palette...'"}
+    scope = body.get("scope")
+    if scope is not None and scope not in ("window", "text", "application"):
+        return {"error": "scope must be window, text or application"}
+
+    def fn():
+        found = []
+        for e in _collect_menu_entries():
+            have = [_menu_caption_key(c) for c in e["path"]]
+            if e["command"] and have[-len(wanted):] == wanted:
+                found.append(e)
+        if not found:
+            return {"error": "no menu item with a command matches %r" % body.get("path")}
+        if len(found) > 1:
+            return {"error": "%d menu items match; give more of the path" % len(found),
+                    "matches": [{"path": " > ".join(e["path"]), "command": e["command"],
+                                 "resource": e["resource"]} for e in found]}
+        e = found[0]
+        cmd, args = e["command"], e["args"] or {}
+        scope = body.get("scope")
+        if not scope:
+            scope = "window"
+            for name, classes in (("application", "application_command_classes"),
+                                  ("text", "text_command_classes"),
+                                  ("window", "window_command_classes")):
+                if any(_command_name_from_class(c) == cmd for c in getattr(sublime_plugin, classes, [])):
+                    scope = name
+                    break
+        w = sublime.active_window()
+        if scope == "text":
+            v = w.active_view()
+            if v is None:
+                return {"error": "no active view for text command %s" % cmd}
+            v.run_command(cmd, args)
+        elif scope == "application":
+            sublime.run_command(cmd, args)
+        else:
+            w.run_command(cmd, args)
+        return {"ok": True, "clicked": " > ".join(e["path"]), "command": cmd, "args": args, "scope": scope}
 
     return _on_main(fn)
 
@@ -2512,6 +2570,127 @@ def _drive_input_panel(body):
             return {"error": "action must be 'submit' or 'cancel'"}
 
         return {"ok": True, "submitted_text": text}
+    return _on_main(fn)
+
+
+_QUICK_PANELS = {}  # window id -> record of the quick panel last opened from this plugin host
+
+
+def _quick_panel_item(item):
+    if isinstance(item, str):
+        return item
+    if isinstance(item, (list, tuple)):
+        return [str(x) for x in item]
+    if hasattr(item, "trigger"):
+        return {"trigger": str(item.trigger), "details": str(getattr(item, "details", "")),
+                "annotation": str(getattr(item, "annotation", ""))}
+    return str(item)
+
+
+def _install_quick_panel_recorder():
+    """Wrap Window.show_quick_panel so get_quick_panel / pick_quick_panel can see
+    panels opened by plugins in this plugin host. Panels opened from another host
+    (e.g. the Python 3.3 one) or by Sublime itself are not recorded."""
+    cur = sublime.Window.show_quick_panel
+    orig = getattr(cur, "_sublime_mcp_orig", cur)
+
+    def show_quick_panel(self, items, on_select=None, *args, **kwargs):
+        if on_select is None:
+            on_select = kwargs.pop("on_done", None)
+        items = list(items)  # a generator would be used up by the recording below
+        try:
+            # items are converted only when someone asks (_quick_panel_items): big pickers stay cheap
+            rec = {"raw": items, "on_select": on_select,
+                   "flags": args[0] if args else kwargs.get("flags", 0),
+                   "selected_index": args[1] if len(args) > 1 else kwargs.get("selected_index", -1),
+                   "picked": False}
+            wid = self.id()
+        except Exception:
+            return orig(self, items, on_select, *args, **kwargs)  # never break the package
+
+        def done(index):
+            if _QUICK_PANELS.get(wid) is rec:
+                del _QUICK_PANELS[wid]
+            if rec["picked"] and index == -1:
+                return  # the cancel produced by our own hide_overlay
+            if on_select is not None:
+                return on_select(index)
+
+        _QUICK_PANELS[wid] = rec
+        try:
+            return orig(self, items, done, *args, **kwargs)
+        except BaseException:
+            if _QUICK_PANELS.get(wid) is rec:
+                del _QUICK_PANELS[wid]  # the panel never opened
+            raise
+
+    show_quick_panel._sublime_mcp_orig = orig
+    sublime.Window.show_quick_panel = show_quick_panel
+
+
+def _remove_quick_panel_recorder():
+    cur = sublime.Window.show_quick_panel
+    if hasattr(cur, "_sublime_mcp_orig"):  # only if nobody wrapped it after us
+        sublime.Window.show_quick_panel = cur._sublime_mcp_orig
+
+
+def _quick_panel_items(rec):
+    if "items" not in rec:
+        rec["items"] = [_quick_panel_item(i) for i in rec["raw"]]
+    return rec["items"]
+
+
+def _get_quick_panel(body):
+    """Items of the quick panel last opened by a plugin in this plugin host."""
+    def fn():
+        rec = _QUICK_PANELS.get(sublime.active_window().id())
+        if rec is None:
+            return {"error": "no recorded quick panel: none is open, or it was opened by Sublime "
+                             "itself or by a package in the other plugin host"}
+        return {"items": _quick_panel_items(rec), "flags": rec["flags"], "selected_index": rec["selected_index"]}
+    return _on_main(fn)
+
+
+def _pick_quick_panel(body):
+    """Pick an item of the recorded quick panel by index or by text, or cancel (index -1)."""
+    index, text = body.get("index"), body.get("text")
+
+    def fn():
+        w = sublime.active_window()
+        rec = _QUICK_PANELS.get(w.id())
+        if rec is None:
+            return {"error": "no recorded quick panel: none is open, or it was opened by Sublime "
+                             "itself or by a package in the other plugin host"}
+        items = _quick_panel_items(rec)
+        i = index
+        if i is not None and text:
+            return {"error": "give index or text, not both"}
+        if isinstance(i, bool):
+            return {"error": "index must be an integer"}
+        if i is None and text:
+            low = str(text).lower()
+            hits = []
+            for n, item in enumerate(items):
+                first = item["trigger"] if isinstance(item, dict) else (item[0] if isinstance(item, list) and item else item)
+                if low in str(first).lower():
+                    hits.append(n)
+            if len(hits) != 1:
+                return {"error": "text matched %d items; give a more exact text or an index" % len(hits),
+                        "matches": hits}
+            i = hits[0]
+        if i is None:
+            return {"error": "give index or text"}
+        if not isinstance(i, int) or not -1 <= i < len(items):
+            return {"error": "index must be -1 (cancel) or 0..%d" % (len(items) - 1)}
+        if i == -1:
+            w.run_command("hide_overlay")
+            return {"ok": True, "picked": -1}
+        _QUICK_PANELS.pop(w.id(), None)
+        rec["picked"] = True
+        w.run_command("hide_overlay")
+        if rec["on_select"] is not None:
+            sublime.set_timeout(lambda: rec["on_select"](i), 0)
+        return {"ok": True, "picked": i, "item": items[i]}
     return _on_main(fn)
 
 
@@ -3311,6 +3490,9 @@ _POST = {
     "/clear_bookmarks": _clear_bookmarks,
     "/select_all_bookmarks": _select_all_bookmarks,
     "/drive_input_panel": _drive_input_panel,
+    "/click_menu_item": _click_menu_item,
+    "/get_quick_panel": _get_quick_panel,
+    "/pick_quick_panel": _pick_quick_panel,
     "/set_syntax": _set_syntax,
     "/toggle_comment": _toggle_comment,
     "/toggle_sidebar": _toggle_sidebar,
@@ -4409,7 +4591,7 @@ def _dismiss_native_window(body):
     return native_windows.dismiss(
         _sublime_process_id(),
         hwnd=hwnd,
-        action=body.get("action") or "cancel",
+        action=body.get("action") or ("button" if body.get("button") else "cancel"),
         button_text=body.get("button"),
     )
 
@@ -4637,6 +4819,17 @@ _MCP_TOOLS = [
          "command": {"type": "string", "default": ""},
      }},
      _g("/menu_items")),
+    ("click_menu_item",
+     "Run an installed menu item by its caption path, e.g. path='Tools > Command Palette...' "
+     "(the end of the path is enough if it is unique). Reads the *.sublime-menu resources and "
+     "runs the item's command and args, as a click would; the native menu is never opened. "
+     "Errors with the candidates if several items match. The result names the scope used "
+     "(window, text or application); pass scope to override it for built-in commands.",
+     {"type": "object", "properties": {
+         "path": {"type": "string", "description": "Captions joined by '>', e.g. 'Tools > Command Palette...'."},
+         "scope": {"type": "string", "enum": ["window", "text", "application"]}},
+      "required": ["path"]},
+     _p("/click_menu_item")),
     ("get_console",
      "Read Sublime Text's built-in console. mode='auto' prefers a complete visible-console "
      "capture and falls back to the reload-safe prospective capture; mode='visible' requires "
@@ -4942,6 +5135,21 @@ _MCP_TOOLS = [
          "action": {"type": "string", "default": "submit"},
      }},
      _p("/drive_input_panel")),
+    ("get_quick_panel",
+     "List the items of the quick panel that a package opened with window.show_quick_panel "
+     "(e.g. the Install Package picker), plus its flags and preselected index. Only sees panels "
+     "opened by packages in the same plugin host as sublime-mcp; the command palette, Goto "
+     "Anything and panels from the other host are not visible and give an error.",
+     {"type": "object", "properties": {}},
+     _p("/get_quick_panel")),
+    ("pick_quick_panel",
+     "Pick an item of the quick panel shown by get_quick_panel: by index, or by text (case-"
+     "insensitive match on the item's first line; must match exactly one item). index -1 cancels. "
+     "Closes the panel and runs the package's own selection callback.",
+     {"type": "object", "properties": {
+         "index": {"type": "integer", "description": "Item index, or -1 to cancel."},
+         "text": {"type": "string", "description": "Text of the item to pick."}}},
+     _p("/pick_quick_panel")),
     ("set_syntax",
      "Set the syntax of the active file by name (case-insensitive partial match is fine).",
      {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
@@ -5071,7 +5279,7 @@ _MCP_TOOLS = [
      "Acts only on windows of the Sublime Text process. 'ok' clicks OK/Yes/the default button.",
      {"type": "object", "properties": {
          "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first dialog, then first menu)."},
-         "action": {"type": "string", "enum": ["cancel", "ok", "button", "close"], "description": "What to do (default: cancel)."},
+         "action": {"type": "string", "enum": ["cancel", "ok", "button", "close"], "description": "What to do (default: cancel, or button when 'button' is given)."},
          "button": {"type": "string", "description": "Button label for action 'button' (ignores case and & mnemonics)."}}},
      _p("/dismiss_native_window")),
     # ── Phase B batch 1: view / tab / pane management ─────────────────────────
@@ -6621,12 +6829,14 @@ def _stop_servers():
 
 
 def plugin_loaded():
+    _install_quick_panel_recorder()
     _start_servers()
     _start_heartbeat()
 
 
 def plugin_unloaded():
     _stop_servers()
+    _remove_quick_panel_recorder()
 
 
 # ── helper text commands ──────────────────────────────────────────────────────

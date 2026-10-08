@@ -135,7 +135,7 @@ put("read/catalog", "get_command_palette get_commands get_menu_items get_package
 put("read/console", "get_console get_console_log get_console_full get_console_win")
 put("view/folding", "fold_lines fold_unfold fold fold_all fold_by_level fold_tag_attributes unfold unfold_all")
 put("view/scrolling", "scroll_to_bof scroll_to_eof show_at_center scroll_lines")
-put("view/panels_and_popups", "show_panel set_status drive_input_panel quick_panel hide_overlay hide_panel hide_popup "
+put("view/panels_and_popups", "show_panel set_status drive_input_panel click_menu_item get_quick_panel pick_quick_panel quick_panel hide_overlay hide_panel hide_popup "
     "context_menu toggle_show_context html_print open_control_panel toggle_show_open_files focus_side_bar "
     "show_progress_window prompt_open cancel")
 put("view/toggles", "toggle_sidebar toggle_side_bar toggle_menu toggle_minimap toggle_status_bar toggle_tabs "

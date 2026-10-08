@@ -4,7 +4,7 @@ Moved out of `AGENT_GUIDE.md` (which `get_help` serves) to keep that guide short
 
 ## Sublime Text command tools (since 1.9.0)
 
-160 of the 404 tools are generated wrappers named exactly after a Sublime Text
+160 of the 407 tools are generated wrappers named exactly after a Sublime Text
 command (`add_word`, `fold_all`, `invert_selection`, `scroll_to_eof`, `chain`,
 `build`, `close_others_by_index`, ...). They come from a snapshot of
 CommandsBrowser's Sublime Text command list, written by
