@@ -208,10 +208,14 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   `run_command(command="show_panel", args={"panel": "console"})` and read the screen.
 - **`run_command` returns `{"ok": true}` even when the command does not exist** or the
   package that provides it did not load. Check for a visible effect.
-- **The timeout message can be wrong:** "main-thread timeout ... a native dialog or menu
-  blocks Sublime" also appears when no dialog exists, for example while a large package
-  imports, or right after the `exit` command. Confirm with `list_native_windows`
-  (`main_thread_blocked`) before assuming a dialog.
+- **A "main-thread timeout" says what it found.** On Windows the message now lists the native
+  dialog, menu or window that is open ("A native window blocks Sublime's main thread ...:
+  "Delete File" (dialog)"), or says that none is open and the main thread is busy, for example
+  while a large package loads or installs, or right after the `exit` command. Answer a dialog with
+  `dismiss_native_window`; for a busy thread call again in a few seconds. Off Windows the message
+  can only say a dialog may be blocking. (Before this change every timeout blamed a dialog.)
+  The tool may still have worked: a `create` or `save_file` that timed out while a package was
+  installing had in fact gone through, so check the state before repeating it.
 - **Tabs of deleted files:** if files vanish while they are open (for example because a package
   folder was removed), closing each tab raises a "Save Deleted File?" dialog; answer No.
 - **Language-server wrappers (`LSP-*`) installed during a session** start their server only
