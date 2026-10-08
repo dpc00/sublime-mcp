@@ -150,6 +150,102 @@ get_commands()                     # command ids, scopes, packages, palette capt
 `project_search` `where` accepts folder paths, `*.py`, `-*.md`, `${project}`,
 `${open_files}`, `${folder:Name}`.
 
+## Packages, menus, palette and input panels (no eval_python needed)
+
+Call these through `batch`; find more with `discover_tools`.
+
+```
+search_packages(query="terminus")             # Package Control search
+install_package(package="Terminus")           # exact name; installs in the background, watch the console
+get_menu_items(caption="Command Palette")     # menu items with their command and args (filters: menu, caption, command)
+run_command(command="show_overlay", args={"overlay": "command_palette", "text": "Install Package"})
+get_command_palette(caption="Install")        # palette entries (filters: package, command, caption)
+drive_input_panel(text="Terminus", action="submit")   # fill and submit/cancel an open input panel
+```
+
+- No tool clicks a menu item by caption. Find the item with `get_menu_items`, then
+  `run_command` with its command and args; that is what the click does.
+- `quick_panel` only opens Goto Anything. To open the command palette use
+  `run_command` with `show_overlay` as above.
+- `drive_input_panel` works on input panels (prompts such as "Packages to install
+  (comma-separated)"). If several agents share the Sublime, call `claim_resource`
+  with `resource="input_panel"` first.
+- Limitation (tool survey 2026-10-07): there is no tool that lists the items of an
+  open quick-panel picker (for example the Package Control "Install Package" list)
+  or picks one. Close it with `hide_overlay`, or have the user pick.
+- `context_menu` opens a native menu that blocks the main thread; see the next
+  section.
+
+## Removing packages, deleting files, reading the console, making folders
+
+Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
+
+- **Remove a package:** call `run_command(command="remove_package")`. Do not open
+  the palette with the text "Package Control: Remove Package": the palette ranks
+  "Remove Channel" first, and its Return opens the channel list. The list that
+  `remove_package` opens also contains `MCP Commander` and `Package Control`, so
+  type the package name to filter the list and check the highlighted entry before
+  confirming. A list opened right after a removal is stale until the status bar
+  says "Package X successfully removed".
+- **Delete files and folders:** pass `files` to `delete_file` and `dirs` (a list) to
+  `delete_folder`; any other argument name, such as `path`, is dropped and the call still
+  returns ok without deleting. Check the disk afterwards. As with the Side Bar menu, the
+  confirmation is always shown, even with `prompt: false`. They open a Windows
+  confirmation ("permanently delete" when the drive has no Recycle Bin) for every
+  item, block the main thread until it is answered, and can stall at "99% complete".
+  Use `list_native_windows`, then answer each dialog. `dismiss_native_window` does
+  not see the Windows progress window.
+- **Make a folder:** there is no tool that creates a folder at a path.
+  `run_command(command="new_folder", args={"dirs": ["<parent>"]})` then
+  `drive_input_panel(text="<name>", action="submit")` does it. `str_replace_based_edit_tool`
+  `create` does not create missing folders.
+- **Files reach the disk only after `save_file`** (or `save_all`); `create` alone leaves an
+  unsaved tab.
+- **Read the console:** `get_console` with the default mode, and `mode="captured"`, can miss
+  Sublime's own output (load errors such as a plugin's SyntaxError). `mode="visible"`
+  returns the whole console but needs the window in front, and its `tail` argument is
+  ignored. If it cannot focus the window, open the panel with
+  `run_command(command="show_panel", args={"panel": "console"})` and read the screen.
+- **`run_command` returns `{"ok": true}` even when the command does not exist** or the
+  package that provides it did not load. Check for a visible effect.
+- **The timeout message can be wrong:** "main-thread timeout ... a native dialog or menu
+  blocks Sublime" also appears when no dialog exists, for example while a large package
+  imports, or right after the `exit` command. Confirm with `list_native_windows`
+  (`main_thread_blocked`) before assuming a dialog.
+- **Tabs of deleted files:** if files vanish while they are open (for example because a package
+  folder was removed), closing each tab raises a "Save Deleted File?" dialog; answer No.
+- **Language-server wrappers (`LSP-*`) installed during a session** start their server only
+  after Sublime restarts, and many need a separate syntax package and a Node or binary
+  download, so the status can read "(installing...)" for minutes.
+- **Installs can take minutes, and the status text does not tell you when they end.** Large
+  packages (SublimeCodeIntel has hundreds of files) and packages with libraries (EasyClangComplete
+  fetches seven, one by one) keep "Installing package ..." in the status bar until the very
+  end. Watch the real state instead: the package folder or `.sublime-package`, its
+  `package-metadata.json`, and `get_command_palette(package=...)`, which stays empty until the
+  commands are registered. Package Control logs "Package X successfully installed" last.
+- **The console is only partly readable.** `get_console` in the default and `captured` modes
+  misses Sublime's own error output (tracebacks printed after an install, `ImportError`);
+  `mode="visible"` needs the window in front and often cannot get it, even after a click on the
+  title bar. `get_output_panel` for the console returns everything since startup (17 KB) and
+  also misses those errors, and every failed `visible` attempt appends a
+  "[sublime-mcp] console capture marker" line to the console. `show_panel` console and reading the
+  screen shows only the last four lines. There is no tool that returns the last N lines of
+  Sublime's own console.
+- **Unknown arguments are dropped silently.** `get_commands` ignored `query` and returned all
+  commands (58 KB); `delete_file` with `path` returned ok and deleted nothing (it takes `files`).
+  Check the tool's schema in `discover_tools` and check the result.
+- **After `run_command exit` and a new start,** three things happen. A Package Control dialog
+  "Sublime Text needs to be restarted for installed or updated libraries" can open (answer OK);
+  an "Update Available" window can open and disable the main window (close it; its buttons are
+  not accessible elements, use its Close button); and the sublime-mcp server may or may not
+  reconnect by itself (the first restart did, the second did not and needed `/mcp`). A key press
+  sent right after a restart is refused until the window has been focused with a click on its
+  title bar. Replacing a package between Python hosts (release on 3.3, master on 3.8) in the
+  same session gives false "No module named" errors; restart Sublime first.
+- **Quick panels have no tool.** Several packages ask for a decision in a quick panel (FileManager's
+  delete asks "Confirm - Send item to trash"; Package Control's pickers). `drive_input_panel`
+  only fills input panels; a quick panel has to be answered with the keyboard.
+
 ## When a native dialog blocks Sublime (Windows)
 
 If a tool call fails with "main-thread timeout after 5s", or a command just
