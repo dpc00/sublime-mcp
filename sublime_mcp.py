@@ -125,8 +125,9 @@ def _start_heartbeat():
         _heartbeat_tick()
 
 
-def _main_thread_stack():
-    """A live stack trace of ST's main thread, callable from any thread.
+def _main_thread_stack(limit=None):
+    """A live stack trace of ST's main thread, callable from any thread
+    (limit: keep only the innermost N frames).
 
     sys._current_frames() reads every thread's current frame directly from
     the interpreter, so this works even while the main thread is wedged --
@@ -139,7 +140,8 @@ def _main_thread_stack():
         return "main thread frame unavailable (main_thread ident={})".format(
             threading.main_thread().ident
         )
-    return "".join(traceback.format_stack(frame))
+    frames = traceback.format_stack(frame)
+    return "".join(frames[-limit:] if limit else frames)
 
 
 _in_flight_dispatch = {"label": None, "started": None}
@@ -237,8 +239,9 @@ def _on_main(fn):
     sublime.set_timeout(_run, 0)
     if not done.wait(5.0):
         print(
-            "[sublime-mcp] _on_main TIMEOUT after 5s dispatching {}\nmain thread stack:\n{}"
-            .format(label, _main_thread_stack())
+            # innermost frames only: a full import-time stack is 5 KB and fills every console read
+            "[sublime-mcp] _on_main TIMEOUT after 5s dispatching {}\nmain thread, innermost frames "
+            "(get_main_thread_stack has all):\n{}".format(label, _main_thread_stack(4))
         )
         raise TimeoutError(_main_thread_timeout_message(label))
     if exc[0]:
