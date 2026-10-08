@@ -6869,11 +6869,16 @@ def _start_servers():
 
 def _stop_servers():
     global _server, _mcp_server
+    # shutdown() only ends the accept loop; server_close() releases the listening socket. Without it
+    # the old module keeps the port open after a reload (HTTPServer sets SO_REUSEADDR, so the new
+    # server can bind it too on Windows) and connections can queue on a socket nobody accepts from.
     if _server:
         _server.shutdown()
+        _server.server_close()
         _server = None
     if _mcp_server:
         _mcp_server.shutdown()
+        _mcp_server.server_close()
         _mcp_server = None
     for q in list(_mcp_sessions.values()):
         q.put(None)
