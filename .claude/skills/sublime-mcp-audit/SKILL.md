@@ -21,6 +21,12 @@ The audit is how we find weaknesses in sublime-mcp itself. Package bugs found al
 
 Allowed, Donald confirmed: copying a package copy (for example repo master) into a Packages folder to test it; the sublime-mcp `run_command` tool, which mimics a user's menu clicks. Running a command from inside `eval_python` is not allowed.
 
+## What was already tested: use the small file, not the log
+
+`.tested_packages.tsv` (repo root, about 25 KB) lists every tested or skipped package: name, date, the line of its entry in the log, and a note (packages recovered from the queue order, for example "queue v1 #12 (done through #707)", or skip reasons). It was rebuilt on 2026-10-07 from the log headings plus queue v1 positions 1-707 and queue v2 positions 1-181; v2 positions after 181 and later-phase packages that have no log entry may still be missing. Search it (for example Grep for the package name) to decide whether a package is done. When you finish or skip a package, append one row with the same columns and a short note for skips.
+
+`.package_skill_test_log.md` (over 1 MB, backed up to Google Drive) is Donald's record of how the audit is done. Keep adding entries to it, but do not read it whole and do not use it to look up what was tested; read only the lines you need, using the line number from the tsv.
+
 ## Which sublime-mcp tools to use
 
 Call `get_help` first. The tool usage (packages, menus, command palette, input panels, native dialogs) is documented in sublime-mcp's own `AGENT_GUIDE.md` and `skills/sublime-mcp/SKILL.md`; do not duplicate it here. Note: `install_package` is not the user picker flow, so it does not replace rule 4.
