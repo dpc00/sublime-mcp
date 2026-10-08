@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-`skills/sublime-debugger` rewritten: it described the removed `debugger-mcp` server. It now holds the tested recipe for driving the Debugger package with the generic tools (setup without palettes, the `eval_python` route, the generic-tools route and its limits, gotchas), and `docs/agents.md` points to it instead of a global skill.
+`skills/sublime-debugger` rewritten: it described the removed `debugger-mcp` server. It now holds the tested recipe for driving the Debugger package with the generic tools (setup without palettes, the `eval_python` route, the generic-tools route and its limits, gotchas), and `docs/agents.md` points to it instead of a global skill. `skills/sublime-lsp` is likewise replaced by the former user-level `lsp-control` text (the LSP bridge and the standard request table), no longer tied to the removed `lsp-mcp`.
 
 New tools: `get_quick_panel` and `pick_quick_panel` read and answer a quick panel that a package opened with `show_quick_panel` in the same plugin host (the command palette, Goto Anything and panels from the other host are not visible); `click_menu_item` runs an installed menu item by caption path without opening the native menu. `dismiss_native_window` now clicks the named button when `button` is given without `action` (it used to cancel silently).
 

@@ -18,10 +18,10 @@ installed Sublime package requires its own server. That's usually not true:
 covers it directly for any client that already has that generic access.
 Everything below that references `lsp_*` / `debugger_*` tools describes
 capability that now needs to be reached that way instead — see
-`~/.claude/skills/lsp-control/SKILL.md` and
-`skills/sublime-debugger/SKILL.md` (in this repo; tested 2026-10-08) for the
-real, verified code (session lookup, the async bridges, coordinate
-conventions) in place of those old typed tools. `skills/package-skill-generator` documents how to
+`skills/sublime-lsp/SKILL.md` and `skills/sublime-debugger/SKILL.md` (both in
+this repo; the Debugger one tested 2026-10-08) for the real, verified code
+(session lookup, the async bridges, coordinate conventions) in place of
+those old typed tools. `skills/package-skill-generator` documents how to
 produce an equivalent skill for any other package.
 
 ## sublime-mcp itself
