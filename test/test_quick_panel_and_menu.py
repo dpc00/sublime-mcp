@@ -212,6 +212,30 @@ class ClickMenuItemTest(unittest.TestCase):
         self.assertEqual(ns["_click_menu_item"]({"path": "Tools > Command Palette..."})["command"], "show_overlay")
         self.assertEqual(ns["_click_menu_item"]({"path": "Tools > Command Palette…"})["command"], "show_overlay")
 
+    def test_items_without_a_caption_match_by_command_name(self):
+        # the shapes seen in Packages/Default/Main.sublime-menu on build 4215
+        menu = json.dumps([
+            {"caption": "Selection", "children": [{"command": "select_all"}]},
+            {"caption": "View", "children": [{"caption": "Side Bar", "id": "side_bar", "children": [
+                {"command": "toggle_side_bar"}, {"command": "toggle_show_open_files"}]}]}])
+        ns, window, _ = _build({"m.sublime-menu": menu})
+        for path in ("Selection > Select All", "Selection > select_all", "select all"):
+            self.assertEqual(ns["_click_menu_item"]({"path": path})["command"], "select_all")
+        self.assertEqual(ns["_click_menu_item"]({"path": "Side Bar > toggle_side_bar"})["command"], "toggle_side_bar")
+        got = ns["_click_menu_item"]({"path": "Side Bar"})  # a submenu: nothing to run
+        self.assertIn("error", got)
+        self.assertIn("by command name", got["error"])
+
+    def test_the_same_uncaptioned_command_in_two_menus_is_told_apart_in_the_error(self):
+        menu = json.dumps([
+            {"caption": "Selection", "children": [{"command": "select_all"}]},
+            {"caption": "Edit", "children": [{"command": "select_all"}]}])
+        ns, window, _ = _build({"m.sublime-menu": menu})
+        got = ns["_click_menu_item"]({"path": "select all"})
+        self.assertEqual(sorted(m["path"] for m in got["matches"]), ["Edit", "Selection"])
+        self.assertEqual(window.commands, [])
+        self.assertTrue(ns["_click_menu_item"]({"path": "Edit > select all"})["ok"])
+
     def test_a_bad_scope_is_refused(self):
         self.assertIn("error", self.ns["_click_menu_item"]({"path": "Tools > Build", "scope": "bogus"}))
         self.assertEqual(self.window.commands, [])
