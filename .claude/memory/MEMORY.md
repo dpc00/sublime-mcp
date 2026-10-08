@@ -1,4 +1,4 @@
-# Memory index
+﻿# Memory index
 
 Dated notes from long agent sessions. Check a note's date and whether the situation still matches.
 
@@ -117,4 +117,15 @@ Dated notes from long agent sessions. Check a note's date and whether the situat
 - [session-baton-2026-10-06](project_session_baton_2026_10_06.md) — 2026-10-06 handoff written before Donald rebooted Windows: where the resumed package audit stands, the leftover IMESupport folder to recycle after ...
 - [project-glama-check-fails-because-of-proxies](project_glama_check_fails_because_of_proxies.md) — Glama badge check on awesome-mcp-servers#15729 fails because Glama reads the wrong file (the project has proxies); known, not a decision for Donald
 - [session-baton-2026-10-06-late](project_session_baton_2026_10_06_late.md) — Handoff written 2026-10-06 evening before Donald restarts the session: audit state, rig state, rules he corrected, what is pending
+- [fresh-audit-list-2026-10-07](project_fresh_audit_list_2026_10_07.md) — 2026-10-07 his list rules, how the fresh list was built, 7 packages tested (3 findings), 29 left at the loosest tier
+- [open-prs-are-done-2026-10-07](feedback_open_prs_are_done_2026_10_07.md) — 2026-10-07 open PRs don't concern him; no tracking, polling or pr_status.py
+- [no-scheduled-polling-2026-10-07](feedback_no_scheduled_polling_2026_10_07.md) — half-hour check removed entirely (traffic cut his Wi-Fi); no CronCreate, no scheduled polling
+- [stino-menu-untitled-tabs-2026-10-07](project_stino_menu_untitled_tabs_2026_10_07.md) — 2026-10-07 his unlogged account: Stino made ST open untitled tabs on menu clicks; evidence lost; clean repro needed before any Package Control report
 - [wsl-st-update-dialog-hosts-block](project_wsl_st_update_dialog_hosts_block_2026_10_06.md) — 2026-10-06: the WSL Sublime shows an unclickable "Update Available" dialog on start; blocked by a /etc/hosts entry; how to tell a package hang from it
+- [eased-audit-list-2026-10-07](project_eased_audit_list_2026_10_07.md) — 4-year push rule for the top 1000 by installs gave 11 packages, all done; ayu#299 filed; list finished, do not ease further without Donald
+- [limitcode-email-misread-2026-10-07](feedback_limitcode_email_misread_2026_10_07.md) — I took his joke literally, reworded it, sent it unseen; show exact email text before sending, never reword
+- [always-computer-use-for-dialogs-2026-10-07](feedback_always_computer_use_for_dialogs_2026_10_07.md) — 2026-10-07: click dialogs with computer-use always, even after his accidental Escape stop; do not switch tools
+- [diagnose-dont-retry-install-2026-10-07](feedback_diagnose_dont_retry_install_2026_10_07.md) — five failed installs from retrying; read the source first, install via the palette picker, wait for indexing
+- [audit-installs-must-follow-user-flow-2026-10-07](feedback_audit_installs_must_follow_user_flow_2026_10_07.md) — every audit install via palette Install Package picker like a user; script installs prove nothing about installability
+- [no-scripts-in-audit-2026-10-07](feedback_no_scripts_in_audit_2026_10_07.md) — the audit finds sublime-mcp weaknesses: use only its own tools, no scripts or side channels; gaps are findings
+- [script-temptations-2026-10-07](project_script_temptations_2026_10_07.md) — summary from this session's transcript of every script, HTTP-bridge and eval_python use, and the sublime-mcp gap each one hid
