@@ -1774,7 +1774,9 @@ def _click_menu_item(body):
                 candidates = [have + [_menu_caption_key(command.replace("_", " "))],
                               have + [_menu_caption_key(command)]]
             if any(c[-len(wanted):] == wanted for c in candidates):
-                found.append(e)
+                if not any(f["path"] == e["path"] and f["command"] == e["command"] and f["args"] == e["args"]
+                           and f["caption"] == e["caption"] for f in found):  # same item in two menu files
+                    found.append(e)
         if not found:
             return {"error": "no menu item with a command matches %r; items with no caption of "
                              "their own match by command name, e.g. 'Selection > select_all'"
@@ -1786,15 +1788,20 @@ def _click_menu_item(body):
         e = found[0]
         cmd, args = e["command"], e["args"] or {}
         scope = body.get("scope")
+        guessed = False
         if not scope:
-            scope = "window"
+            scope, guessed = "window", True
             for name, classes in (("application", "application_command_classes"),
                                   ("text", "text_command_classes"),
                                   ("window", "window_command_classes")):
                 if any(_command_name_from_class(c) == cmd for c in getattr(sublime_plugin, classes, [])):
-                    scope = name
+                    scope, guessed = name, False
                     break
         w = sublime.active_window()
+        try:  # a real click expands ${packages} and the like
+            args = sublime.expand_variables(args, w.extract_variables())
+        except Exception:
+            pass
         if scope == "text":
             v = w.active_view()
             if v is None:
@@ -1804,8 +1811,12 @@ def _click_menu_item(body):
             sublime.run_command(cmd, args)
         else:
             w.run_command(cmd, args)
-        return {"ok": True, "clicked": " > ".join(e["path"]) + ("" if e["caption"] else " > " + cmd),
-                "command": cmd, "args": args, "scope": scope}
+        out = {"ok": True, "clicked": " > ".join(e["path"]) + ("" if e["caption"] else " > " + cmd),
+               "command": cmd, "args": args, "scope": scope}
+        if guessed:
+            out["note"] = ("scope was a guess (the command is not a plugin command in this host); "
+                           "if nothing happened, repeat with scope='text' or 'application'")
+        return out
 
     return _on_main(fn)
 
@@ -2681,12 +2692,14 @@ def _pick_quick_panel(body):
         if isinstance(i, bool):
             return {"error": "index must be an integer"}
         if i is None and text:
-            low = str(text).lower()
-            hits = []
-            for n, item in enumerate(items):
+            low = str(text).strip().lower()
+            firsts = []
+            for item in items:
                 first = item["trigger"] if isinstance(item, dict) else (item[0] if isinstance(item, list) and item else item)
-                if low in str(first).lower():
-                    hits.append(n)
+                firsts.append(str(first).strip().lower())
+            hits = [n for n, f in enumerate(firsts) if f == low]  # an exact match wins
+            if len(hits) != 1:
+                hits = [n for n, f in enumerate(firsts) if low in f]
             if len(hits) != 1:
                 return {"error": "text matched %d items; give a more exact text or an index" % len(hits),
                         "matches": hits}
@@ -2702,7 +2715,11 @@ def _pick_quick_panel(body):
         rec["picked"] = True
         w.run_command("hide_overlay")
         if rec["on_select"] is not None:
-            sublime.set_timeout(lambda: rec["on_select"](i), 0)
+            try:
+                rec["on_select"](i)
+            except Exception as e:  # the package's own code failed; say so instead of "ok"
+                return {"error": "the panel was closed and the package's callback raised %s: %s"
+                                 % (type(e).__name__, e), "picked": i, "item": items[i]}
         return {"ok": True, "picked": i, "item": items[i]}
     return _on_main(fn)
 
