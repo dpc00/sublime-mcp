@@ -30,6 +30,9 @@ class FakeWindow:
     def show_quick_panel(self, items, on_select, flags=0, selected_index=-1, on_highlight=None, placeholder=None):
         FakeWindow.shown.append((items, on_select))
 
+    def extract_variables(self):
+        return {"packages": "C:/Pk"}
+
     def run_command(self, cmd, args=None):
         self.commands.append((cmd, args))
         if cmd == "hide_overlay" and FakeWindow.shown:
@@ -49,6 +52,8 @@ def _build(menus):
         find_resources=lambda pattern: sorted(menus),
         load_resource=lambda r: menus[r],
         decode_value=json.loads,
+        expand_variables=lambda a, v: {k: s.replace("${packages}", v["packages"]) if isinstance(s, str) else s
+                                       for k, s in a.items()},
         set_timeout=lambda fn, ms: fn(),
         run_command=lambda c, a=None: window.commands.append(("app:" + c, a)),
     )
@@ -103,6 +108,19 @@ class QuickPanelTest(unittest.TestCase):
         self.assertEqual(self.picked, [])
         self.assertTrue(self.ns["_pick_quick_panel"]({"text": "BERRY"})["ok"])
         self.assertEqual(self.picked, [2])
+
+    def test_an_exact_text_beats_longer_items_that_contain_it(self):
+        self._open(["Remove Package", "Remove", "Remove Library"])
+        self.assertEqual(self.ns["_pick_quick_panel"]({"text": "remove"})["picked"], 1)
+        self.assertEqual(self.picked, [1])
+
+    def test_a_callback_that_raises_is_reported_not_called_ok(self):
+        def boom(i):
+            raise ValueError("package bug")
+        self.window.show_quick_panel(["a"], boom)
+        got = self.ns["_pick_quick_panel"]({"index": 0})
+        self.assertNotIn("ok", got)
+        self.assertIn("ValueError: package bug", got["error"])
 
     def test_cancel_delivers_one_minus_one(self):
         self._open(["a"])
@@ -235,6 +253,26 @@ class ClickMenuItemTest(unittest.TestCase):
         self.assertEqual(sorted(m["path"] for m in got["matches"]), ["Edit", "Selection"])
         self.assertEqual(window.commands, [])
         self.assertTrue(ns["_click_menu_item"]({"path": "Edit > select all"})["ok"])
+
+    def test_the_same_item_in_two_menu_files_is_not_ambiguous(self):
+        menu = json.dumps([{"caption": "Selection", "children": [{"command": "select_all"}]}])
+        ns, window, _ = _build({"a.sublime-menu": menu, "b.sublime-menu": menu})
+        self.assertTrue(ns["_click_menu_item"]({"path": "Selection > select_all"})["ok"])
+        self.assertEqual(len(window.commands), 1)
+
+    def test_variables_in_menu_args_are_expanded(self):
+        menu = json.dumps([{"caption": "Preferences", "children": [
+            {"caption": "Settings", "command": "open_file", "args": {"file": "${packages}/User/x"}}]}])
+        ns, window, _ = _build({"m.sublime-menu": menu})
+        ns["_click_menu_item"]({"path": "Preferences > Settings"})
+        self.assertEqual(window.commands, [("open_file", {"file": "C:/Pk/User/x"})])
+
+    def test_a_guessed_scope_is_flagged_and_a_known_one_is_not(self):
+        got = self.ns["_click_menu_item"]({"path": "Tools > Build"})
+        self.assertIn("guess", got["note"])
+        self.plugin.window_command_classes.append(types.SimpleNamespace(name="build"))
+        self.assertNotIn("note", self.ns["_click_menu_item"]({"path": "Tools > Build"}))
+        self.assertNotIn("note", self.ns["_click_menu_item"]({"path": "Tools > Build", "scope": "window"}))
 
     def test_a_bad_scope_is_refused(self):
         self.assertIn("error", self.ns["_click_menu_item"]({"path": "Tools > Build", "scope": "bogus"}))
