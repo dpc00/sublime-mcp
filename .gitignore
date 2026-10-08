@@ -6,6 +6,7 @@
 *.sublime-workspace
 .cache
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .omp/
 .mcp.json
 .env
