@@ -203,9 +203,10 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   unsaved tab.
 - **Read the console:** `get_console` with the default mode, and `mode="captured"`, can miss
   Sublime's own output (load errors such as a plugin's SyntaxError). `mode="visible"`
-  returns the whole console but needs the window in front, and its `tail` argument is
-  ignored. If it cannot focus the window, open the panel with
-  `run_command(command="show_panel", args={"panel": "console"})` and read the screen.
+  returns the console (the last 200 lines by default; `tail=N` for N lines, `tail=0` for all, and
+  the result says `lines_total` and `truncated`) but needs the window in front. If the window
+  is not in front it fails at once with a clear message and changes nothing. Then open the
+  panel with `run_command(command="show_panel", args={"panel": "console"})` and read the screen.
 - **`run_command` returns `{"ok": true}` even when the command does not exist** or the
   package that provides it did not load. Check for a visible effect.
 - **A "main-thread timeout" says what it found.** On Windows the message now lists the native
@@ -230,11 +231,13 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
 - **The console is only partly readable.** `get_console` in the default and `captured` modes
   misses Sublime's own error output (tracebacks printed after an install, `ImportError`);
   `mode="visible"` needs the window in front and often cannot get it, even after a click on the
-  title bar. `get_output_panel` for the console returns everything since startup (17 KB) and
-  also misses those errors, and every failed `visible` attempt appends a
-  "[sublime-mcp] console capture marker" line to the console. `show_panel` console and reading the
-  screen shows only the last four lines. There is no tool that returns the last N lines of
-  Sublime's own console.
+  title bar (a click from the agent does not make it the system's front window; `force_focus=true`
+  raises it but can crash a portable). `get_output_panel` for the console is the same as
+  `get_console` in the default mode, so it also misses those errors when the window is not in
+  front. A visible capture that succeeds prints one "[sublime-mcp] console capture marker" line
+  into the console; one that fails for lack of focus now leaves nothing behind. `show_panel`
+  console and reading the screen shows only the last four lines. The last N lines are available
+  from `get_console(mode="visible", tail=N)` whenever the window is in front.
 - **Unknown arguments are dropped silently.** `get_commands` ignored `query` and returned all
   commands (58 KB); `delete_file` with `path` returned ok and deleted nothing (it takes `files`).
   Check the tool's schema in `discover_tools` and check the result.
