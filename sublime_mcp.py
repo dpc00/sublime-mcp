@@ -1412,6 +1412,15 @@ def _capture_console_win(params):
         tr("restore_focus: done")
         done.set()
 
+    if not force_focus_requested and not own_window_has_focus():
+        # Decide before changing anything. do_show prints a marker line into the console,
+        # replaces the clipboard and switches the visible panel; a capture that is bound to
+        # fail for lack of focus must not leave those behind (each failed attempt used to
+        # add a "console capture marker" line to the console).
+        return {"error": "could not give the Sublime Text window the keyboard focus; no input was "
+                         "sent; this Sublime window is not in front. Bring it to the front yourself, "
+                         "or pass force_focus=true to raise it (a portable Sublime Text may crash "
+                         "when raised)"}
     sublime.set_timeout(do_show, 0)
     if not done.wait(timeout=6.0):
         # Best-effort cleanup even when an earlier UI callback did not run.
@@ -1428,6 +1437,34 @@ def _capture_console_win(params):
     return {"error": result.get("error", "unknown")}
 
 
+def _tail_lines(text, tail):
+    """Keep the last ``tail`` lines of ``text`` (all of it when tail <= 0).
+
+    Returns (text, total_line_count).
+    """
+    lines = text.splitlines(True)
+    if tail <= 0 or len(lines) <= tail:
+        return text, len(lines)
+    return "".join(lines[-tail:]), len(lines)
+
+
+def _apply_visible_tail(visible, tail):
+    """Cut a visible-console result to its last ``tail`` lines and say that it was cut.
+
+    The visible capture copies the whole console (everything since startup, tens of
+    kilobytes), so without this ``tail`` was ignored in visible mode.
+    """
+    if not isinstance(visible, dict) or "text" not in visible or tail <= 0:
+        return visible
+    text, total = _tail_lines(visible["text"], tail)
+    result = dict(visible)
+    result["text"] = text
+    result["length"] = len(text)
+    result["lines_total"] = total
+    result["truncated"] = total > tail
+    return result
+
+
 def _get_console(params):
     """Unified console reader with explicit completeness and source metadata."""
     mode = (params.get("mode", ["auto"])[0] or "auto").lower()
@@ -1436,10 +1473,14 @@ def _get_console(params):
         return _get_console_log({"tail": [tail]})
     if mode not in ("auto", "visible"):
         return {"error": "mode must be auto, visible, or captured"}
+    try:
+        tail_n = int(tail)
+    except (TypeError, ValueError):
+        return {"error": "tail must be an integer"}
     if sys.platform == "win32":
         visible = _get_console_win(params)
         if "error" not in visible or mode == "visible":
-            return visible
+            return _apply_visible_tail(visible, tail_n)
         captured = _get_console_log({"tail": [tail]})
         captured["warning"] = "visible capture failed: {}".format(visible["error"])
         return captured
@@ -4561,8 +4602,11 @@ _MCP_TOOLS = [
      "capture and falls back to the reload-safe prospective capture; mode='visible' requires "
      "a complete capture; mode='captured' is non-invasive but contains only messages observed "
      "since capture began. Results include source and complete metadata. The visible capture "
-     "clicks in the console and copies it, so it only runs when this Sublime window is in front; "
-     "force_focus=true raises it first, which can crash a portable Sublime Text.",
+     "clicks in the console and copies it, so it only runs when this Sublime window is in front "
+     "(otherwise it fails at once and changes nothing); "
+     "force_focus=true raises it first, which can crash a portable Sublime Text. "
+     "tail=N keeps the last N entries (captured) or the last N lines (visible; the result then "
+     "has lines_total and truncated); tail=0 returns everything.",
      {"type": "object", "properties": {
          "mode": {"type": "string", "enum": ["auto", "visible", "captured"], "default": "auto"},
          "tail": {"type": "integer", "default": 200},
