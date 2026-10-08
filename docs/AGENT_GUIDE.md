@@ -6,7 +6,7 @@ Canonical copy for repo readers. `get_help` serves
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.
 
-Seven workflow tools are shown by default; the complete typed catalog (404
+Seven workflow tools are shown by default; the complete typed catalog (407
 tools) remains available through `discover_tools` and `batch`. Prefer a named capability over
 `run_command`, which often opens UI that steals focus from the agent chat.
 
@@ -165,8 +165,9 @@ get_command_palette(caption="Install")        # palette entries (filters: packag
 drive_input_panel(text="Terminus", action="submit")   # fill and submit/cancel an open input panel
 ```
 
-- No tool clicks a menu item by caption. Find the item with `get_menu_items`, then
-  `run_command` with its command and args; that is what the click does.
+- `click_menu_item` runs an installed menu item by caption path, e.g.
+  `path="Tools > Command Palette..."`; the end of the path is enough when it is unique.
+  (Or find the item with `get_menu_items` and `run_command` its command and args.)
 - `quick_panel` only opens Goto Anything. To open the command palette use
   `run_command` with `show_overlay` as above.
 - `drive_input_panel` works on input panels (prompts such as "Packages to install
@@ -265,9 +266,13 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   sent right after a restart is refused until the window has been focused with a click on its
   title bar. Replacing a package between Python hosts (release on 3.3, master on 3.8) in the
   same session gives false "No module named" errors; restart Sublime first.
-- **Quick panels have no tool.** Several packages ask for a decision in a quick panel (FileManager's
-  delete asks "Confirm - Send item to trash"; Package Control's pickers). `drive_input_panel`
-  only fills input panels; a quick panel has to be answered with the keyboard.
+- **Quick panels:** several packages ask for a decision in a quick panel (FileManager's delete asks
+  "Confirm - Send item to trash"; Package Control's pickers). `get_quick_panel` lists the items of
+  the panel and `pick_quick_panel` picks one (by index or text) or cancels it with index -1.
+  They only see panels opened by packages in the same plugin host as sublime-mcp; the command
+  palette, Goto Anything and panels from the other host give an error, and then the keyboard is
+  the only way. Picking runs the package's own callback, so pick only items you mean to run (some
+  pickers open files, folders or browser tabs). `drive_input_panel` only fills input panels.
 
 ## When a native dialog blocks Sublime (Windows)
 

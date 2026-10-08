@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+New tools: `get_quick_panel` and `pick_quick_panel` read and answer a quick panel that a package opened with `show_quick_panel` in the same plugin host (the command palette, Goto Anything and panels from the other host are not visible); `click_menu_item` runs an installed menu item by caption path without opening the native menu. `dismiss_native_window` now clicks the named button when `button` is given without `action` (it used to cancel silently).
+
 Browser-origin requests are refused. Without an `auth_token`, a web page could send a text/plain JSON POST to the loopback servers (no CORS preflight is needed for that) and reach every tool, including `eval_python`. Both servers now reject a request whose `Origin` is not localhost, 127.0.0.1 or `[::1]` (or is `null`), and, while bound to loopback only, a request whose `Host` is not loopback (DNS rebinding). MCP clients that are not browsers send no `Origin` and are unaffected. "No CORS headers" alone does not protect the servers; set `auth_token` for real protection. Reported by kaste in the package_control_channel review.
 
 ## 1.12.1
