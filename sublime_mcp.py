@@ -152,6 +152,45 @@ def _dispatch_label(fn):
     return "{}:{}".format(os.path.basename(code.co_filename), code.co_firstlineno)
 
 
+_BLOCKING_WINDOW_KINDS = ("dialog", "menu", "window")
+
+
+def _timeout_message(label, windows):
+    """Say why the main thread did not answer, from the native windows that exist.
+
+    ``windows`` is the list from native_windows.list_windows, or None when the
+    windows cannot be listed (not Windows, or the listing failed). A timeout does
+    not always mean a dialog: a package that is loading or installing keeps the
+    main thread busy for many seconds with no dialog open, and blaming a dialog
+    then sends the caller looking for something that is not there.
+    """
+    head = "main-thread timeout after 5s."
+    if windows is None:
+        return (head + " A native dialog or menu may be blocking Sublime's main thread until it is "
+                "dismissed; list_native_windows (Windows only) shows it and dismiss_native_window "
+                "answers it.")
+    blocking = [w for w in windows if w.get("kind") in _BLOCKING_WINDOW_KINDS]
+    if blocking:
+        names = ", ".join('"{}" ({})'.format(w.get("title") or w.get("class") or "untitled", w.get("kind"))
+                          for w in blocking)
+        return (head + " A native window blocks Sublime's main thread until it is dismissed: " + names +
+                ". list_native_windows shows it and dismiss_native_window answers it; both work while "
+                "Sublime is blocked.")
+    return (head + " No native dialog or menu is open, so the main thread is busy, not blocked by a "
+            "dialog (for example a package is loading or installing). It was running {}. Call again in "
+            "a few seconds; list_native_windows shows how long it has been busy.".format(label))
+
+
+def _main_thread_timeout_message(label):
+    windows = None
+    if native_windows.SUPPORTED:
+        try:
+            windows = native_windows.list_windows(_sublime_process_id())
+        except Exception:
+            windows = None
+    return _timeout_message(label, windows)
+
+
 def _on_main(fn):
     """Run fn() on ST's main thread and return its result (or re-raise its exception).
 
@@ -201,10 +240,7 @@ def _on_main(fn):
             "[sublime-mcp] _on_main TIMEOUT after 5s dispatching {}\nmain thread stack:\n{}"
             .format(label, _main_thread_stack())
         )
-        raise TimeoutError(
-            "main-thread timeout after 5s. A native dialog or menu blocks Sublime's main thread until it is "
-            "dismissed; list_native_windows and dismiss_native_window work while it is blocked."
-        )
+        raise TimeoutError(_main_thread_timeout_message(label))
     if exc[0]:
         raise exc[0]
     return result[0]
