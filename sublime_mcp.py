@@ -2665,14 +2665,32 @@ def _quick_panel_items(rec):
     return rec["items"]
 
 
+def _quick_panel_first_line(item):
+    first = item["trigger"] if isinstance(item, dict) else (item[0] if isinstance(item, list) and item else item)
+    return str(first).strip().lower()
+
+
 def _get_quick_panel(body):
-    """Items of the quick panel last opened by a plugin in this plugin host."""
+    """Items of the quick panel last opened by a plugin in this plugin host: at most `limit`
+    (default 100) of those whose first line contains `text`, starting at `offset`."""
+    text = str(body.get("text") or "").strip().lower()
+    try:
+        limit = max(1, min(int(body.get("limit", 100)), 1000))
+        offset = max(0, int(body.get("offset", 0)))
+    except (TypeError, ValueError):
+        return {"error": "limit and offset must be integers"}
+
     def fn():
         rec = _QUICK_PANELS.get(sublime.active_window().id())
         if rec is None:
             return {"error": "no recorded quick panel: none is open, or it was opened by Sublime "
                              "itself or by a package in the other plugin host"}
-        return {"items": _quick_panel_items(rec), "flags": rec["flags"], "selected_index": rec["selected_index"]}
+        items = _quick_panel_items(rec)
+        indexes = [n for n, item in enumerate(items) if not text or text in _quick_panel_first_line(item)]
+        page = indexes[offset:offset + limit]
+        return {"items": [items[n] for n in page], "indexes": page, "total": len(items),
+                "matched": len(indexes), "offset": offset, "flags": rec["flags"],
+                "selected_index": rec["selected_index"]}
     return _on_main(fn)
 
 
@@ -2694,10 +2712,7 @@ def _pick_quick_panel(body):
             return {"error": "index must be an integer"}
         if i is None and text:
             low = str(text).strip().lower()
-            firsts = []
-            for item in items:
-                first = item["trigger"] if isinstance(item, dict) else (item[0] if isinstance(item, list) and item else item)
-                firsts.append(str(first).strip().lower())
+            firsts = [_quick_panel_first_line(item) for item in items]
             hits = [n for n, f in enumerate(firsts) if f == low]  # an exact match wins
             if len(hits) != 1:
                 hits = [n for n, f in enumerate(firsts) if low in f]
@@ -5169,10 +5184,16 @@ _MCP_TOOLS = [
      _p("/drive_input_panel")),
     ("get_quick_panel",
      "List the items of the quick panel that a package opened with window.show_quick_panel "
-     "(e.g. the Install Package picker), plus its flags and preselected index. Only sees panels "
-     "opened by packages in the same plugin host as sublime-mcp; the command palette, Goto "
-     "Anything and panels from the other host are not visible and give an error.",
-     {"type": "object", "properties": {}},
+     "(e.g. the Install Package picker), plus its flags and preselected index. Big pickers hold "
+     "thousands of items, so the result is a page: pass text to keep only items whose first line "
+     "contains it, limit (default 100, at most 1000) and offset; the result gives total, matched "
+     "and the original indexes of the items returned. Only sees panels opened by packages in the "
+     "same plugin host as sublime-mcp; the command palette, Goto Anything and panels from the "
+     "other host are not visible and give an error.",
+     {"type": "object", "properties": {
+         "text": {"type": "string", "description": "Keep only items whose first line contains this."},
+         "limit": {"type": "integer", "description": "Page size (default 100, at most 1000)."},
+         "offset": {"type": "integer", "description": "Skip this many matching items (default 0)."}}},
      _p("/get_quick_panel")),
     ("pick_quick_panel",
      "Pick an item of the quick panel shown by get_quick_panel: by index, or by text (case-"

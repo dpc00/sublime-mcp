@@ -987,10 +987,24 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'get_quick_panel',
         'description': 'List the items of the quick panel that a package opened with '
                        'window.show_quick_panel (e.g. the Install Package picker), plus its flags '
-                       'and preselected index. Only sees panels opened by packages in the same '
-                       'plugin host as sublime-mcp; the command palette, Goto Anything and panels '
-                       'from the other host are not visible and give an error.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+                       'and preselected index. Big pickers hold thousands of items, so the result '
+                       'is a page: pass text to keep only items whose first line contains it, '
+                       'limit (default 100, at most 1000) and offset; the result gives total, '
+                       'matched and the original indexes of the items returned. Only sees panels '
+                       'opened by packages in the same plugin host as sublime-mcp; the command '
+                       'palette, Goto Anything and panels from the other host are not visible and '
+                       'give an error.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'text': {   'type': 'string',
+                                                         'description': 'Keep only items whose '
+                                                                        'first line contains '
+                                                                        'this.'},
+                                             'limit': {   'type': 'integer',
+                                                          'description': 'Page size (default 100, '
+                                                                         'at most 1000).'},
+                                             'offset': {   'type': 'integer',
+                                                           'description': 'Skip this many matching '
+                                                                          'items (default 0).'}}}},
     {   'name': 'get_scope_at_cursor',
         'description': 'Return the full syntax scope string at the cursor position.',
         'inputSchema': {'type': 'object', 'properties': {}}},
