@@ -131,3 +131,4 @@ Dated notes from long agent sessions. Check a note's date and whether the situat
 - [audit-installs-must-follow-user-flow-2026-10-07](feedback_audit_installs_must_follow_user_flow_2026_10_07.md) — every audit install via palette Install Package picker like a user; script installs prove nothing about installability
 - [no-scripts-in-audit-2026-10-07](feedback_no_scripts_in_audit_2026_10_07.md) — the audit finds sublime-mcp weaknesses: use only its own tools, no scripts or side channels; gaps are findings
 - [script-temptations-2026-10-07](project_script_temptations_2026_10_07.md) — summary from this session's transcript of every script, HTTP-bridge and eval_python use, and the sublime-mcp gap each one hid
+- [audit-exhausted-and-reload-hang-2026-10-08](project_audit_exhausted_and_reload_hang_2026_10_08.md) — audit list finished; new quick-panel/menu tools; /mcp "waiting" after a reload, socket-leak fix (unconfirmed cause); edit in scratch, commit only when green
