@@ -3794,6 +3794,38 @@ def _p(endpoint):
     return handler
 
 
+def _unknown_arg_warning(schema, args):
+    """Say which argument names a tool's schema does not list, or return None.
+
+    Many tools hand their arguments on to a Sublime command, which drops an
+    argument it does not know and still succeeds. Without this note a call such
+    as delete_file(path=...) (the argument is `files`) returns ok and does
+    nothing. The call is still run; only the result gets a warning. Tools whose
+    schema lists no properties are left alone, so an incomplete schema cannot
+    produce false warnings.
+    """
+    if not isinstance(args, dict) or not args:
+        return None
+    props = (schema or {}).get("properties")
+    if not isinstance(props, dict) or not props:
+        return None
+    unknown = sorted(str(k) for k in args if k not in props)
+    if not unknown:
+        return None
+    return ("argument(s) not in this tool's schema: {}; its arguments are: {}. "
+            "The call ran, but an unknown argument may have been dropped."
+            .format(", ".join(unknown), ", ".join(sorted(props))))
+
+
+def _with_arg_warning(result, schema, args):
+    """Add the unknown-argument warning to a dict result (lists are left alone)."""
+    warning = _unknown_arg_warning(schema, args)
+    if warning and isinstance(result, dict) and "warning" not in result:
+        result = dict(result)
+        result["warning"] = warning
+    return result
+
+
 _BATCH_MAX_CALLS = 50
 _PROJECT_SEARCH_TIMEOUT_SECONDS = 120.0
 _project_search_lock = threading.Lock()
@@ -3816,6 +3848,7 @@ def _batch(args):
 
     with _mcp_tools_lock:
         tools_by_name = {t[0]: t[3] for t in _MCP_TOOLS}
+        schemas_by_name = {t[0]: t[2] for t in _MCP_TOOLS}
     results = []
     for call in calls:
         if not isinstance(call, dict):
@@ -3834,7 +3867,8 @@ def _batch(args):
             results.append({"error": "unknown tool: {!r}".format(tool_name)})
             continue
         try:
-            results.append(handler(tool_args))
+            results.append(_with_arg_warning(
+                handler(tool_args), schemas_by_name.get(tool_name), tool_args))
         except Exception as e:
             results.append({"error": str(e)})
     return {"results": results}
@@ -6403,7 +6437,7 @@ def _mcp_dispatch(msg):
                 entry = next((t for t in _MCP_TOOLS if t[0] == tool_name), None)
             if entry is None:
                 raise ValueError("Unknown tool: " + str(tool_name))
-            data = entry[3](tool_args)
+            data = _with_arg_warning(entry[3](tool_args), entry[2], tool_args)
             if isinstance(data, list):
                 result = {"content": data}
             else:
