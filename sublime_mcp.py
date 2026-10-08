@@ -2046,15 +2046,55 @@ def _replace_lines(body):
     return _on_main(fn)
 
 
+def _split_guide(text):
+    """Split the guide into (heading, text) parts at its "## " lines.
+
+    The part before the first heading is called "Overview". A "## " line inside a
+    fenced code block is not a heading.
+    """
+    parts = []
+    heading, lines, in_fence = "Overview", [], False
+    for line in text.splitlines(True):
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+        if not in_fence and line.startswith("## "):
+            parts.append((heading, "".join(lines)))
+            heading, lines = line[3:].strip(), [line]
+        else:
+            lines.append(line)
+    parts.append((heading, "".join(lines)))
+    return [(h, t) for h, t in parts if t.strip()]
+
+
+def _help_for(text, section):
+    """The guide, or only the sections whose heading contains ``section`` (any case).
+
+    The full guide is about 12 KB, so an agent that needs one topic can ask for it:
+    get_help(section="console"). Every result lists the section headings.
+    """
+    parts = _split_guide(text)
+    headings = [h for h, _ in parts]
+    section = (section or "").strip().lower()
+    if not section:
+        return {"ok": True, "content": text, "sections": headings}
+    matched = [(h, t) for h, t in parts if section in h.lower()]
+    if not matched:
+        return {"error": "no section of the guide has {!r} in its heading".format(section),
+                "sections": headings}
+    return {"ok": True, "content": "".join(t for _, t in matched),
+            "matched": [h for h, _ in matched], "sections": headings}
+
+
 def _get_help(body):
     """Return the AGENT_GUIDE.md content to educate AI agents on tool usage."""
     import os
     guide_path = os.path.join(os.path.dirname(__file__), "AGENT_GUIDE.md")
     try:
         with open(guide_path, encoding="utf-8") as f:
-            return {"ok": True, "content": f.read()}
+            text = f.read()
     except FileNotFoundError:
         return {"error": "AGENT_GUIDE.md not found at {}".format(guide_path)}
+    return _help_for(text, body.get("section"))
 
 
 def _run_command(body):
@@ -5009,8 +5049,12 @@ _MCP_TOOLS = [
      _install_package),
     ("get_help",
      "Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use sublime-mcp tools correctly. "
-     "Call this first if you are unsure how to save files, close tabs, or use eval_python.",
-     {"type": "object", "properties": {}},
+     "Call this first if you are unsure how to save files, close tabs, or use eval_python. "
+     "The full guide is about 12 KB; section=<words from a heading> returns only the matching "
+     "section(s), and every result lists the section headings.",
+     {"type": "object", "properties": {"section": {
+         "type": "string",
+         "description": "Return only the sections whose heading contains this text, e.g. 'console'."}}},
      _p("/get_help")),
     ("list_native_windows",
      "List the native OS windows, dialogs and menus of this Sublime Text process (Windows only): "
