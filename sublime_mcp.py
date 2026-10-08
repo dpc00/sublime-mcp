@@ -1814,8 +1814,9 @@ def _click_menu_item(body):
         out = {"ok": True, "clicked": " > ".join(e["path"]) + ("" if e["caption"] else " > " + cmd),
                "command": cmd, "args": args, "scope": scope}
         if guessed:
-            out["note"] = ("scope was a guess (the command is not a plugin command in this host); "
-                           "if nothing happened, repeat with scope='text' or 'application'")
+            out["note"] = ("scope not detected (a built-in command, or one from the other plugin host), "
+                           "so it ran in the window, which also reaches built-in text commands such as "
+                           "select_all; if nothing happened, repeat with scope='text' or 'application'")
         return out
 
     return _on_main(fn)
