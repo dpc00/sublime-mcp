@@ -1,4 +1,4 @@
----
+﻿---
 name: dont-report-newest-build-lag
 description: "2026-10-03 Donald: \"won't start on build 4215\" is not a bug, it is lag behind the times; test each package on the Sublime/Python versions it requires, and only report real defects there"
 metadata:
@@ -15,3 +15,6 @@ After the top-ten run (golang/sublime-build#45, zsong/SqlBeautifier#31, Robot-Wi
 **How to apply:** for every package read its `.python-version` / README for the Sublime and Python it needs and test there (the older portable `D:\st_portable_4200`, Python 3.3 and 3.8 hosts; see [[reference_portable_st_4200_older_build]]). If it only fails on 4215, log "fails on 4215 only (age)" and do NOT file. File only defects that reproduce on a version the package supports. Do not stop at the first load failure: after it, retest on 4200 and look for real bugs. Also do not file general "old library on a newer system Python" issues unless they hit the package's required setup.
 
 Resolved: he approved closing the five "4215" issues on 2026-10-03 (see [[project_closed_4215_only_issues_2026_10_03]]). Related: [[project_package_audit_campaign_stopped_2026_10_03]], [[feedback_keep_issue_text_short]].
+
+**2026-10-08 NARROW READING:** Donald's actual typed words (session fcb54aa2, line 40732) concern only bare 'won't start on 4215' reports. He did not write a rule against reporting defects with a visible cause (he told me to file HoverDocs's show_popup float TypeError). Do not stretch this note; see [[hover-with-real-pointer-and-file-3-14-findings-2026-10-08]].
+
