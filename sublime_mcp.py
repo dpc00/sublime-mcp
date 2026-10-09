@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.12.1"
+__version__ = "1.12.2"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -1183,10 +1183,12 @@ def _capture_console_win(params):
 
     def snapshot_ui():
         window = sublime.active_window()
+        view = window.active_view()
         return {
             "window": window,
             "panel": window.active_panel(),
-            "view": window.active_view(),
+            "view": view,
+            "selection": [(r.a, r.b) for r in view.sel()] if view else None,
             "clipboard": sublime.get_clipboard(),
             "foreground": foreground,
         }
@@ -1315,6 +1317,13 @@ def _capture_console_win(params):
             tr("do_click_focused: window does not have focus; no input sent")
             abort_no_focus()
             return
+        if snapshot["window"].active_panel() != "console":
+            # The click below goes to a fixed spot near the bottom of the window. If the
+            # console panel is not open there, it lands in the editor view instead (in a
+            # terminal tab it selects a line of the prompt), so never click without it.
+            tr("do_click_focused: console panel not open; no input sent")
+            abort_no_focus("; the console panel did not open")
+            return
         INP = _INP()
         tr("do_click_focused: cursor + click")
         user32.SetCursorPos(cx, cy)
@@ -1408,6 +1417,11 @@ def _capture_console_win(params):
         previous_view = snapshot["view"]
         if previous_view and previous_view.is_valid():
             snapshot["window"].focus_view(previous_view)
+            saved = snapshot.get("selection")
+            if saved is not None and [(r.a, r.b) for r in previous_view.sel()] != saved:
+                # A stray click or key must not leave a different selection behind.
+                previous_view.sel().clear()
+                previous_view.sel().add_all([sublime.Region(a, b) for a, b in saved])
         previous_foreground = snapshot["foreground"]
         if previous_foreground and previous_foreground != hwnd:
             tr("restore_focus: SetForegroundWindow(previous)")
