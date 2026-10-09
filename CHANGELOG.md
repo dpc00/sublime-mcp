@@ -2,7 +2,7 @@
 
 ## 1.12.2
 
-Console capture no longer disturbs the editor: the visible-console read refuses to click unless the console panel is actually open (the click lands at a fixed spot near the bottom of the window, and in a terminal tab it selected a line of the prompt and left the tab frozen on an old screen), and it restores the previous view's selection when it finishes.
+Console capture is safer: the visible-console read refuses to click unless the console panel is actually open (the click lands at a fixed spot near the bottom of the window, and in a terminal tab it can select a line of the prompt), and it restores the previous view's selection when it finishes. This is a guard only; it is not the fix for the frozen-tab report, which was traced to AgentIDE reacting to an instruction from Claude.
 
 `skills/sublime-debugger` rewritten: it described the removed `debugger-mcp` server. It now holds the tested recipe for driving the Debugger package with the generic tools (setup without palettes, the `eval_python` route, the generic-tools route and its limits, gotchas), and `docs/agents.md` points to it instead of a global skill. `skills/sublime-lsp` is likewise replaced by the former user-level `lsp-control` text (the LSP bridge and the standard request table), no longer tied to the removed `lsp-mcp`.
 
