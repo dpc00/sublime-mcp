@@ -1,6 +1,6 @@
 ---
 name: colorhelper-fork-fix-2026-10-09
-description: 2026-10-09 (late) Donald asked to retest ColorHelper in portable 4215 and fix the native-picker freeze; fork cloned to data\dev, fix tested, nothing posted or pushed
+description: 2026-10-09 (late) Donald asked to retest ColorHelper in portable 4215 and fix the native-picker freeze; fork, fix, tests, Linux run (history; it was pushed and became PR #284, see colorhelper-maintainer-reply-2026-10-10 for the final state)
 metadata:
   type: project
 ---
@@ -29,6 +29,8 @@ State left: portable quit, junction `D:\st_portable_4215\Data\Packages\ColorHelp
 
 **Gotchas seen:** after `remove_package` plus the junction, Package Control reinstalled the mdpopups library and showed "restart for libraries" (answer OK, restart); commands silently do nothing until the libraries finish. The picker starts white because the cursor colour is not detected by the command.
 
-**State left:** portable 4215 quit; junction `D:\st_portable_4215\Data\Packages\ColorHelper` still exists; test setting file and CSS recycled. Nothing committed, pushed, or posted. Posting anything to the Discussion is Donald's call, and he must see the exact text first.
+**State left (as of the night of 2026-10-09, SUPERSEDED: it was committed, pushed and posted on 2026-10-10, see the paragraphs above and [[colorhelper-maintainer-reply-2026-10-10]]):** portable 4215 quit; junction `D:\st_portable_4215\Data\Packages\ColorHelper` still exists; test setting file and CSS recycled. Posting anything to the Discussion is Donald's call, and he must see the exact text first.
+
+**Moved 2026-10-10:** the clone is no longer at `C:\Users\donal\data\dev\ColorHelper` but at `C:\Users\donal\tools\ColorHelper` (the junction was re-created); every `data\dev\ColorHelper` path above is a dated record. Also: this note already knew "background computer-use clicks do NOT fire popup links; a real pointer click does" and the mdpopups `yaml` rig fix; I rediscovered the click part the long way on 2026-10-10 ([[popup-clicks-need-real-pointer-and-front-2026-10-10]]). The "picker starts white" gotcha above is explained: nothing selected, or the file has no ColorHelper rules yet.
 
 **PR OPENED (2026-10-10, Donald: 'go ahead' after seeing the text):** https://github.com/facelessuser/ColorHelper/pull/284 from dpc00:native-picker-off-main-thread, body in the 'Claude reports:' format. Do not poll; look only when Donald asks.
