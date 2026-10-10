@@ -30,3 +30,5 @@ State left: portable quit, junction `D:\st_portable_4215\Data\Packages\ColorHelp
 **Gotchas seen:** after `remove_package` plus the junction, Package Control reinstalled the mdpopups library and showed "restart for libraries" (answer OK, restart); commands silently do nothing until the libraries finish. The picker starts white because the cursor colour is not detected by the command.
 
 **State left:** portable 4215 quit; junction `D:\st_portable_4215\Data\Packages\ColorHelper` still exists; test setting file and CSS recycled. Nothing committed, pushed, or posted. Posting anything to the Discussion is Donald's call, and he must see the exact text first.
+
+**PR OPENED (2026-10-10, Donald: 'go ahead' after seeing the text):** https://github.com/facelessuser/ColorHelper/pull/284 from dpc00:native-picker-off-main-thread, body in the 'Claude reports:' format. Do not poll; look only when Donald asks.
