@@ -1,0 +1,13 @@
+---
+name: wsl-st-upgraded-4215-2026-10-09
+description: 2026-10-09 the WSL Sublime program files were upgraded from build 4200 to 4215 (config untouched, not launched); what to expect on the first start
+metadata:
+  type: project
+---
+
+Donald, after the ColorHelper Linux discussion: "Just upgrade wsl-st". Done the same evening, files only, nothing launched (WSLg launches are the thing that wedged his keyboard, see [[feedback_wslg_window_froze_keyboard]]).
+
+**What was done:** downloaded `https://download.sublimetext.com/sublime_text_build_4215_x64.tar.xz` (22,300,732 bytes, matches Content-Length, SHA-256 C153F418D3AB26B90ECCE8C02A82E4E961025ED7A65F7E25060A5457D43E88D9, no published hash to compare) to `C:\Users\donal\data\dev\st4215_linux\`; staged and checked it in `~/st_upgrade_tmp` (`--version` = 4215); moved the old program directory to `~/removed_packages/sublime_text_4200_program` (restore by moving it back); installed the new one at `~/.local/sublime/sublime_text`. Script: scratchpad `wsl_upgrade.sh stage|swap`. `~/.config/sublime-text` (Packages, Installed Packages, Lib, Local) was not touched.
+
+**Update, same night:** it WAS launched afterwards for the ColorHelper Linux test and worked (see [[colorhelper-fork-fix-2026-10-09]]): Package Control installed the 3.14 libraries and showed "restart for libraries" once; MCP ports 9532/9530 answered; the `sublime-mcp-wsl-4200` server (name still says 4200) needed `/mcp`. MCP Commander in WSL was re-synced from the repo (`sublime_mcp.py`, `lib/*.py`, `AGENT_GUIDE.md`, `.python-version` 3.14). The WSL Sublime is quit again and its config has no ColorHelper test leftovers.
+**Expect on the first start (written before the launch):** 4215 has only the 3.3 and 3.14 plugin hosts; MCP Commander there is the 2026-10-06 copy pinned `.python-version` 3.8 (3.8 maps to the 3.14 host on 4215, as on the Windows portable) and may be older than the repo's `sublime_mcp.py` (re-copy `sublime_mcp.py` and `lib/` first, see [[project_wsl_st_running_2026_10_06]]); the config has Lib `python33` and `python38` only, so Package Control will install 3.14 libraries and show "restart for libraries" (answer OK); `/etc/hosts` no longer has the `www.sublimetext.com` block (WSL regenerated it), but 4215 is the latest build so the Update dialog should not appear; the `sublime-mcp-wsl` server needs `/mcp` after the start; start order and `wsl --shutdown` steps are in [[project_wsl_st_running_2026_10_06]]. `kcolorchooser` is installed in WSL (see [[project_colorhelper_fork_fix_2026_10_09]]), so a Linux ColorHelper picker run is now possible there once he agrees to a launch.
