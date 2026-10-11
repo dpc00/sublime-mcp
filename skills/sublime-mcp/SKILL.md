@@ -62,6 +62,14 @@ Reading the console (tested 2026-10-11 on portable 4200 and 4215, identical resu
 or menu has blocked Sublime's main thread and the other tools time out; call them
 through `batch`.
 
+A dialog can open a moment after `run_command` returned ok, so a `list_native_windows`
+in the same batch may miss it: pass `settle_ms=300` to `run_command` and read `dialogs`
+in the result. `list_native_windows` returns no message text for a task dialog with
+custom button text (for example "Install Terminus" / "Cancel"); read it with
+computer-use. To close a tab that has no path use `close_file(name=...)` or
+`close_file(index=...)`, never `run_command` `close` (it does nothing) and never
+`close_file` with no arguments unless the active tab is the one you mean.
+
 Edit through `str_replace_based_edit_tool` so changes appear in Sublime with undo
 and diff markers. Call `save_file` after an edit unless the user asks to leave the
 buffer unsaved.

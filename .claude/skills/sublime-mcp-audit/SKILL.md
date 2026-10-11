@@ -61,6 +61,16 @@ No tool reads the items of an open quick panel (such as the Install Package pick
 - The app name for the portable in computer-use changes between listings: always take it from `list_apps` and use the `process:D:\...\sublime_text.exe` entry, never your real Sublime.
 - Console: use `get_console(mode="visible", tail=N, force_focus=true)` for a complete read, on every call (tested 2026-10-11 on 4200 and 4215: no crash, `complete: true`; the window does not stay in front, and a title-bar click does not raise it). Without `force_focus` visible mode fails at once; `auto` and `get_output_panel` (which now also takes `force_focus`; tested, gives a complete read with it) fall back to captured text (`complete: false`, with a `warning`). `captured`/`get_console_log` miss startup output. Do not open the console panel and read the screen. Details: `skills/sublime-mcp/SKILL.md`.
 - `delete_file` / `delete_folder` raise a Windows "permanently delete" confirmation per item on this drive and can stall; confirm each in computer-use.
+- Learned 2026-10-11 (AI package audit, portable 4200):
+  - After `show_overlay` (or any `run_command` that changes the UI) the next computer-use key press can come back "interrupted: user input detected" for every key until you call `get_window_state` once; do that, then type. A freshly started portable answers "no_viable_candidate" to keys until its title bar is clicked.
+  - Order that works for the Install picker: `run_command show_overlay` -> `get_window_state` (image) -> `Return` -> wait about 6 s for the list -> one key press per letter of the name -> `get_window_state` (image) to see the match -> `Return`.
+  - The Remove picker highlights its first row, which is often MCP Commander or Package Control: type the package's name first and check the screenshot shows the single right entry before `Return`.
+  - Dialogs: read them with `list_native_windows`; if `messages` is empty (a task dialog with custom button text) read the text with computer-use. A click by `element_index` on those buttons did nothing; click the pixel position from a `capture_mode="image"` snapshot. A message box may need a second or two to close after the click, so list again before clicking twice.
+  - Use `run_command` with `settle_ms=300` when a command may show a dialog; it returns the new dialog in `dialogs`.
+  - A package linked in as a junction does not get its `dependencies.json` libraries: run `run_command satisfy_libraries`, then restart the portable before testing. Libraries installed that way are not removed with the package; list them as leftovers.
+  - Close a pathless tab with `close_file(name=...)`; `run_command close` with scope view does nothing.
+  - After a portable restart its MCP server may reconnect by itself: test with a call before asking for `/mcp`.
+  - Settings files written from outside Sublime are picked up late (about one command later). Run something harmless first, or check the console for "reloading settings Packages/User/...".
 
 ## Portable instance not connected (fixed procedure, 2026-10-07)
 

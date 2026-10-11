@@ -278,12 +278,18 @@ TOOLS = [   {   'name': 'add_directory',
                        "host-side close-blocking hook gets a chance to run -- e.g. GhostShell's "
                        'ai_terminal package refuses this outright (no dialog, just a no-op) for '
                        'any ai_terminal tab, so calling this on one does nothing rather than '
-                       'closing it. Only ever targets an already-open view found by path or the '
-                       'current active view -- it cannot target an unsaved/path-less tab (like an '
-                       'ai_terminal tab) by index; do not call this expecting it to close '
-                       "'whatever tab you mean' when no path resolves.",
+                       'closing it. Only ever targets an already-open view found by path, by '
+                       'name or index, or the current active view. Pass path for a saved file. '
+                       'For a tab with no path (unsaved buffer, scratch view) pass name '
+                       "(partial, case-insensitive match on the tab's title) or index (0-based, "
+                       'from get_open_files); with none of the three it closes whichever tab is '
+                       'active, so name the tab you mean. A name or index that matches nothing '
+                       'is an error and closes nothing. (run_command '
+                       "'close' with scope='view' does not close a tab: use this tool.)",
         'inputSchema': {   'type': 'object',
-                           'properties': {'path': {'type': 'string', 'default': ''}}}},
+                           'properties': {   'path': {'type': 'string', 'default': ''},
+                                             'name': {'type': 'string', 'default': ''},
+                                             'index': {'type': 'integer', 'default': -1}}}},
     {   'name': 'close_folder_list',
         'description': 'Removes all the folder(s) from the sidebar and hides it. (WindowCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1867,13 +1873,19 @@ TOOLS = [   {   'name': 'add_directory',
                        "For scope='view'/'text', optionally target a specific tab with name "
                        '(partial, case-insensitive) or index (0-based, from get_open_files) '
                        'instead of whatever tab happens to be globally focused -- important when '
-                       'another agent/session may be sharing this Sublime instance.',
+                       'another agent/session may be sharing this Sublime instance.\n'
+                       'ok means the command was dispatched, not that it did anything: a command '
+                       'that opens a dialog often does so a moment after this returns. Pass '
+                       'settle_ms (for example 300) to wait up to that long and get any dialog '
+                       "that appeared in the result as 'dialogs' (Windows; same fields as "
+                       'list_native_windows).',
         'inputSchema': {   'type': 'object',
                            'properties': {   'command': {'type': 'string'},
                                              'args': {'type': 'object'},
                                              'scope': {'type': 'string', 'default': 'window'},
                                              'name': {'type': 'string', 'default': ''},
-                                             'index': {'type': 'integer', 'default': -1}},
+                                             'index': {'type': 'integer', 'default': -1},
+                                             'settle_ms': {'type': 'integer', 'default': 0}},
                            'required': ['command']}},
     {   'name': 'run_macro',
         'description': 'Play back the most recently recorded macro at the cursor.',

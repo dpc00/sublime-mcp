@@ -1288,7 +1288,7 @@ def _capture_console_win(params):
 
     def abort_no_focus(hint=""):
         result["error"] = ("could not give the Sublime Text window the keyboard focus; "
-                           "no input was sent" + hint)
+                           "no input was sent" + hint + _dialog_hint())
         restore_ui()
 
     def do_click():
@@ -1383,7 +1383,8 @@ def _capture_console_win(params):
                         result["error"] = "console copy did not update the clipboard"
                     elif marker not in text:
                         result["error"] = ("the copied text is not the console (it lacks the "
-                                           "capture marker); the console did not have the focus")
+                                           "capture marker); the console did not have the focus"
+                                           + _dialog_hint())
                     else:
                         result["text"] = text
                     kernel32.GlobalUnlock(h)
@@ -1440,7 +1441,7 @@ def _capture_console_win(params):
         return {"error": "could not give the Sublime Text window the keyboard focus; no input was "
                          "sent; this Sublime window is not in front. Bring it to the front yourself, "
                          "or pass force_focus=true to raise it (a portable Sublime Text may crash "
-                         "when raised)"}
+                         "when raised)" + _dialog_hint()}
     sublime.set_timeout(do_show, 0)
     if not done.wait(timeout=6.0):
         # Best-effort cleanup even when an earlier UI callback did not run.
@@ -2200,12 +2201,41 @@ def _get_help(body):
     return _help_for(text, body.get("section"))
 
 
+def _open_dialogs():
+    """Native dialogs this Sublime process has open right now, as list_native_windows
+    reports them (Windows only; an empty list elsewhere or on any failure). Never touches
+    the main thread, so it also works while a modal dialog has blocked it."""
+    if not native_windows.SUPPORTED:
+        return []
+    try:
+        windows = native_windows.list_windows(_sublime_process_id())
+    except Exception:
+        return []
+    return [w for w in windows if w.get("kind") == "dialog"]
+
+
+def _dialog_hint():
+    """A sentence naming an open native dialog, for error messages ('' when none is open).
+    A modal dialog takes the keyboard focus, so several tools fail with a focus error that
+    does not say why; this tells the caller what to dismiss."""
+    dialogs = _open_dialogs()
+    if not dialogs:
+        return ""
+    text = " ".join(str(m) for d in dialogs for m in (d.get("messages") or [])).strip()
+    text = " ".join(text.split())
+    if len(text) > 120:
+        text = text[:117] + "..."
+    return ("; a native dialog is open{} -- dismiss it first (list_native_windows, "
+            "dismiss_native_window)".format(" ({!r})".format(text) if text else ""))
+
+
 def _run_command(body):
     cmd = body.get("command")
     args = body.get("args") or {}
     scope = body.get("scope", "window")
     name = body.get("name", "")
     index = int(body.get("index", -1))
+    settle_ms = max(0, min(int(body.get("settle_ms", 0) or 0), 5000))
     if not cmd:
         return {"error": "command required"}
 
@@ -2226,7 +2256,25 @@ def _run_command(body):
             w.run_command(cmd, args)
         return {"ok": True}
 
-    return _on_main(fn)
+    if not settle_ms:
+        return _on_main(fn)
+
+    # settle_ms: a command often opens its dialog a moment AFTER run_command has returned
+    # ok (a timer, a worker thread, an error_message posted back to the main thread), so a
+    # list_native_windows in the same batch can miss it. Watch for up to settle_ms and report
+    # any dialog that was not already open before the command, as "dialogs".
+    before = {d.get("hwnd") for d in _open_dialogs()}
+    result = _on_main(fn)
+    new = []
+    deadline = time.time() + settle_ms / 1000.0
+    while True:
+        new = [d for d in _open_dialogs() if d.get("hwnd") not in before]
+        if new or time.time() >= deadline:
+            break
+        time.sleep(0.05)
+    if new and isinstance(result, dict):
+        result["dialogs"] = new
+    return result
 
 
 def _run_build(body):
@@ -2279,6 +2327,8 @@ def _save_all(body):
 
 def _close_file(body):
     path = body.get("path")
+    name = body.get("name", "") or ""
+    index = int(body.get("index", -1))
 
     def fn():
         w = sublime.active_window()
@@ -2286,6 +2336,14 @@ def _close_file(body):
             v = w.find_open_file(path)
             if not v:
                 return {"error": "not open: {}".format(path)}
+        elif name or index >= 0:
+            # Target a path-less tab (an unsaved buffer, a panel-less scratch view) the same
+            # way run_command does: by partial name or by position. Without this the only
+            # way to close such a tab was the active-tab fallback below, which closes
+            # whatever tab happens to be in front.
+            v, err = _resolve_view(w, name, index)
+            if err:
+                return err
         else:
             v = w.active_view()
         if not v:
@@ -2301,8 +2359,8 @@ def _close_file(body):
         if v is w.active_view():
             w.run_command("close_file")
         else:
-            group, index = w.get_view_index(v)
-            w.run_command("close_by_index", {"group": group, "index": index})
+            group, pos = w.get_view_index(v)
+            w.run_command("close_by_index", {"group": group, "index": pos})
         return {"ok": True}
 
     return _on_main(fn)
@@ -5067,13 +5125,18 @@ _MCP_TOOLS = [
      "For scope='view'/'text', optionally target a specific tab with name "
      "(partial, case-insensitive) or index (0-based, from get_open_files) "
      "instead of whatever tab happens to be globally focused -- important "
-     "when another agent/session may be sharing this Sublime instance.",
+     "when another agent/session may be sharing this Sublime instance.\n"
+     "ok means the command was dispatched, not that it did anything: a command that "
+     "opens a dialog often does so a moment after this returns. Pass settle_ms "
+     "(for example 300) to wait up to that long and get any dialog that appeared in "
+     "the result as 'dialogs' (Windows; same fields as list_native_windows).",
      {"type": "object", "properties": {
          "command": {"type": "string"},
          "args": {"type": "object"},
          "scope": {"type": "string", "default": "window"},
          "name": {"type": "string", "default": ""},
          "index": {"type": "integer", "default": -1},
+         "settle_ms": {"type": "integer", "default": 0},
      }, "required": ["command"]},
      _p("/run_command")),
     ("run_build",
@@ -5102,11 +5165,18 @@ _MCP_TOOLS = [
      "GhostShell's ai_terminal package refuses this outright (no dialog, "
      "just a no-op) for any ai_terminal tab, so calling this on one does "
      "nothing rather than closing it. Only ever targets an already-open "
-     "view found by path or the current active view -- it cannot target an "
-     "unsaved/path-less tab (like an ai_terminal tab) by index; do not call "
-     "this expecting it to close 'whatever tab you mean' when no path "
-     "resolves.",
-     {"type": "object", "properties": {"path": {"type": "string", "default": ""}}},
+     "view found by path, by name or index, or the current active view. "
+     "Pass path for a saved file. For a tab with no path (unsaved buffer, scratch "
+     "view) pass name (partial, case-insensitive match on the tab's title) or "
+     "index (0-based, from get_open_files); with none of the three it closes "
+     "whichever tab is active, so name the tab you mean. A name or index that "
+     "matches nothing is an error and closes nothing. "
+     "(run_command 'close' with scope='view' does not close a tab: use this tool.)",
+     {"type": "object", "properties": {
+         "path": {"type": "string", "default": ""},
+         "name": {"type": "string", "default": ""},
+         "index": {"type": "integer", "default": -1},
+     }},
      _p("/close_file")),
     ("toggle_comment",
      "Toggle line comment (or block comment if block=true) on the current selection.",

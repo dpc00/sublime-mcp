@@ -300,6 +300,28 @@ only (they use Win32). Verified on all 16 blocking commands with
 `tools/verify_native_dialogs.py`: each froze Sublime, was listed and dismissed
 by these tools, and Sublime answered again.
 
+**A dialog that appears after `run_command` has returned.** `ok` from `run_command` only
+means the command was dispatched. A command that shows its dialog from a timer, a worker
+thread or `sublime.error_message` does so a moment later, so a `list_native_windows` in the
+same `batch` can come back without it (seen with Package Control's and several packages'
+error dialogs). Pass `settle_ms` (for example 300): `run_command` then waits up to that long
+and returns every dialog that was not open before the command as `dialogs`, with the same
+fields as `list_native_windows`. Without `settle_ms` nothing changes. When `get_console`
+fails for lack of focus while a dialog is open, the error now names the dialog.
+
+**What `list_native_windows` cannot read.** The message of a Windows task dialog (one whose
+buttons have custom text, such as "Install Terminus" / "Cancel") comes back with an empty
+`messages` list, although the buttons are listed. Read it with computer-use
+(`get_window_state` shows it as the dialog's main text). With computer-use, a click by
+`element_index` on those buttons may do nothing; a click at the button's pixel position
+from a `capture_mode="image"` snapshot worked, and a message box can take a second or two
+to close after the click, so list the windows again before assuming it did not.
+
+**Closing a tab that has no path.** `close_file(name="...")` (partial, case-insensitive) or
+`close_file(index=N)` closes that tab; with none of `path`, `name`, `index` it closes the
+active tab. `run_command` with `command="close"` and `scope="view"` returns ok and closes
+nothing.
+
 ## More
 
 The 160 tools generated from Sublime's command list, what each was observed to do, and
