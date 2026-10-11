@@ -2961,14 +2961,27 @@ def _eval_python(body):
             "view": sublime.active_window().active_view(),
             "print": lambda *a, **kw: print(*a, **kw, file=buf),
         }
-        exec(code, env)  # noqa: S102
+        try:
+            exec(code, env)  # noqa: S102
+        except (SystemExit, KeyboardInterrupt, GeneratorExit) as e:
+            # sys.exit() / exit() in the code must not take the plugin host down with it
+            raise RuntimeError("the code called {}({}); that would end the plugin host, so it was stopped".format(
+                type(e).__name__, ", ".join(repr(a) for a in e.args)))
         return buf.getvalue()
 
     try:
         output = _on_main(fn)
         return {"ok": True, "output": output}
     except Exception as e:
-        return {"ok": False, "error": str(e), "output": buf.getvalue()}
+        # only the frames of the evaluated code (file name "<string>"): the plugin's own frames are noise
+        code_lines = code.splitlines()
+        steps = []
+        for frame in traceback.extract_tb(e.__traceback__):
+            if frame.filename == "<string>":
+                text = code_lines[frame.lineno - 1].strip() if 0 < frame.lineno <= len(code_lines) else ""
+                steps.append("line {}: {}".format(frame.lineno, text))
+        steps.append("{}: {}".format(type(e).__name__, e))
+        return {"ok": False, "error": str(e), "output": buf.getvalue(), "traceback": "\n".join(steps)}
 
 
 def _eval_python_latest(body):
@@ -3898,6 +3911,26 @@ _POST = {
 }
 
 
+def _read_json_body(handler):
+    """(body, None) from a request's JSON body, or (None, message) when it cannot be used.
+
+    An unreadable body used to raise inside the handler: the connection was dropped without any
+    answer and a traceback was printed into the console."""
+    try:
+        length = int(handler.headers.get("Content-Length", 0) or 0)
+    except ValueError:
+        return None, "invalid Content-Length header"
+    if length < 0:
+        return None, "invalid Content-Length header"
+    raw = handler.rfile.read(length) if length else b""
+    if not raw.strip():
+        return {}, None
+    try:
+        return json.loads(raw.decode("utf-8")), None
+    except (ValueError, UnicodeDecodeError) as e:
+        return None, "request body is not valid JSON: {}".format(e)
+
+
 class _Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -3945,8 +3978,13 @@ class _Handler(BaseHTTPRequestHandler):
         if tool_name in _DISABLED_TOOLS:
             self._json(_tool_disabled_error(tool_name), 403)
             return
-        length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length)) if length else {}
+        body, problem = _read_json_body(self)
+        if problem:
+            self._json({"error": problem}, 400)
+            return
+        if not isinstance(body, dict):
+            self._json({"error": "request body must be a JSON object"}, 400)
+            return
         handler = _POST.get(parsed.path)
         if handler:
             try:
@@ -6749,8 +6787,16 @@ class _MCPHandler(BaseHTTPRequestHandler):
     def _handle_message(self):
         params = parse_qs(urlparse(self.path).query)
         session_id = params.get("sessionId", [None])[0]
-        length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length)) if length else {}
+        body, problem = _read_json_body(self)
+        if problem:
+            payload = json.dumps({"jsonrpc": "2.0", "id": None,
+                                  "error": {"code": -32700, "message": problem}}).encode()
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
 
         self.send_response(202)
         self.send_header("Content-Type", "application/json")
@@ -6770,8 +6816,16 @@ class _MCPHandler(BaseHTTPRequestHandler):
         # second connection. One JSON-RPC request in, one response out on the
         # same connection. Reuses the same dispatch logic as the legacy SSE
         # path (/sse + /messages) so both transports share one implementation.
-        length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length)) if length else {}
+        body, problem = _read_json_body(self)
+        if problem:
+            payload = json.dumps({"jsonrpc": "2.0", "id": None,
+                                  "error": {"code": -32700, "message": problem}}).encode()
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
 
         resp = _mcp_dispatch(body)
 
