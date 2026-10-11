@@ -1663,13 +1663,17 @@
     },
     {
       "name": "get_output_panel",
-      "description": "Return the text content of an output panel.\nIf name is omitted, read the active output panel. Use name='exec' for build output.\nUse name='Console' to read Sublime's built-in console through the best available backend.",
+      "description": "Return the text content of an output panel.\nIf name is omitted, read the active output panel. Use name='exec' for build output.\nUse name='Console' to read Sublime's built-in console through the best available backend; for the console, force_focus=true raises the window first (needed for a complete read when the window is not in front; can crash a portable Sublime Text).",
       "inputSchema": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
             "default": ""
+          },
+          "force_focus": {
+            "type": "boolean",
+            "default": false
           }
         }
       }

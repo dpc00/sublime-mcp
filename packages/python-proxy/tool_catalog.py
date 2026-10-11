@@ -943,9 +943,12 @@ TOOLS = [   {   'name': 'add_directory',
                        "If name is omitted, read the active output panel. Use name='exec' for "
                        'build output.\n'
                        "Use name='Console' to read Sublime's built-in console through the best "
-                       'available backend.',
+                       'available backend; for the console, force_focus=true raises the '
+                       'window first (needed for a complete read when the window is not in '
+                       'front; can crash a portable Sublime Text).',
         'inputSchema': {   'type': 'object',
-                           'properties': {'name': {'type': 'string', 'default': ''}}}},
+                           'properties': {   'name': {'type': 'string', 'default': ''},
+                                             'force_focus': {'type': 'boolean', 'default': False}}}},
     {   'name': 'get_package_mcp_info',
         'description': 'Discover what an installed Sublime package can do, then just control it '
                        'directly --\n'

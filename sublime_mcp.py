@@ -1077,7 +1077,10 @@ def _get_output_panel(params):
     name = params.get("name", [""])[0]
 
     if name and name.lower() == "console":
-        return _get_console({"mode": ["auto"]})
+        console_params = {"mode": ["auto"]}
+        if params.get("force_focus"):
+            console_params["force_focus"] = params["force_focus"]
+        return _get_console(console_params)
 
     def fn():
         w = sublime.active_window()
@@ -4886,8 +4889,13 @@ _MCP_TOOLS = [
     ("get_output_panel",
      "Return the text content of an output panel.\n"
      "If name is omitted, read the active output panel. Use name='exec' for build output.\n"
-     "Use name='Console' to read Sublime's built-in console through the best available backend.",
-     {"type": "object", "properties": {"name": {"type": "string", "default": ""}}},
+     "Use name='Console' to read Sublime's built-in console through the best available backend; "
+     "for the console, force_focus=true raises the window first (needed for a complete read "
+     "when the window is not in front; can crash a portable Sublime Text).",
+     {"type": "object", "properties": {
+         "name": {"type": "string", "default": ""},
+         "force_focus": {"type": "boolean", "default": False},
+     }},
      _g("/output_panel")),
     ("lookup_symbol",
      "Find where a symbol is defined across all open files.",

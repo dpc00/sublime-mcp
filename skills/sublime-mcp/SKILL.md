@@ -36,10 +36,27 @@ for these.
 To remove a package use `run_command remove_package` (not the palette text), and
 expect a Windows confirmation dialog for every `delete_file` / `delete_folder` item;
 "Removing packages, deleting files, reading the console, making folders" in `get_help`
-has the details and the console-reading workaround. `run_command` reports ok even for a
-command that does not exist, so check for a visible effect; unknown arguments are dropped
-silently too. Package installs can run for minutes with an unchanging status text, and the
-console cannot be read reliably through the tools (see the same guide section).
+has the details. `run_command` reports ok even for a command that does not exist, so check
+for a visible effect; unknown arguments are dropped silently too. Package installs can run
+for minutes with an unchanging status text.
+
+Reading the console (tested 2026-10-11 on portable 4200 and 4215, identical results):
+- Complete read: `get_console(mode="visible", force_focus=true)`. Use `tail=N` to keep the
+  reply small. It raised the window, did not crash either portable, and returned
+  `complete: true`. The window does NOT stay in front between calls (it was not in front
+  seconds later), so pass `force_focus=true` on every call. Clicking the title bar does not
+  bring it to the front. `get_console(force_focus=true)` (auto) gives the same result.
+- Without `force_focus`, with the window behind: `visible`, `get_console_full` and
+  `get_console_win` fail at once and change nothing; `auto` and `get_output_panel(name="console")`
+  silently fall back to the captured text with `complete: false` and a `warning`. Check
+  `complete`/`warning` before trusting a result.
+- `mode="captured"` and `get_console_log` never need focus, but always report `complete: false`:
+  they miss what Sublime printed before sublime-mcp loaded (startup lines, plugin load errors).
+- `get_console_full` and `get_console_win` accept `force_focus` and work with it.
+  `get_output_panel(name="console", force_focus=true)` passes it on (added 2026-10-11, tested on
+  portable 4200 and 4215: `complete: true` with it, captured fallback with a `warning` without).
+- Each successful visible read adds one `[sublime-mcp] console capture marker` line.
+- Do not open the console panel with `show_panel` and read the screen.
 
 `list_native_windows` and `dismiss_native_window` (Windows) work while a native dialog
 or menu has blocked Sublime's main thread and the other tools time out; call them

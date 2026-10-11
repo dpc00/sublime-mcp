@@ -217,8 +217,10 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   Sublime's own output (load errors such as a plugin's SyntaxError). `mode="visible"`
   returns the console (the last 200 lines by default; `tail=N` for N lines, `tail=0` for all, and
   the result says `lines_total` and `truncated`) but needs the window in front. If the window
-  is not in front it fails at once with a clear message and changes nothing. Then open the
-  panel with `run_command(command="show_panel", args={"panel": "console"})` and read the screen.
+  is not in front it fails at once with a clear message and changes nothing. Pass
+  `force_focus=true` on every visible call (tested on 4200 and 4215: complete read, no crash;
+  the window does not stay in front between calls). Do not fall back to opening the panel with
+  `show_panel` and reading the screen.
 - **The console is only partly readable.** `get_console` in the default and `captured` modes
   misses Sublime's own error output (tracebacks printed after an install, `ImportError`);
   `mode="visible"` needs the window in front and often cannot get it, even after a click on the
@@ -226,8 +228,7 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   raises it but can crash a portable). `get_output_panel` for the console is the same as
   `get_console` in the default mode, so it also misses those errors when the window is not in
   front. A visible capture that succeeds prints one "[sublime-mcp] console capture marker" line
-  into the console; one that fails for lack of focus now leaves nothing behind. `show_panel`
-  console and reading the screen shows only the last four lines. The last N lines are available
+  into the console; one that fails for lack of focus now leaves nothing behind. The last N lines are available
   from `get_console(mode="visible", tail=N)` whenever the window is in front.
 
 ## Silent failures and timeouts
