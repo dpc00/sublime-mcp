@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.3
+
+`get_output_panel(name="console")` now accepts `force_focus`, passed to the visible-console read, so it can give a complete console read when the window is not in front (without it the call still falls back to the captured text with `complete: false` and a warning). `eval_python` no longer lets `sys.exit()`, `KeyboardInterrupt` or `GeneratorExit` raised by user code take down the plugin host: they come back as an error, and errors now include a traceback with the failing line of the user's code. A malformed or missing JSON body now returns HTTP 400 (or JSON-RPC -32700) with a message instead of dropping the connection. The agent guides and skills now say how to read the console completely: `get_console(mode="visible", force_focus=true)` on every call, tested on Sublime Text 4200 and 4215.
+
 ## 1.12.2
 
 Console capture is safer: the visible-console read refuses to click unless the console panel is actually open (the click lands at a fixed spot near the bottom of the window, and in a terminal tab it can select a line of the prompt), and it restores the previous view's selection when it finishes. This is a guard only; it is not the fix for the frozen-tab report, which was traced to AgentIDE reacting to an instruction from Claude.
