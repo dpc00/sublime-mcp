@@ -51,7 +51,12 @@
     "description": "Native dialogs and menus that block Sublime",
     "tools": [
      "dismiss_native_window",
-     "list_native_windows"
+     "list_native_windows",
+     "ui_click",
+     "ui_hover",
+     "ui_press_key",
+     "ui_screenshot",
+     "ui_type_text"
     ]
    },
    "prompts": {

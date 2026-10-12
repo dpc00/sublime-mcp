@@ -6,7 +6,7 @@ Canonical copy for repo readers. `get_help` serves
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.
 
-Seven workflow tools are shown by default; the complete typed catalog (408
+Seven workflow tools are shown by default; the complete typed catalog (413
 tools) remains available through `discover_tools` and `batch`. Prefer a named capability over
 `run_command`, which often opens UI that steals focus from the agent chat.
 
@@ -299,6 +299,31 @@ deleted; on `remove_license` the license is removed). The tools act only on wind
 only (they use Win32). Verified on all 16 blocking commands with
 `tools/verify_native_dialogs.py`: each froze Sublime, was listed and dismissed
 by these tools, and Sublime answered again.
+
+**Looking at and driving Sublime's own windows (Windows only).** `ui_screenshot`,
+`ui_press_key`, `ui_type_text`, `ui_click` and `ui_hover` work on the windows of the Sublime Text
+process only, and need no OS permission prompt, so they also work from a remote session.
+`ui_screenshot(hwnd=...)` saves a PNG of one window (it works for a window behind others, and for
+dialogs) and returns its path: open it with the Read tool (`inline=true` returns the image itself).
+`ui_press_key(key="Return")` and `ui_type_text(text="cel")` post the key or characters to the window
+without moving focus or the pointer, for example to pick an entry in the command palette or a quick
+panel: open the palette with `run_command show_overlay`, then Return, type the filter, Return. Input
+is handled asynchronously, so each call waits `settle_ms` (default 150 ms, up to 5000) afterwards, and
+`ui_screenshot` waits 200 ms first.
+
+Sublime draws its own editor, palette and popups, so it ignores posted mouse messages and posted
+keys carry no Ctrl/Shift/Alt state (a posted Ctrl+Shift+P arrives as a plain "p"). For those cases
+the tools use the REAL mouse and keyboard, which would disturb the person using the computer, so
+they are gated: `ui_click(x, y)` (x, y are pixels in the `ui_screenshot` picture), `ui_hover(x, y,
+screenshot=true)` and `ui_press_key(..., method="input")` are refused unless the person has been idle
+for `min_idle_s` seconds (default 8) and the target window is the one under the point at that moment;
+the pointer is put back afterwards. A refusal says how long the person has been idle; wait and try
+again, or use keys, `pick_quick_panel` and editor commands instead. `method="input"` also needs the
+window in front, and activates it with a real click on its title bar (same gate). Never inject real
+input while the person may be using the computer, and never use `SendMessage` from a plugin to a
+Sublime window: it waits for the UI thread and can deadlock Sublime (the tools only use `PostMessage`).
+The default window is the first editor window of the Sublime process, which on a person's own Sublime
+may be the window that hosts your session; pass `hwnd` of the window you mean.
 
 **A dialog that appears after `run_command` has returned.** `ok` from `run_command` only
 means the command was dispatched. A command that shows its dialog from a timer, a worker

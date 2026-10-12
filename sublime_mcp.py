@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.12.5"
+__version__ = "1.13.0"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -4217,9 +4217,11 @@ _AUTH_TOKEN = ""
 # direct GET/POST routes).
 _WINDOWS_ONLY_TOOLS = frozenset({
     "get_console_full", "get_console_win", "list_native_windows", "dismiss_native_window",
+    "ui_screenshot", "ui_press_key", "ui_type_text", "ui_click", "ui_hover",
 })
 _WINDOWS_ONLY_ROUTES = frozenset({
     "/console_full", "/console_win", "/list_native_windows", "/dismiss_native_window",
+    "/ui_screenshot", "/ui_press_key", "/ui_type_text", "/ui_click", "/ui_hover",
 })
 _PLATFORM_UNAVAILABLE_TOOLS = _WINDOWS_ONLY_TOOLS if sys.platform != "win32" else frozenset()
 _PLATFORM_UNAVAILABLE_ROUTES = _WINDOWS_ONLY_ROUTES if sys.platform != "win32" else frozenset()
@@ -4878,6 +4880,141 @@ def _dismiss_native_window(body):
 
 _POST["/list_native_windows"] = _list_native_windows
 _POST["/dismiss_native_window"] = _dismiss_native_window
+
+
+def _ui_screenshot(body):
+    """PNG of one window of this Sublime Text process, returned as an MCP image."""
+    if not native_windows.SUPPORTED:
+        return {"error": "ui_screenshot is implemented for Windows only"}
+    from .lib import ui_input
+    pid = _sublime_process_id()
+    hwnd = body.get("hwnd")
+    if hwnd is None:
+        wins = [w for w in native_windows.list_windows(pid) if w["kind"] == "editor_window"]
+        if not wins:
+            return {"error": "no editor window found; pass hwnd from list_native_windows"}
+        hwnd = wins[0]["hwnd"]
+    res = ui_input.screenshot(pid, hwnd, body.get("settle_ms", 200))
+    if "png" not in res:
+        return res
+    info = {"hwnd": int(hwnd), "width": res["width"], "height": res["height"]}
+    if body.get("inline"):
+        import base64
+        return [{"type": "image", "data": base64.b64encode(res["png"]).decode("ascii"), "mimeType": "image/png"},
+                {"type": "text", "text": json.dumps(info)}]
+    import tempfile
+    folder = os.path.join(tempfile.gettempdir(), "sublime-mcp-ui")
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, "window_{}_{}.png".format(int(hwnd), int(time.time() * 1000)))
+    with open(path, "wb") as f:
+        f.write(res["png"])
+    # keep the folder small: drop pictures older than an hour
+    for name in os.listdir(folder):
+        fp = os.path.join(folder, name)
+        try:
+            if name.endswith(".png") and time.time() - os.path.getmtime(fp) > 3600:
+                os.remove(fp)
+        except OSError:
+            pass
+    info["path"] = path
+    return info
+
+
+def _ui_press_key(body):
+    """Send one key to one window of this Sublime Text process."""
+    if not native_windows.SUPPORTED:
+        return {"error": "ui_press_key is implemented for Windows only"}
+    from .lib import ui_input
+    pid = _sublime_process_id()
+    hwnd = body.get("hwnd")
+    if hwnd is None:
+        wins = [w for w in native_windows.list_windows(pid) if w["kind"] == "editor_window"]
+        if not wins:
+            return {"error": "no editor window found; pass hwnd from list_native_windows"}
+        hwnd = wins[0]["hwnd"]
+    key = body.get("key")
+    if not key:
+        return {"error": "key is required, for example 'Return', 'Down', 'a', 'F5'"}
+    return ui_input.press_key(pid, hwnd, key, body.get("mods"), body.get("method") or "post", body.get("settle_ms", 150), body.get("min_idle_s", 8))
+
+
+_POST["/ui_screenshot"] = _ui_screenshot
+_POST["/ui_press_key"] = _ui_press_key
+
+
+def _ui_type_text(body):
+    """Type text into one window of this Sublime Text process."""
+    if not native_windows.SUPPORTED:
+        return {"error": "ui_type_text is implemented for Windows only"}
+    from .lib import ui_input
+    pid = _sublime_process_id()
+    hwnd = body.get("hwnd")
+    if hwnd is None:
+        wins = [w for w in native_windows.list_windows(pid) if w["kind"] == "editor_window"]
+        if not wins:
+            return {"error": "no editor window found; pass hwnd from list_native_windows"}
+        hwnd = wins[0]["hwnd"]
+    if body.get("text") is None:
+        return {"error": "text is required"}
+    return ui_input.type_text(pid, hwnd, body.get("text"), body.get("settle_ms", 150))
+
+
+_POST["/ui_type_text"] = _ui_type_text
+
+
+def _ui_click(body):
+    """Click in one window of this Sublime Text process with the real mouse (gated)."""
+    if not native_windows.SUPPORTED:
+        return {"error": "ui_click is implemented for Windows only"}
+    from .lib import ui_input
+    pid = _sublime_process_id()
+    hwnd = body.get("hwnd")
+    if hwnd is None:
+        wins = [w for w in native_windows.list_windows(pid) if w["kind"] == "editor_window"]
+        if not wins:
+            return {"error": "no editor window found; pass hwnd from list_native_windows"}
+        hwnd = wins[0]["hwnd"]
+    if body.get("x") is None or body.get("y") is None:
+        return {"error": "x and y are required (pixels in the picture ui_screenshot returns)"}
+    return ui_input.click(pid, hwnd, body.get("x"), body.get("y"), body.get("button") or "left",
+                          bool(body.get("double")), body.get("min_idle_s", 8), body.get("settle_ms", 250))
+
+
+_POST["/ui_click"] = _ui_click
+
+
+def _ui_hover(body):
+    """Hover the real pointer over a point of one window (gated), optionally with a picture."""
+    if not native_windows.SUPPORTED:
+        return {"error": "ui_hover is implemented for Windows only"}
+    from .lib import ui_input
+    pid = _sublime_process_id()
+    hwnd = body.get("hwnd")
+    if hwnd is None:
+        wins = [w for w in native_windows.list_windows(pid) if w["kind"] == "editor_window"]
+        if not wins:
+            return {"error": "no editor window found; pass hwnd from list_native_windows"}
+        hwnd = wins[0]["hwnd"]
+    if body.get("x") is None or body.get("y") is None:
+        return {"error": "x and y are required (pixels in the picture ui_screenshot returns)"}
+    res = ui_input.hover(pid, hwnd, body.get("x"), body.get("y"), body.get("dwell_ms", 900),
+                         body.get("hold_ms", 0), bool(body.get("screenshot")), body.get("min_idle_s", 8))
+    shot = res.pop("shot", None)
+    if shot is not None:
+        if "png" not in shot:
+            res["screenshot_error"] = shot.get("error")
+        else:
+            import tempfile
+            folder = os.path.join(tempfile.gettempdir(), "sublime-mcp-ui")
+            os.makedirs(folder, exist_ok=True)
+            path = os.path.join(folder, "hover_{}_{}.png".format(int(hwnd), int(time.time() * 1000)))
+            with open(path, "wb") as f:
+                f.write(shot["png"])
+            res["path"] = path
+    return res
+
+
+_POST["/ui_hover"] = _ui_hover
 
 
 # (name, description, inputSchema, handler)
@@ -5607,6 +5744,78 @@ _MCP_TOOLS = [
          "action": {"type": "string", "enum": ["cancel", "ok", "button", "close"], "description": "What to do (default: cancel, or button when 'button' is given)."},
          "button": {"type": "string", "description": "Button label for action 'button' (ignores case and & mnemonics)."}}},
      _p("/dismiss_native_window")),
+    ("ui_screenshot",
+     "Take a picture of one window of this Sublime Text process (Windows only). The PNG is saved to a "
+     "file and its path is returned (open it with the Read tool); inline=true returns the image itself. Works for a window that is behind others or not focused, and for dialogs. hwnd comes "
+     "from list_native_windows (default: the first editor window). Only windows of Sublime Text "
+     "itself can be captured, never another program.",
+     {"type": "object", "properties": {
+         "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
+         "inline": {"type": "boolean", "description": "Return the image itself instead of a file path (default false)."},
+         "settle_ms": {"type": "integer", "description": "Milliseconds to wait before the picture so earlier input has been handled (default 200, max 5000)."},}},
+     _p("/ui_screenshot")),
+    ("ui_press_key",
+     "Send one key press to one window of this Sublime Text process (Windows only), for example "
+     "Return in the command palette or Down in a quick panel. key: Return, Escape, Tab, Up, Down, "
+     "Left, Right, Home, End, PageUp, PageDown, Delete, Backspace, Space, F1-F24, or a single "
+     "character. mods: any of ctrl, shift, alt. method 'post' (default) posts the key to the window "
+     "without moving focus; 'input' brings the window to the front, sends real input, then restores "
+     "the previous foreground window. Only windows of Sublime Text itself accept input.",
+     {"type": "object", "properties": {
+         "key": {"type": "string", "description": "Key name or single character."},
+         "mods": {"type": "array", "items": {"type": "string", "enum": ["ctrl", "shift", "alt"]}, "description": "Modifier keys held during the press."},
+         "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
+         "method": {"type": "string", "enum": ["post", "input"], "description": "post (default, no focus change, no modifier keys) or input (real keys, carry modifiers; needs the window in front and activates it with a real title-bar click only when the person is idle)."},
+         "min_idle_s": {"type": "number", "description": "For method input: required seconds since the person last used the mouse or keyboard (default 8)."},
+         "settle_ms": {"type": "integer", "description": "Milliseconds to wait after the key so it has been handled (default 150, max 5000)."},},
+      "required": ["key"]},
+     _p("/ui_press_key")),
+    ("ui_type_text",
+     "Type text into one window of this Sublime Text process (Windows only), for example into the "
+     "command palette's search box or a quick panel's filter, without moving focus. A newline is "
+     "sent as Return. At most 2000 characters per call. Only windows of Sublime Text itself accept input.",
+     {"type": "object", "properties": {
+         "text": {"type": "string", "description": "The text to type."},
+         "settle_ms": {"type": "integer", "description": "Milliseconds to wait after typing so it has been handled (default 150, max 5000)."},
+         "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."}},
+      "required": ["text"]},
+     _p("/ui_type_text")),
+    ("ui_click",
+     "Click in one window of this Sublime Text process (Windows only) with the REAL mouse, because "
+     "Sublime draws its own editor, command palette and popups and ignores posted mouse messages. "
+     "x, y are pixels in the picture ui_screenshot returns for the same window (top-left is 0, 0). "
+     "Because it moves the pointer of the person at the computer for a moment, it is REFUSED unless "
+     "they have been idle for min_idle_s seconds (default 8), and refused unless the target window is "
+     "the one under that point (another window in front would take the click). The pointer is "
+     "restored afterwards. button: left (default) or right; double=true double-clicks. Prefer keys "
+     "(ui_press_key), pick_quick_panel and editor commands when they can do the job.",
+     {"type": "object", "properties": {
+         "x": {"type": "integer", "description": "Pixels from the left edge of the window picture."},
+         "y": {"type": "integer", "description": "Pixels from the top edge of the window picture."},
+         "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
+         "button": {"type": "string", "enum": ["left", "right"], "description": "Mouse button (default left)."},
+         "double": {"type": "boolean", "description": "Double-click (default false)."},
+         "min_idle_s": {"type": "number", "description": "Required seconds since the person last used the mouse or keyboard (default 8)."},
+         "settle_ms": {"type": "integer", "description": "Milliseconds to wait after the click (default 250, max 5000)."}},
+      "required": ["x", "y"]},
+     _p("/ui_click")),
+    ("ui_hover",
+     "Hold the REAL mouse pointer over a point of one window of this Sublime Text process (Windows "
+     "only) so hover popups and tooltips appear, optionally taking a picture while it is there "
+     "(screenshot=true saves it and returns the path), then put the pointer back. x, y are pixels in "
+     "the picture ui_screenshot returns. Same safety gates as ui_click: refused unless the person at "
+     "the computer has been idle for min_idle_s seconds (default 8) and the target window is the one "
+     "under that point. dwell_ms (default 900, max 5000) is how long to wait before the picture.",
+     {"type": "object", "properties": {
+         "x": {"type": "integer", "description": "Pixels from the left edge of the window picture."},
+         "y": {"type": "integer", "description": "Pixels from the top edge of the window picture."},
+         "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
+         "screenshot": {"type": "boolean", "description": "Take a picture while the pointer is there and return its path."},
+         "dwell_ms": {"type": "integer", "description": "Milliseconds the pointer rests before the picture (default 900)."},
+         "hold_ms": {"type": "integer", "description": "Extra milliseconds to keep the pointer there afterwards (default 0)."},
+         "min_idle_s": {"type": "number", "description": "Required seconds since the person last used the mouse or keyboard (default 8)."}},
+      "required": ["x", "y"]},
+     _p("/ui_hover")),
     # ── Phase B batch 1: view / tab / pane management ─────────────────────────
     ("new_file",
      "Create a new untitled file in the current window (File → New File).",
