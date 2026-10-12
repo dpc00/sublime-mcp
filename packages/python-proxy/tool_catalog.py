@@ -1014,7 +1014,17 @@ TOOLS = [   {   'name': 'add_directory',
                                                                          'at most 1000).'},
                                              'offset': {   'type': 'integer',
                                                            'description': 'Skip this many matching '
-                                                                          'items (default 0).'}}}},
+                                                                          'items (default 0).'},
+                                             'wait_ms': {   'type': 'integer',
+                                                            'description': 'Wait up to this long '
+                                                                           '(at most 60000) for '
+                                                                           'the panel to appear; '
+                                                                           'use 15000 for Package '
+                                                                           "Control's Install "
+                                                                           'Package list, which '
+                                                                           'loads for a while '
+                                                                           'after Enter (default 0 '
+                                                                           '= no waiting).'}}}},
     {   'name': 'get_scope_at_cursor',
         'description': 'Return the full syntax scope string at the cursor position.',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1051,8 +1061,17 @@ TOOLS = [   {   'name': 'add_directory',
                        'and untitled buffers.\n'
                        'Returns identity, group position, selection/focus state, type, path, name, '
                        'and dirty state.\n'
-                       'Use index with get_sheet_content to read a specific tab.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+                       'Use index with get_sheet_content to read a specific tab.\n'
+                       'Every tab also carries its full settings (over 100 keys); pass '
+                       'settings=false to leave them out.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'settings': {   'type': 'boolean',
+                                                             'default': True,
+                                                             'description': "Include each tab's "
+                                                                            'full settings dict '
+                                                                            '(default true). false '
+                                                                            'gives a compact '
+                                                                            'list.'}}}},
     {   'name': 'get_symbols',
         'description': 'Return all symbols (functions, classes, etc.) in the active file with line '
                        'numbers.',
@@ -1089,6 +1108,19 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {   'type': 'object',
                            'properties': {   'name': {'type': 'string', 'default': ''},
                                              'key': {'type': 'string', 'default': ''}}}},
+    {   'name': 'get_view_regions',
+        'description': 'Return the regions a plugin stored in a view under a region key '
+                       '(view.add_regions): begin, end and the first 80 characters of each. '
+                       'Sublime cannot list the keys, so name them: one key or several separated '
+                       "by commas (for example 'ifdef,ifdeferror' for the Simple Ifdef package). "
+                       'Use it to check what a highlighting plugin drew without a screenshot. Omit '
+                       'name for the active view.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'key': {   'type': 'string',
+                                                        'description': 'Region key, or several '
+                                                                       'separated by commas.'},
+                                             'name': {'type': 'string', 'default': ''}},
+                           'required': ['key']}},
     {   'name': 'get_view_size',
         'description': 'Return the total character count of any open tab by name (partial match, '
                        'case-insensitive).\n'
@@ -1521,7 +1553,14 @@ TOOLS = [   {   'name': 'add_directory',
                                                                          'cancel.'},
                                              'text': {   'type': 'string',
                                                          'description': 'Text of the item to '
-                                                                        'pick.'}}}},
+                                                                        'pick.'},
+                                             'wait_ms': {   'type': 'integer',
+                                                            'description': 'Wait up to this long '
+                                                                           '(at most 60000) for '
+                                                                           'the panel to appear '
+                                                                           '(15000 for the Install '
+                                                                           'Package list); default '
+                                                                           '0.'}}}},
     {   'name': 'play_macro',
         'description': 'Alias of run_macro — play back the most recently recorded macro.',
         'inputSchema': {'type': 'object', 'properties': {}}},

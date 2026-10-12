@@ -1734,6 +1734,10 @@
           "offset": {
             "type": "integer",
             "description": "Skip this many matching items (default 0)."
+          },
+          "wait_ms": {
+            "type": "integer",
+            "description": "Wait up to this long (at most 60000) for the panel to appear; use 15000 for Package Control's Install Package list, which loads for a while after Enter (default 0 = no waiting)."
           }
         }
       }
@@ -1819,10 +1823,16 @@
     },
     {
       "name": "get_sheets",
-      "description": "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\nReturns identity, group position, selection/focus state, type, path, name, and dirty state.\nUse index with get_sheet_content to read a specific tab.",
+      "description": "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\nReturns identity, group position, selection/focus state, type, path, name, and dirty state.\nUse index with get_sheet_content to read a specific tab.\nEvery tab also carries its full settings (over 100 keys); pass settings=false to leave them out.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "settings": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include each tab's full settings dict (default true). false gives a compact list."
+          }
+        }
       }
     },
     {
@@ -1904,6 +1914,26 @@
             "default": ""
           }
         }
+      }
+    },
+    {
+      "name": "get_view_regions",
+      "description": "Return the regions a plugin stored in a view under a region key (view.add_regions): begin, end and the first 80 characters of each. Sublime cannot list the keys, so name them: one key or several separated by commas (for example 'ifdef,ifdeferror' for the Simple Ifdef package). Use it to check what a highlighting plugin drew without a screenshot. Omit name for the active view.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Region key, or several separated by commas."
+          },
+          "name": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "key"
+        ]
       }
     },
     {
@@ -2786,6 +2816,10 @@
           "text": {
             "type": "string",
             "description": "Text of the item to pick."
+          },
+          "wait_ms": {
+            "type": "integer",
+            "description": "Wait up to this long (at most 60000) for the panel to appear (15000 for the Install Package list); default 0."
           }
         }
       }

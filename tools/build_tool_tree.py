@@ -128,7 +128,7 @@ put("search/symbols", "get_symbols lookup_symbol goto_definition goto_reference 
     "open_symbol_definition goto_symbol_in_project goto_line prompt_goto_line show_scope_name")
 put("search/bookmarks", "get_bookmarks toggle_bookmark next_bookmark prev_bookmark clear_bookmarks")
 put("read/text", "get_cursor_context get_sheet_content get_file_content get_view_content get_view_size "
-    "get_view_chars get_view_phantoms get_output_panel get_word_at_cursor get_line_count")
+    "get_view_chars get_view_phantoms get_view_regions get_output_panel get_word_at_cursor get_line_count")
 put("read/state", "get_open_files get_project_folders get_project_data get_variables get_active_panel get_syntaxes "
     "get_encoding get_scope_at_cursor get_setting")
 put("read/catalog", "get_command_palette get_commands get_menu_items get_package_mcp_info console_python_version")

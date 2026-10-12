@@ -369,6 +369,7 @@
      "get_view_chars",
      "get_view_content",
      "get_view_phantoms",
+     "get_view_regions",
      "get_view_size",
      "get_word_at_cursor"
     ]

@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.12.4"
+__version__ = "1.12.5"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -570,6 +570,18 @@ def _install_console_capture():
 # ── GET handlers ──────────────────────────────────────────────────────────────
 
 
+def _syntax_label(syn):
+    """Display name of a sublime.Syntax. A syntax file without a `name:` key (Bicep, for one) has
+    syn.name == "" in the API while Sublime's status bar shows the file stem; do the same."""
+    if not syn:
+        return None
+    name = getattr(syn, "name", "") or ""
+    if name:
+        return name
+    path = getattr(syn, "path", "") or ""
+    return os.path.splitext(os.path.basename(path))[0] or None
+
+
 def _get_active_file(params):
     def fn():
         v = _active_view()
@@ -586,7 +598,8 @@ def _get_active_file(params):
             "line": row + 1,
             "col": col + 1,
             "is_dirty": v.is_dirty(),
-            "syntax": syn.name if syn else None,
+            "syntax": _syntax_label(syn),
+            "syntax_path": syn.path if syn else None,
         }
 
     return _on_main(fn)
@@ -659,6 +672,9 @@ def _get_open_files(params):
 
 
 def _get_sheets(params):
+    # `settings=false` leaves out the per-tab settings dump (over 100 keys per tab).
+    with_settings = str(params.get("settings", ["true"])[0]).strip().lower() not in ("false", "0", "no")
+
     def fn():
         w = sublime.active_window()
         selected_sheets = [
@@ -698,10 +714,11 @@ def _get_sheets(params):
             # tab actually is without sublime-mcp needing to know about
             # that package by name.
             if v is not None:
-                try:
-                    item["settings"] = v.settings().to_dict()
-                except Exception:
-                    item["settings"] = {}
+                if with_settings:
+                    try:
+                        item["settings"] = v.settings().to_dict()
+                    except Exception:
+                        item["settings"] = {}
                 item["is_scratch"] = v.is_scratch()
                 item["is_read_only"] = v.is_read_only()
                 try:
@@ -710,7 +727,7 @@ def _get_sheets(params):
                     item["size"] = None
                 try:
                     syntax = v.syntax()
-                    item["syntax"] = syntax.name if syntax else None
+                    item["syntax"] = _syntax_label(syntax)
                 except Exception:
                     item["syntax"] = None
             out.append(item)
@@ -758,7 +775,7 @@ def _sheet_summary(w, s):
             summary["size"] = None
         try:
             syntax = v.syntax()
-            summary["syntax"] = syntax.name if syntax else None
+            summary["syntax"] = _syntax_label(syntax)
         except Exception:
             summary["syntax"] = None
     return summary
@@ -1981,6 +1998,30 @@ def _get_view_chars(params):
     return _on_main(fn)
 
 
+def _get_view_regions(params):
+    """Return the regions a plugin stored in a view under one or more region keys
+    (view.add_regions(key, ...)): begin, end and the first 80 characters of each. The API offers no
+    way to list the keys, so the caller names them (several, separated by commas). Lets a test see
+    what a highlighting plugin drew without a screenshot."""
+    name = params.get("name", [None])[0]
+    keys = [k.strip() for k in str(params.get("key", [""])[0]).split(",") if k.strip()]
+    if not keys:
+        return {"error": "key required: a region key such as 'ifdef' (several: separate with commas)"}
+
+    def fn():
+        w = sublime.active_window()
+        v, open_views = _find_view_by_name(w, name)
+        if not v:
+            return {"error": "no view matching {!r}".format(name), "open_views": open_views}
+        out = {}
+        for k in keys:
+            out[k] = [{"begin": r.begin(), "end": r.end(), "text": v.substr(r)[:80]}
+                      for r in v.get_regions(k)[:500]]
+        return {"name": v.name(), "path": v.file_name(), "regions": out}
+
+    return _on_main(fn)
+
+
 def _get_view_phantoms(params):
     """Return all phantoms attached to a view, with HTML stripped to plain text.
 
@@ -2774,9 +2815,44 @@ def _quick_panel_first_line(item):
     return str(first).strip().lower()
 
 
+_NO_QUICK_PANEL = ("no recorded quick panel: none is open, or it was opened by Sublime "
+                   "itself or by a package in the other plugin host")
+
+
+def _wait_for_quick_panel(body):
+    """Optional `wait_ms` (0..60000, default 0): poll until a quick panel is recorded for the
+    active window. Package Control builds its Install Package list for up to ~15 s after Enter,
+    so a call made at once finds nothing. Returns the time waited in ms."""
+    try:
+        wait = max(0, min(int(body.get("wait_ms") or 0), 60000))
+    except (TypeError, ValueError):
+        return 0
+    if not wait:
+        return 0
+    start = time.time()
+    deadline = start + wait / 1000.0
+    while time.time() < deadline:
+        if _on_main(lambda: _QUICK_PANELS.get(sublime.active_window().id())) is not None:
+            break
+        time.sleep(0.2)
+    return int((time.time() - start) * 1000)
+
+
+def _no_quick_panel_error(waited):
+    err = {"error": _NO_QUICK_PANEL}
+    if waited:
+        err["waited_ms"] = waited
+        err["error"] += " (waited %d ms)" % waited
+    else:
+        err["hint"] = ("a picker that is still loading (Package Control's Install Package list "
+                       "takes up to ~15 s) is not recorded yet: pass wait_ms, for example 15000")
+    return err
+
+
 def _get_quick_panel(body):
     """Items of the quick panel last opened by a plugin in this plugin host: at most `limit`
     (default 100) of those whose first line contains `text`, starting at `offset`."""
+    waited = _wait_for_quick_panel(body)
     text = str(body.get("text") or "").strip().lower()
     try:
         limit = max(1, min(int(body.get("limit", 100)), 1000))
@@ -2787,8 +2863,7 @@ def _get_quick_panel(body):
     def fn():
         rec = _QUICK_PANELS.get(sublime.active_window().id())
         if rec is None:
-            return {"error": "no recorded quick panel: none is open, or it was opened by Sublime "
-                             "itself or by a package in the other plugin host"}
+            return _no_quick_panel_error(waited)
         items = _quick_panel_items(rec)
         indexes = [n for n, item in enumerate(items) if not text or text in _quick_panel_first_line(item)]
         page = indexes[offset:offset + limit]
@@ -2801,13 +2876,13 @@ def _get_quick_panel(body):
 def _pick_quick_panel(body):
     """Pick an item of the recorded quick panel by index or by text, or cancel (index -1)."""
     index, text = body.get("index"), body.get("text")
+    waited = _wait_for_quick_panel(body)
 
     def fn():
         w = sublime.active_window()
         rec = _QUICK_PANELS.get(w.id())
         if rec is None:
-            return {"error": "no recorded quick panel: none is open, or it was opened by Sublime "
-                             "itself or by a package in the other plugin host"}
+            return _no_quick_panel_error(waited)
         items = _quick_panel_items(rec)
         i = index
         if i is not None and text:
@@ -2884,13 +2959,13 @@ def _set_syntax(body):
         if not v:
             return {"error": "no active view"}
         syns = sublime.list_syntaxes()
-        match = next((s for s in syns if s.name.lower() == name.lower()), None)
+        match = next((s for s in syns if (_syntax_label(s) or "").lower() == name.lower()), None)
         if not match:
-            match = next((s for s in syns if name.lower() in s.name.lower()), None)
+            match = next((s for s in syns if name.lower() in (_syntax_label(s) or "").lower()), None)
         if not match:
             return {"error": "syntax not found: {}".format(name)}
         v.assign_syntax(match.path)
-        return {"ok": True, "syntax": match.name}
+        return {"ok": True, "syntax": _syntax_label(match)}
 
     return _on_main(fn)
 
@@ -3232,6 +3307,14 @@ def _ac(cmd):
         return _on_main(fn)
 
     return handler
+
+
+def _exit_app(body):
+    """Quit Sublime. Replies first and runs `exit` 300 ms later: running it inside the request
+    made the reply fail with "API is not available" although Sublime did close."""
+    args = {k: v for k, v in body.items() if v is not None}
+    sublime.set_timeout(lambda: sublime.run_command("exit", args), 300)
+    return {"ok": True, "note": "Sublime is closing; this connection will drop"}
 
 
 def _insert_snippet(body):
@@ -3599,6 +3682,7 @@ _GET = {
     "/view_size": _get_view_size,
     "/view_chars": _get_view_chars,
     "/view_phantoms": _get_view_phantoms,
+    "/view_regions": _get_view_regions,
     "/output_panel": _get_output_panel,
     "/console": _get_console,
     "/console_log": _get_console_log,
@@ -3874,7 +3958,7 @@ _POST = {
     "/delete_word": _vc("delete_word"),
     "/drag_select": _vc("drag_select"),
     "/encode_html_entities": _vc("encode_html_entities"),
-    "/exit": _ac("exit"),
+    "/exit": _exit_app,
     "/expand_snippet": _vc("expand_snippet"),
     "/find_all": _wc("find_all"),
     "/find_all_under": _vc("find_all_under"),
@@ -4892,8 +4976,13 @@ _MCP_TOOLS = [
     ("get_sheets",
      "List ALL sheets (tabs) in the current window by index, including images and untitled buffers.\n"
      "Returns identity, group position, selection/focus state, type, path, name, and dirty state.\n"
-     "Use index with get_sheet_content to read a specific tab.",
-     {}, _g("/sheets")),
+     "Use index with get_sheet_content to read a specific tab.\n"
+     "Every tab also carries its full settings (over 100 keys); pass settings=false to leave them out.",
+     {"type": "object", "properties": {
+         "settings": {"type": "boolean", "default": True,
+                      "description": "Include each tab's full settings dict (default true). "
+                                     "false gives a compact list."}}},
+     _g("/sheets")),
     ("get_selected_sheets",
      "Return the currently multi-selected sheets, optionally limited to one group, with stable IDs and group positions.",
      {"type": "object", "properties": {"group": {"type": "integer", "minimum": 0}}},
@@ -4978,6 +5067,17 @@ _MCP_TOOLS = [
          "key": {"type": "string", "default": ""},
      }},
      _g("/view_phantoms")),
+    ("get_view_regions",
+     "Return the regions a plugin stored in a view under a region key (view.add_regions): begin, "
+     "end and the first 80 characters of each. Sublime cannot list the keys, so name them: one key "
+     "or several separated by commas (for example 'ifdef,ifdeferror' for the Simple Ifdef package). "
+     "Use it to check what a highlighting plugin drew without a screenshot. Omit name for the "
+     "active view.",
+     {"type": "object", "properties": {
+         "key": {"type": "string", "description": "Region key, or several separated by commas."},
+         "name": {"type": "string", "default": ""},
+     }, "required": ["key"]},
+     _g("/view_regions")),
     ("get_output_panel",
      "Return the text content of an output panel.\n"
      "If name is omitted, read the active output panel. Use name='exec' for build output.\n"
@@ -5360,7 +5460,10 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {
          "text": {"type": "string", "description": "Keep only items whose first line contains this."},
          "limit": {"type": "integer", "description": "Page size (default 100, at most 1000)."},
-         "offset": {"type": "integer", "description": "Skip this many matching items (default 0)."}}},
+         "offset": {"type": "integer", "description": "Skip this many matching items (default 0)."},
+         "wait_ms": {"type": "integer", "description": "Wait up to this long (at most 60000) for the panel to appear; "
+                                                       "use 15000 for Package Control's Install Package list, which "
+                                                       "loads for a while after Enter (default 0 = no waiting)."}}},
      _p("/get_quick_panel")),
     ("pick_quick_panel",
      "Pick an item of the quick panel shown by get_quick_panel: by index, or by text (case-"
@@ -5368,7 +5471,9 @@ _MCP_TOOLS = [
      "Closes the panel and runs the package's own selection callback.",
      {"type": "object", "properties": {
          "index": {"type": "integer", "description": "Item index, or -1 to cancel."},
-         "text": {"type": "string", "description": "Text of the item to pick."}}},
+         "text": {"type": "string", "description": "Text of the item to pick."},
+         "wait_ms": {"type": "integer", "description": "Wait up to this long (at most 60000) for the panel to appear "
+                                                       "(15000 for the Install Package list); default 0."}}},
      _p("/pick_quick_panel")),
     ("set_syntax",
      "Set the syntax of the active file by name (case-insensitive partial match is fine).",
