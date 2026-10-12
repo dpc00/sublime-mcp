@@ -2612,7 +2612,7 @@
     },
     {
       "name": "open_folder",
-      "description": "Open a folder in a new window (WindowCommand). Pass 'path' in args.",
+      "description": "Open a folder in a NEW window (makes the window and sets the folder as its project data; returns window_id and folders). Pass 'path' (an existing folder).",
       "inputSchema": {
         "type": "object",
         "properties": {

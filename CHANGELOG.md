@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.4
+
+Bug fixes found while auditing packages. `open_folder` called a Sublime command that does not exist, so it reported ok and did nothing; it now opens the folder in a new window and returns the `window_id` and folders. `install_package` never saved Package Control's installed-packages list (the Package Control call records the name without persisting it), so the package, and any libraries it needed, vanished at the next restart; it now saves the settings after a successful install. `close_file` accepts `name` and `index` like `run_command` does, so it can close a tab that has no path; closing an unnamed tab by index had closed the wrong one. `run_command` accepts `settle_ms` (up to 5000) to wait for a dialog that a command opens a moment after it returns, and a tool that times out because a native dialog blocks Sublime now says so and names the dialog. Tool descriptions and the fallback catalogs were regenerated (407 tools), and the agent guides document the dialog helpers.
+
 ## 1.12.3
 
 `get_output_panel(name="console")` now accepts `force_focus`, passed to the visible-console read, so it can give a complete console read when the window is not in front (without it the call still falls back to the captured text with `complete: false` and a warning). `eval_python` no longer lets `sys.exit()`, `KeyboardInterrupt` or `GeneratorExit` raised by user code take down the plugin host: they come back as an error, and errors now include a traceback with the failing line of the user's code. A malformed or missing JSON body now returns HTTP 400 (or JSON-RPC -32700) with a message instead of dropping the connection. The agent guides and skills now say how to read the console completely: `get_console(mode="visible", force_focus=true)` on every call, tested on Sublime Text 4200 and 4215.

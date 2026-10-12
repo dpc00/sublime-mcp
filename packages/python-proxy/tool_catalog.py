@@ -278,14 +278,14 @@ TOOLS = [   {   'name': 'add_directory',
                        "host-side close-blocking hook gets a chance to run -- e.g. GhostShell's "
                        'ai_terminal package refuses this outright (no dialog, just a no-op) for '
                        'any ai_terminal tab, so calling this on one does nothing rather than '
-                       'closing it. Only ever targets an already-open view found by path, by '
-                       'name or index, or the current active view. Pass path for a saved file. '
-                       'For a tab with no path (unsaved buffer, scratch view) pass name '
-                       "(partial, case-insensitive match on the tab's title) or index (0-based, "
-                       'from get_open_files); with none of the three it closes whichever tab is '
-                       'active, so name the tab you mean. A name or index that matches nothing '
-                       'is an error and closes nothing. (run_command '
-                       "'close' with scope='view' does not close a tab: use this tool.)",
+                       'closing it. Only ever targets an already-open view found by path, by name '
+                       'or index, or the current active view. Pass path for a saved file. For a '
+                       'tab with no path (unsaved buffer, scratch view) pass name (partial, '
+                       "case-insensitive match on the tab's title) or index (0-based, from "
+                       'get_open_files); with none of the three it closes whichever tab is active, '
+                       'so name the tab you mean. A name or index that matches nothing is an error '
+                       "and closes nothing. (run_command 'close' with scope='view' does not close "
+                       'a tab: use this tool.)',
         'inputSchema': {   'type': 'object',
                            'properties': {   'path': {'type': 'string', 'default': ''},
                                              'name': {'type': 'string', 'default': ''},
@@ -949,12 +949,13 @@ TOOLS = [   {   'name': 'add_directory',
                        "If name is omitted, read the active output panel. Use name='exec' for "
                        'build output.\n'
                        "Use name='Console' to read Sublime's built-in console through the best "
-                       'available backend; for the console, force_focus=true raises the '
-                       'window first (needed for a complete read when the window is not in '
-                       'front; can crash a portable Sublime Text).',
+                       'available backend; for the console, force_focus=true raises the window '
+                       'first (needed for a complete read when the window is not in front; can '
+                       'crash a portable Sublime Text).',
         'inputSchema': {   'type': 'object',
                            'properties': {   'name': {'type': 'string', 'default': ''},
-                                             'force_focus': {'type': 'boolean', 'default': False}}}},
+                                             'force_focus': {   'type': 'boolean',
+                                                                'default': False}}}},
     {   'name': 'get_package_mcp_info',
         'description': 'Discover what an installed Sublime package can do, then just control it '
                        'directly --\n'
@@ -1426,7 +1427,9 @@ TOOLS = [   {   'name': 'add_directory',
                        '(WindowCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'open_folder',
-        'description': "Open a folder in a new window (WindowCommand). Pass 'path' in args.",
+        'description': 'Open a folder in a NEW window (makes the window and sets the folder as its '
+                       "project data; returns window_id and folders). Pass 'path' (an existing "
+                       'folder).',
         'inputSchema': {   'type': 'object',
                            'properties': {'path': {'type': 'string'}},
                            'required': ['path']}},

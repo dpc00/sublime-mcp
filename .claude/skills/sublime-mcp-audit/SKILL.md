@@ -27,6 +27,15 @@ Allowed, Donald confirmed: copying a package copy (for example repo master) into
 
 `.package_skill_test_log.md` (over 1 MB, backed up to Google Drive) is Donald's record of how the audit is done. Keep adding entries to it, but do not read it whole and do not use it to look up what was tested; read only the lines you need, using the line number from the tsv.
 
+### Check "already tested" before EVERY package (Donald, 2026-10-11: "you missed some")
+
+Do all four, not just the tsv name column:
+1. `.tested_packages.tsv`: search the name anywhere in the row, with word boundaries (names carry version suffixes like `name 1.2.5` and queue prefixes like `#681 name`).
+2. `.package_skill_test_log.md`: search the WHOLE text, not only `##` headings. Old entries are also dated lines without a heading (`2026-10-03 SublimeLinter-contrib-codespell (kaste): tested ...`) and grouped headings (`## LSP-some-sass, LSP-pyproject, LSP-taplo`).
+3. Transcripts in `C:\Users\donal\.claude\projects\C--Users-donal-projects-sublime-mcp\*.jsonl`: search `Installed package` plus the name (the Grep tool does 730 MB in seconds).
+4. Judge each hit by eye: a substring hit is not a match (Bicep syntax vs LSP-Bicep, "Mar" inside "Make Bookmarklet", `Lean` vs `LSP-lean` are different packages).
+When a miss is found, add a retroactive row to the tsv at once.
+
 ## Which sublime-mcp tools to use
 
 Call `get_help` first. The tool usage (packages, menus, command palette, input panels, native dialogs) is documented in sublime-mcp's own `AGENT_GUIDE.md` and `skills/sublime-mcp/SKILL.md`; do not duplicate it here. Note: `install_package` is not the user picker flow, so it does not replace rule 4.
@@ -63,7 +72,7 @@ No tool reads the items of an open quick panel (such as the Install Package pick
 - `delete_file` / `delete_folder` raise a Windows "permanently delete" confirmation per item on this drive and can stall; confirm each in computer-use.
 - Learned 2026-10-11 (AI package audit, portable 4200):
   - After `show_overlay` (or any `run_command` that changes the UI) the next computer-use key press can come back "interrupted: user input detected" for every key until you call `get_window_state` once; do that, then type. A freshly started portable answers "no_viable_candidate" to keys until its title bar is clicked.
-  - Order that works for the Install picker: `run_command show_overlay` -> `get_window_state` (image) -> `Return` -> wait about 6 s for the list -> one key press per letter of the name -> `get_window_state` (image) to see the match -> `Return`.
+  - Order that works for the Install picker: `run_command show_overlay` -> `get_window_state` (image) -> `Return` -> wait about 6 s for the list -> **`get_window_state` (image) and confirm the package list is on screen (not still the palette text "Package Control: Install Package")** -> one key press per letter of the name -> `get_window_state` (image) to see the match -> `Return`. Donald's rule (2026-10-11): never send the name letter by letter until a screenshot shows the Enter took effect. A press_key result of `no_viable_candidate` or `interrupted` means the keys did NOT land: click the title bar (element index of AXTitleBar), call `get_window_state`, and retry the Return first.
   - The Remove picker highlights its first row, which is often MCP Commander or Package Control: type the package's name first and check the screenshot shows the single right entry before `Return`.
   - Dialogs: read them with `list_native_windows`; if `messages` is empty (a task dialog with custom button text) read the text with computer-use. A click by `element_index` on those buttons did nothing; click the pixel position from a `capture_mode="image"` snapshot. A message box may need a second or two to close after the click, so list again before clicking twice.
   - Use `run_command` with `settle_ms=300` when a command may show a dialog; it returns the new dialog in `dialogs`.

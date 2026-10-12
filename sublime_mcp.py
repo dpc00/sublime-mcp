@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.12.3"
+__version__ = "1.12.4"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -2366,6 +2366,32 @@ def _close_file(body):
     return _on_main(fn)
 
 
+def _open_folder(body):
+    """Open a folder in a NEW window.
+
+    The old tool called a Sublime command named open_folder, which does not exist, so
+    it reported ok and did nothing. This makes a new window and gives it the folder as
+    its project data (what `subl -n folder` does).
+    """
+    path = (body.get("path") or "").strip()
+    if not path:
+        return {"error": "path required"}
+    if not os.path.isdir(path):
+        return {"error": "not a folder: {}".format(path)}
+
+    def fn():
+        before = set(w.id() for w in sublime.windows())
+        sublime.run_command("new_window")
+        new = [w for w in sublime.windows() if w.id() not in before]
+        if not new:
+            return {"error": "new_window did not create a window"}
+        w = new[0]
+        w.set_project_data({"folders": [{"path": path}]})
+        return {"ok": True, "window_id": w.id(), "folders": w.folders()}
+
+    return _on_main(fn)
+
+
 def _find_in_files(body):
     """Open ST's native Find in Files panel (Ctrl+Shift+H equivalent) and run a search.
 
@@ -3742,7 +3768,7 @@ _POST = {
     # ── Phase B batch 2: file/project operations ─────────────────────────
     "/new_file_at": _wc("new_file_at"),
     "/new_folder": _wc("new_folder"),
-    "/open_folder": _wc("open_folder"),
+    "/open_folder": _open_folder,
     "/open_containing_folder": _wc("open_containing_folder"),
     "/rename_file": _wc("rename_file"),
     "/copy_path": _wc("copy_path"),
@@ -4697,7 +4723,15 @@ def _install_package(body):
             if package not in avail:
                 print("sublime-mcp: install_package: '{}' not found in Package Control".format(package))
                 return
-            pm.install_package(package, unattended=False)
+            installed = pm.install_package(package, unattended=False)
+            if installed is not False:
+                # PackageManager.install_package records the name in
+                # installed_packages with persist=False, so the caller must save.
+                # Without this the settings file never lists the package and
+                # Package Control removes it (and its libraries) at the next start.
+                sublime.set_timeout(
+                    lambda: sublime.save_settings("Package Control.sublime-settings"), 0
+                )
         except Exception as e:
             print("sublime-mcp: install_package '{}' error: {}".format(package, e))
 
@@ -5812,7 +5846,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/new_folder")),
     ("open_folder",
-     "Open a folder in a new window (WindowCommand). Pass 'path' in args.",
+     "Open a folder in a NEW window (makes the window and sets the folder as its project data; returns window_id and folders). Pass 'path' (an existing folder).",
      {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
      _p("/open_folder")),
     ("open_containing_folder",
