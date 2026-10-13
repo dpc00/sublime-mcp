@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.13.2
 
 `close_file` takes `discard` (default false): with it, a tab that has unsaved edits is closed at once and the edits are thrown away, instead of raising Sublime's native "Save Changes?" dialog, which blocks the main thread until someone answers it. The result says `discarded` when it did so. Tried on build 4200: an unsaved tab with 17 characters closed immediately, no dialog, `"discarded": true`. Tool count stays 413; the tool lists were regenerated for the new option.
 
