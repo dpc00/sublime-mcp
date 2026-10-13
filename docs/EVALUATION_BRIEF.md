@@ -1,7 +1,8 @@
 # sublime-mcp: brief for an outside evaluator
 
 Written 2026-09-26. Everything below is a record of what was done and seen; it
-contains no recommendations. The author of the code is an AI (Claude) working
+contains no recommendations. **Numbers in this brief are as of 2026-09-26** (version
+1.10.0, 401 tools); the current release is 1.13.2 with 413 tools, 160 of them generated. The author of the code is an AI (Claude) working
 for the repository owner, who asked for an independent expert to evaluate it.
 
 ## What it is

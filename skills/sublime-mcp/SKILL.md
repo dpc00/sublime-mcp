@@ -69,6 +69,11 @@ custom button text (for example "Install Terminus" / "Cancel"); read it with
 computer-use. To close a tab that has no path use `close_file(name=...)` or
 `close_file(index=...)`, never `run_command` `close` (it does nothing) and never
 `close_file` with no arguments unless the active tab is the one you mean.
+To close a tab that has unsaved edits without Sublime's "Save Changes?" dialog
+(which blocks the main thread), pass `discard=true` (since 1.13.2): the edits are
+thrown away and the result says `discarded`. If the dialog opens anyway, the
+running Sublime still has older plugin code (seen once on portable 4200,
+2026-10-13): answer it with `dismiss_native_window`.
 
 Edit through `str_replace_based_edit_tool` so changes appear in Sublime with undo
 and diff markers. Call `save_file` after an edit unless the user asks to leave the
