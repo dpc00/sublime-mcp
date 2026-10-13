@@ -168,7 +168,9 @@ Palette. Check View > Show Console for startup confirmation.
 
 ## Agent skill
 
-Installable Codex skills are in `skills/sublime-mcp`,
-`skills/sublime-debugger`, and `skills/sublime-lsp`. Copy the desired
-directories to your Codex skills directory or install them through your normal
-skill workflow.
+Two skills ship with sublime-mcp: `skills/sublime-mcp` (how an agent uses the
+tools) and `skills/package-skill-generator` (how to generate a small skill for
+any Sublime package you use, such as a language server or a debugger). Copy the
+directories to your agent's skills directory or install them through your normal
+skill workflow. Skills for individual packages are not shipped: generate your own
+with the generator.

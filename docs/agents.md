@@ -17,12 +17,11 @@ installed Sublime package requires its own server. That's usually not true:
 `get_package_mcp_info` (in this plugin) plus `eval_python`/`run_command`
 covers it directly for any client that already has that generic access.
 Everything below that references `lsp_*` / `debugger_*` tools describes
-capability that now needs to be reached that way instead — see
-`skills/sublime-lsp/SKILL.md` and `skills/sublime-debugger/SKILL.md` (both in
-this repo; the Debugger one tested 2026-10-08) for the real, verified code
-(session lookup, the async bridges, coordinate conventions) in place of
-those old typed tools. `skills/package-skill-generator` documents how to
-produce an equivalent skill for any other package.
+capability that now needs to be reached that way instead. Per-package skills
+for them (a language-server or debugger skill) are not shipped: generate your
+own with `skills/package-skill-generator`, which documents how to produce one
+for any installed package. The old lsp-mcp and debugger-mcp sources are in git
+history (before commit 435cf12 for lsp-mcp).
 
 ## sublime-mcp itself
 

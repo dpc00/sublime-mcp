@@ -87,11 +87,11 @@ the three packages tested so far.
 
 Standard Agent Skills format: a folder named for the package (e.g.
 `<package>-control/`) containing `SKILL.md` with `name`/`description`
-frontmatter, placed in the environment's own skills location (for this
-project, mirror the existing `skills/sublime-debugger/`-style layout only
-if it's meant to ship with this repo; otherwise the user's own
-`~/.claude/skills/` is the real, standard location -- see
-`get_package_mcp_info`'s own tool description for this same distinction).
+frontmatter. Put it in the user's own skills location (for Claude Code,
+`~/.claude/skills/`). Do not add a generated skill to this repository: users
+generate their own for the packages they use, and only `skills/sublime-mcp`
+and this generator ship with sublime-mcp (see `get_package_mcp_info`'s own
+tool description for the same distinction).
 
 Body content, concretely:
 - What the package actually does (from Step 1's real findings, not the
