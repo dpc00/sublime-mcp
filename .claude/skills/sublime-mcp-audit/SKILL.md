@@ -5,6 +5,8 @@ description: How to run the Sublime package audit so it exposes sublime-mcp weak
 
 # sublime-mcp package audit
 
+Public, general version of this method for other people: https://github.com/dpc00/sublime-package-audit (`.claude/skills/sublime-package-audit/SKILL.md` and `PROCEDURE.md`). This file is the private working copy with Donald's local rules and paths; when a lesson is general, put it in the public skill too.
+
 Source: Donald's instructions of 2026-10-07 and the tool survey made the same day with `discover_tools`.
 
 ## Purpose
@@ -99,3 +101,25 @@ Test Python plugins on 4200 first (reportable). A failure only on 4215 is build 
 ## After one failure, diagnose; do not retry
 
 Read the package's code path and check that the command it calls exists, before trying the same action again (the niceDarkTheme Install button calls the nonexistent `advanced_install_package`; Package Control 4.2.8 has `install_package` and `install_packages`).
+
+## Current practice, 2026-10-13 (supersedes older lines above where they differ)
+
+Where the older text says computer-use is needed for pickers or that scripts are forbidden: since 2026-10-08 the sublime-mcp tools `get_quick_panel` / `pick_quick_panel` / `drive_input_panel` / `list_native_windows` / `dismiss_native_window` / `ui_press_key` exist and are used. Small helper scripts that only read data outside Sublime (zip contents, gh API calls, file hashes, simulating a user's file add) are fine and always written with the Write tool, never inline shell.
+
+### Steps for one package on portable 4200 (`D:\st_portable_4200`)
+1. Build the "untested" list with a CHECKED filter. Never trust a column guess: the 2026-10-13 filter read the tier column as the name and listed already-tested packages (ACP was retested by mistake). Look at the header, print a few rows, and test the filter on a package known to be done. Then check each candidate with the four-point check above (tsv by name AND by repo owner/name, log text, transcripts).
+2. Back up `Data\Packages\User\Preferences.sublime-settings` and `Package Control.sublime-settings` to the scratchpad (`Preferences.backup`, `PC4200.backup`). Add one line to `C:\Users\donal\data\test_installs_to_remove_2026_10_11.txt` BEFORE installing.
+3. Launch: `Start-Process 'D:\st_portable_4200\sublime_text.exe'`, wait for port 9522. Then reconnect through the MAIN Sublime: `run_command ai_terminal_send_string` with scope view, name "Claude", string `/mcp reconnect sublime-mcp-portable-4200\r`; wait about 12 s; `ToolSearch select:mcp__sublime-mcp-portable-4200__batch`. If computer-use was stopped by Escape: `/mcp reconnect computer-use-mcp` the same way, immediately; do not drop it.
+4. Install via palette: `show_overlay` command_palette text "Package Control: Install Package", `ui_press_key Return`, then `pick_quick_panel text=<name> wait_ms 30000`. If the palette picks a different command (Remove Package once opened "Remove Channel"), quit and delete the package the fallback way instead of retrying.
+5. Inspect the package source first (zip in `Data\Installed Packages`; read with `python -I -X utf8`); then run real commands; read the console and any plugin log panel; use the REAL external tool when the package needs one (install the free one in its own folder under `tools`, own package.json), never a stub.
+6. Prove before filing: reproduce, find the cause in the source, try the fix on an unpacked copy in `Data\Packages\<name>` (restart first, a package folder added while Sublime runs may not load its Preferences), check existing issues, one short factual issue per finding, text starts "Claude reports:", say plainly whether a visible effect was seen.
+7. Cleanup, in this order: close all tabs (set_scratch + close) so no Save dialog blocks; `exit` the portable; wait until no process remains; recycle the zip, the unpacked copy, user settings files the test created, the downloaded tools and clones with the `recycle-delete` skill (admin through `run-as-admin` when Windows asks for it); restore both settings from the backups and compare file hashes; append the log section, the `.tested_packages.tsv` row and the `test_installs_to_remove` line.
+
+### Findings that change how to judge
+- A package's `Preferences.sublime-settings` added while Sublime runs is NOT merged until restart (sublimehq/sublime_text#7012, tested 2026-10-13; own `Foo.sublime-settings` files load at once). A theme or package that "ignores its defaults" right after install: restart before judging. Edits to a file Sublime already knew at startup are live.
+- `eval_python` runs on the main thread: a `time.sleep` in it freezes the editor and trips the tool's 5 s timeout. Never sleep in it.
+- ACP-style permission prompts are quick panels: read with `get_quick_panel`, answer with `pick_quick_panel` (index or text, pass the argument inside `args`).
+- An input panel (prompt box) is filled and submitted with `drive_input_panel`.
+- The user's global instructions (memory scans) make Claude-based agents start with file-read permission prompts; decline them, they are not part of the package.
+- 2026-10-13 (LSP-R, FileTabRename, simpleifdef, LanguageTool): (a) when you remove a package zip by hand, restore `Package Control.sublime-settings` from the backup BEFORE the next launch, otherwise Package Control sees the package in `installed_packages` and downloads it again at startup, and the Install list no longer offers it. (b) PowerShell `Expand-Archive` refuses `.sublime-package`; unpack with python `zipfile`. (c) PowerShell variable names are case-insensitive: `$p` overwrote `$P` and a cleanup script half-ran; use distinct names. (d) Passing a single path to `recycle.ps1` through `@items` splats a string into characters: always `@(...)`-wrap the list. (e) A freshly installed LSP helper may not start until the window config is updated (sublimelsp/LSP#3074, only packages that register two plugins such as LSP-R); check `windows.lookup(w).get_config_manager().all` before judging a "server never starts". (f) The R language server skips diagnostics for files inside the Windows temp folder: never put R test files in the scratchpad. (g) `eval_python` selection changes (`sel().add`) do not fire `on_selection_modified` here; a real `move` command does. (h) Plugins on build 4200 need real build-4215 scope names sometimes (Simple Ifdef 0.4.0 does nothing on 4200): test on the 4215 portable and do not report it as a bug. (i) Look inside the package code for a PATH/config assumption first (LSP-R calls `R` from PATH: launch the portable with the tool's bin folder in PATH for that process only).
+- pick_quick_panel index is the position in the FULL picker list (the indexes that get_quick_panel returns for a filtered list), not the position in the filtered result. Pick by 	ext (exact name) to be safe. 2026-10-13: index 0 after a filter installed an unrelated package.
