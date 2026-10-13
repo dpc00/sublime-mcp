@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.13.0"
+__version__ = "1.13.1"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -4935,7 +4935,7 @@ def _ui_press_key(body):
     key = body.get("key")
     if not key:
         return {"error": "key is required, for example 'Return', 'Down', 'a', 'F5'"}
-    return ui_input.press_key(pid, hwnd, key, body.get("mods"), body.get("method") or "post", body.get("settle_ms", 150), body.get("min_idle_s", 8))
+    return ui_input.press_key(pid, hwnd, key, body.get("mods"), body.get("method") or "post", body.get("settle_ms", 150), body.get("min_idle_s", 8), body.get("wait_idle_s", 0))
 
 
 _POST["/ui_screenshot"] = _ui_screenshot
@@ -4977,7 +4977,7 @@ def _ui_click(body):
     if body.get("x") is None or body.get("y") is None:
         return {"error": "x and y are required (pixels in the picture ui_screenshot returns)"}
     return ui_input.click(pid, hwnd, body.get("x"), body.get("y"), body.get("button") or "left",
-                          bool(body.get("double")), body.get("min_idle_s", 8), body.get("settle_ms", 250))
+                          bool(body.get("double")), body.get("min_idle_s", 8), body.get("settle_ms", 250), body.get("wait_idle_s", 0))
 
 
 _POST["/ui_click"] = _ui_click
@@ -4998,7 +4998,7 @@ def _ui_hover(body):
     if body.get("x") is None or body.get("y") is None:
         return {"error": "x and y are required (pixels in the picture ui_screenshot returns)"}
     res = ui_input.hover(pid, hwnd, body.get("x"), body.get("y"), body.get("dwell_ms", 900),
-                         body.get("hold_ms", 0), bool(body.get("screenshot")), body.get("min_idle_s", 8))
+                         body.get("hold_ms", 0), bool(body.get("screenshot")), body.get("min_idle_s", 8), body.get("wait_idle_s", 0))
     shot = res.pop("shot", None)
     if shot is not None:
         if "png" not in shot:
@@ -5766,7 +5766,8 @@ _MCP_TOOLS = [
          "mods": {"type": "array", "items": {"type": "string", "enum": ["ctrl", "shift", "alt"]}, "description": "Modifier keys held during the press."},
          "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
          "method": {"type": "string", "enum": ["post", "input"], "description": "post (default, no focus change, no modifier keys) or input (real keys, carry modifiers; needs the window in front and activates it with a real title-bar click only when the person is idle)."},
-         "min_idle_s": {"type": "number", "description": "For method input: required seconds since the person last used the mouse or keyboard (default 8)."},
+         "min_idle_s": {"type": "number", "description": "For method input: required seconds since the person last used the mouse or keyboard (default 8); real keys are never sent while they are typing."},
+         "wait_idle_s": {"type": "number", "description": "Wait up to this many seconds (max 120) for the person to stop typing or moving the mouse before giving up (default 0 = refuse at once). Use it instead of retrying when they are busy."},
          "settle_ms": {"type": "integer", "description": "Milliseconds to wait after the key so it has been handled (default 150, max 5000)."},},
       "required": ["key"]},
      _p("/ui_press_key")),
@@ -5787,7 +5788,7 @@ _MCP_TOOLS = [
      "Because it moves the pointer of the person at the computer for a moment, it is REFUSED unless "
      "they have been idle for min_idle_s seconds (default 8), and refused unless the target window is "
      "the one under that point (another window in front would take the click). The pointer is "
-     "restored afterwards. button: left (default) or right; double=true double-clicks. Prefer keys "
+     "restored afterwards. To click inside an open popup menu or other native popup, pass that menu's own hwnd from list_native_windows (x, y then count from the menu's top-left corner; ui_screenshot of the menu hwnd shows it). Pass wait_idle_s to wait for a busy person instead of refusing. button: left (default) or right; double=true double-clicks. Prefer keys "
      "(ui_press_key), pick_quick_panel and editor commands when they can do the job.",
      {"type": "object", "properties": {
          "x": {"type": "integer", "description": "Pixels from the left edge of the window picture."},
@@ -5796,6 +5797,7 @@ _MCP_TOOLS = [
          "button": {"type": "string", "enum": ["left", "right"], "description": "Mouse button (default left)."},
          "double": {"type": "boolean", "description": "Double-click (default false)."},
          "min_idle_s": {"type": "number", "description": "Required seconds since the person last used the mouse or keyboard (default 8)."},
+         "wait_idle_s": {"type": "number", "description": "Wait up to this many seconds (max 120) for the person to stop typing or moving the mouse before giving up (default 0 = refuse at once). Use it instead of retrying when they are busy."},
          "settle_ms": {"type": "integer", "description": "Milliseconds to wait after the click (default 250, max 5000)."}},
       "required": ["x", "y"]},
      _p("/ui_click")),
@@ -5813,7 +5815,8 @@ _MCP_TOOLS = [
          "screenshot": {"type": "boolean", "description": "Take a picture while the pointer is there and return its path."},
          "dwell_ms": {"type": "integer", "description": "Milliseconds the pointer rests before the picture (default 900)."},
          "hold_ms": {"type": "integer", "description": "Extra milliseconds to keep the pointer there afterwards (default 0)."},
-         "min_idle_s": {"type": "number", "description": "Required seconds since the person last used the mouse or keyboard (default 8)."}},
+         "min_idle_s": {"type": "number", "description": "Required seconds since the person last used the mouse or keyboard (default 8)."},
+         "wait_idle_s": {"type": "number", "description": "Wait up to this many seconds (max 120) for the person to stop typing or moving the mouse before giving up (default 0 = refuse at once). Use it instead of retrying when they are busy."},},
       "required": ["x", "y"]},
      _p("/ui_hover")),
     # ── Phase B batch 1: view / tab / pane management ─────────────────────────

@@ -228,7 +228,7 @@ def _client_width_hint(hwnd):
     return max(1, (rect.right - rect.left) // 2)
 
 
-def press_key(pid, hwnd, key, mods=None, method="post", settle_ms=150, min_idle_s=8.0):
+def press_key(pid, hwnd, key, mods=None, method="post", settle_ms=150, min_idle_s=8.0, wait_idle_s=0):
     """Send one key (with optional modifiers) to window ``hwnd`` of process ``pid``.
 
     method "post": WM_KEYDOWN/WM_KEYUP (and WM_CHAR for a printable key with no ctrl/alt)
@@ -250,6 +250,13 @@ def press_key(pid, hwnd, key, mods=None, method="post", settle_ms=150, min_idle_
             return {"error": "unknown modifier {!r}; use ctrl, shift, alt or win".format(m)}
         mod_vks.append(mv)
     if method == "input":
+        # Real key events land wherever the person's focus is, so never send them while they are typing.
+        idle = wait_for_idle(min_idle_s, wait_idle_s)
+        if idle < min_idle_s:
+            return {"error": "the person at the computer is using the mouse or keyboard (idle {:.1f}s, "
+                             "need {:.1f}s); real keys would collide with their typing. Pass wait_idle_s "
+                             "to wait for them to stop, or use method 'post'".format(idle, min_idle_s),
+                    "idle_seconds": round(idle, 1)}
         previous = _user32.GetForegroundWindow()
         if previous != hwnd:
             _bring_to_front(hwnd, previous)
@@ -258,7 +265,7 @@ def press_key(pid, hwnd, key, mods=None, method="post", settle_ms=150, min_idle_
             # Windows refuses to let a background process take the foreground. A real click on
             # the window's title bar activates it, but that moves the person's pointer, so it is
             # gated on them being idle (and on the window really being under that point).
-            res = click(pid, hwnd, _client_width_hint(hwnd), 16, "left", False, min_idle_s, 150)
+            res = click(pid, hwnd, _client_width_hint(hwnd), 16, "left", False, min_idle_s, 150, wait_idle_s)
             if "error" in res:
                 return {"error": "the window is not in front and could not be activated: " + res["error"]}
             time.sleep(0.15)
@@ -333,7 +340,23 @@ def idle_seconds():
     return (ctypes.windll.kernel32.GetTickCount() - li.dwTime) / 1000.0
 
 
-def click(pid, hwnd, x, y, button="left", double=False, min_idle_s=8.0, settle_ms=250):
+def wait_for_idle(min_idle_s, wait_idle_s=0):
+    """Return the idle seconds once they reach ``min_idle_s``, waiting up to ``wait_idle_s`` seconds for
+    the person at the computer to stop typing or moving the mouse. Returns the last value seen on timeout."""
+    try:
+        wait = max(0.0, min(float(wait_idle_s or 0), 120.0))
+        need = float(min_idle_s)
+    except (TypeError, ValueError):
+        return idle_seconds()
+    end = time.time() + wait
+    idle = idle_seconds()
+    while idle < need and time.time() < end:
+        time.sleep(0.25)
+        idle = idle_seconds()
+    return idle
+
+
+def click(pid, hwnd, x, y, button="left", double=False, min_idle_s=8.0, settle_ms=250, wait_idle_s=0):
     """Click at picture position (x, y) of window ``hwnd`` of process ``pid`` with the REAL mouse.
 
     Sublime draws its own editor, palette and popups and ignores posted mouse messages, so a
@@ -360,10 +383,11 @@ def click(pid, hwnd, x, y, button="left", double=False, min_idle_s=8.0, settle_m
     if not (0 <= x < rect.right - rect.left and 0 <= y < rect.bottom - rect.top):
         return {"error": "({}, {}) is outside the window ({} x {})".format(
             x, y, rect.right - rect.left, rect.bottom - rect.top)}
-    idle = idle_seconds()
+    idle = wait_for_idle(min_idle_s, wait_idle_s)
     if idle < min_idle_s:
         return {"error": "the person at the computer is using the mouse or keyboard (idle {:.1f}s, "
-                         "need {:.1f}s); a real click would move their pointer. Try again later, or "
+                         "need {:.1f}s); a real click would move their pointer. Try again later, pass "
+                         "wait_idle_s to wait for them to stop, or "
                          "use keys / editor commands instead".format(idle, min_idle_s),
                 "idle_seconds": round(idle, 1)}
     sx, sy = rect.left + x, rect.top + y
@@ -396,7 +420,7 @@ def click(pid, hwnd, x, y, button="left", double=False, min_idle_s=8.0, settle_m
     return {"ok": True, "method": "pointer", "hwnd": hwnd, "screen": [sx, sy], "idle_seconds": round(idle, 1)}
 
 
-def hover(pid, hwnd, x, y, dwell_ms=900, hold_ms=0, capture=False, min_idle_s=8.0):
+def hover(pid, hwnd, x, y, dwell_ms=900, hold_ms=0, capture=False, min_idle_s=8.0, wait_idle_s=0):
     """Move the real pointer to picture position (x, y) of window ``hwnd`` and leave it there for
     ``dwell_ms`` (so hover popups can appear), optionally taking a picture while it is there, then
     keep it ``hold_ms`` longer and put it back. Same gates as ``click``: refused unless the person at
@@ -418,10 +442,11 @@ def hover(pid, hwnd, x, y, dwell_ms=900, hold_ms=0, capture=False, min_idle_s=8.
     _user32.GetWindowRect(hwnd, ctypes.byref(rect))
     if not (0 <= x < rect.right - rect.left and 0 <= y < rect.bottom - rect.top):
         return {"error": "({}, {}) is outside the window".format(x, y)}
-    idle = idle_seconds()
+    idle = wait_for_idle(min_idle_s, wait_idle_s)
     if idle < min_idle_s:
         return {"error": "the person at the computer is using the mouse or keyboard (idle {:.1f}s, "
-                         "need {:.1f}s); hovering moves their pointer. Try again later".format(idle, min_idle_s),
+                         "need {:.1f}s); hovering moves their pointer. Try again later or pass "
+                         "wait_idle_s".format(idle, min_idle_s),
                 "idle_seconds": round(idle, 1)}
     sx, sy = rect.left + x, rect.top + y
     under = _user32.WindowFromPoint(wintypes.POINT(sx, sy))

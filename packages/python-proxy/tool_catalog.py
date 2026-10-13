@@ -2458,9 +2458,12 @@ TOOLS = [   {   'name': 'add_directory',
                        'REFUSED unless they have been idle for min_idle_s seconds (default 8), and '
                        'refused unless the target window is the one under that point (another '
                        'window in front would take the click). The pointer is restored afterwards. '
-                       'button: left (default) or right; double=true double-clicks. Prefer keys '
-                       '(ui_press_key), pick_quick_panel and editor commands when they can do the '
-                       'job.',
+                       "To click inside an open popup menu or other native popup, pass that menu's "
+                       "own hwnd from list_native_windows (x, y then count from the menu's "
+                       'top-left corner; ui_screenshot of the menu hwnd shows it). Pass '
+                       'wait_idle_s to wait for a busy person instead of refusing. button: left '
+                       '(default) or right; double=true double-clicks. Prefer keys (ui_press_key), '
+                       'pick_quick_panel and editor commands when they can do the job.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'x': {   'type': 'integer',
                                                       'description': 'Pixels from the left edge of '
@@ -2486,6 +2489,19 @@ TOOLS = [   {   'name': 'add_directory',
                                                                               'last used the mouse '
                                                                               'or keyboard '
                                                                               '(default 8).'},
+                                             'wait_idle_s': {   'type': 'number',
+                                                                'description': 'Wait up to this '
+                                                                               'many seconds (max '
+                                                                               '120) for the '
+                                                                               'person to stop '
+                                                                               'typing or moving '
+                                                                               'the mouse before '
+                                                                               'giving up (default '
+                                                                               '0 = refuse at '
+                                                                               'once). Use it '
+                                                                               'instead of '
+                                                                               'retrying when they '
+                                                                               'are busy.'},
                                              'settle_ms': {   'type': 'integer',
                                                               'description': 'Milliseconds to wait '
                                                                              'after the click '
@@ -2533,7 +2549,20 @@ TOOLS = [   {   'name': 'add_directory',
                                                                               'since the person '
                                                                               'last used the mouse '
                                                                               'or keyboard '
-                                                                              '(default 8).'}},
+                                                                              '(default 8).'},
+                                             'wait_idle_s': {   'type': 'number',
+                                                                'description': 'Wait up to this '
+                                                                               'many seconds (max '
+                                                                               '120) for the '
+                                                                               'person to stop '
+                                                                               'typing or moving '
+                                                                               'the mouse before '
+                                                                               'giving up (default '
+                                                                               '0 = refuse at '
+                                                                               'once). Use it '
+                                                                               'instead of '
+                                                                               'retrying when they '
+                                                                               'are busy.'}},
                            'required': ['x', 'y']}},
     {   'name': 'ui_press_key',
         'description': 'Send one key press to one window of this Sublime Text process (Windows '
@@ -2577,7 +2606,23 @@ TOOLS = [   {   'name': 'add_directory',
                                                                               'since the person '
                                                                               'last used the mouse '
                                                                               'or keyboard '
-                                                                              '(default 8).'},
+                                                                              '(default 8); real '
+                                                                              'keys are never sent '
+                                                                              'while they are '
+                                                                              'typing.'},
+                                             'wait_idle_s': {   'type': 'number',
+                                                                'description': 'Wait up to this '
+                                                                               'many seconds (max '
+                                                                               '120) for the '
+                                                                               'person to stop '
+                                                                               'typing or moving '
+                                                                               'the mouse before '
+                                                                               'giving up (default '
+                                                                               '0 = refuse at '
+                                                                               'once). Use it '
+                                                                               'instead of '
+                                                                               'retrying when they '
+                                                                               'are busy.'},
                                              'settle_ms': {   'type': 'integer',
                                                               'description': 'Milliseconds to wait '
                                                                              'after the key so it '

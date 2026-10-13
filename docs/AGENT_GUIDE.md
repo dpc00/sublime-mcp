@@ -318,7 +318,11 @@ they are gated: `ui_click(x, y)` (x, y are pixels in the `ui_screenshot` picture
 screenshot=true)` and `ui_press_key(..., method="input")` are refused unless the person has been idle
 for `min_idle_s` seconds (default 8) and the target window is the one under the point at that moment;
 the pointer is put back afterwards. A refusal says how long the person has been idle; wait and try
-again, or use keys, `pick_quick_panel` and editor commands instead. `method="input"` also needs the
+again, pass `wait_idle_s` (up to 120) to wait for them to stop typing instead of giving up, or use keys,
+`pick_quick_panel` and editor commands instead. Native popups (an open menu, the `#32768` windows in
+`list_native_windows`) are windows of the process too: pass the menu's own `hwnd` to `ui_screenshot`,
+`ui_hover` and `ui_click` (x, y count from the menu's top-left corner) to read and click it; a click
+on the editor window's coordinates is refused while the menu is in front of that point. `method="input"` also needs the
 window in front, and activates it with a real click on its title bar (same gate). Never inject real
 input while the person may be using the computer, and never use `SendMessage` from a plugin to a
 Sublime window: it waits for the UI thread and can deadlock Sublime (the tools only use `PostMessage`).
