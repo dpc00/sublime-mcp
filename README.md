@@ -88,10 +88,10 @@ machine: set `auth_token` for that.
 
 ### 1. Install the Sublime Text plugin
 
-**Package Control (recommended once available):** run `Package Control:
-Install Package` and search for **MCP Commander**. This package is
+**Package Control: not available.** The package was
 [submitted to Package Control](https://github.com/sublimehq/package_control_channel/pull/9554)
-and awaiting merge — until it lands, use the manual path below.
+and that pull request is closed without being merged, so **MCP Commander** does not
+appear in `Package Control: Install Package`. Use the manual path below.
 
 **Manual (also the path for developing sublime-mcp itself):**
 
@@ -162,8 +162,8 @@ Other MCP clients may use the legacy SSE URL (Windows example):
 }
 ```
 
-Each plugin's MCP server starts automatically when ST loads it. To stop or
-restart sublime-mcp's, run "MCP Commander: Server Status" from the Command
+The MCP server starts automatically when ST loads the plugin. To stop or
+restart it, run "MCP Commander: Server Status" from the Command
 Palette. Check View > Show Console for startup confirmation.
 
 ## Agent skill

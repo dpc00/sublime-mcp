@@ -28,7 +28,7 @@ produce an equivalent skill for any other package.
 
 | MCP            | Plugin dir | MCP SSE                         | HTTP bridge                     | Tools                          |
 | -------------- | ---------- | -------------------------------- | -------------------------------- | ------------------------------ |
-| **sublime-mcp**  | repo root | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | 7 default, 394 discoverable    |
+| **sublime-mcp**  | repo root | 9502 (Win) / 9503 (macOS/Linux) | 9500 (Win) / 9501 (macOS/Linux) | 7 default, 406 discoverable    |
 
 Ports are configured via `MCP Commander.sublime-settings` (`"mcp_port"` /
 `"http_port"`), overridable in `Packages/User/`. The proxy → HTTP bridge URL

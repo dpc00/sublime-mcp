@@ -1,7 +1,7 @@
 # Agent Guide for sublime-mcp (MCP Commander)
 
 Canonical copy for repo readers. `get_help` serves
-`AGENT_GUIDE.md` (repo root) — keep these two files in sync.
+`AGENT_GUIDE.md` (repo root) -- keep these two files in sync.
 
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.
@@ -76,7 +76,8 @@ the hidden tool `open_file(path=...)`.
 
 Hidden tools (everything except the seven) are only reachable through `batch`; calling one
 directly gives "No such tool". `get_sheets` returns every tab's full settings (over 100 lines per
-tab); the hidden `get_open_files` returns just each tab's path, name and dirty flag.
+tab) unless you pass `settings=false`, which gives a compact list; the hidden `get_open_files`
+returns just each tab's path, name and dirty flag.
 
 ## Batch (cuts round trips)
 
@@ -275,6 +276,27 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   palette, Goto Anything and panels from the other host give an error, and then the keyboard is
   the only way. Picking runs the package's own callback, so pick only items you mean to run (some
   pickers open files, folders or browser tabs). `drive_input_panel` only fills input panels.
+  **Package Control's Install Package / Remove Package lists take up to ~15 s to appear after
+  Enter** (the status bar says "Loading packages..."): pass `wait_ms` (at most 60000) to
+  `pick_quick_panel` or `get_quick_panel`, for example `pick_quick_panel(text="Bicep",
+  wait_ms=30000)`, and the call waits for the panel instead of failing with "no recorded quick
+  panel". Without `wait_ms` that error carries a hint.
+- **What a highlighting plugin drew:** `get_view_regions(key="ifdef")` returns the regions stored
+  with `view.add_regions(key, ...)` (begin, end, first 80 characters); name several keys with
+  commas. Sublime cannot list the keys, so read the plugin's source for them. Built-in example:
+  after `toggle_bookmark`, key `bookmarks`.
+- **Syntax names:** `get_active_file` and `get_sheets` give `syntax` (the name, or the file name
+  when the syntax file has no `name:` line, as with Bicep) and `get_active_file` also gives
+  `syntax_path`.
+- **Scope names differ between Sublime builds.** In build 4200 the C syntax scopes `#ifdef` as
+  `keyword.control.import`; in 4215 it is `keyword.control.directive.conditional`. A package that
+  selects by scope can work on one build and do nothing on the other: check the scopes with
+  `get_scope_at_cursor` on the build the user runs before calling it a defect.
+- **PowerShell pipes add a byte-order mark.** `Get-Content file | tool -` feeds the tool a BOM and
+  tools that read stdin may report a parse error; redirect the file instead (`tool - < file`)
+  from Bash or cmd.
+- **`exit`** replies first and closes Sublime 300 ms later, so the call returns `ok` and the
+  connection then drops (restart, then reconnect the server).
 
 ## When a native dialog blocks Sublime (Windows)
 
