@@ -2370,6 +2370,7 @@ def _close_file(body):
     path = body.get("path")
     name = body.get("name", "") or ""
     index = int(body.get("index", -1))
+    discard = bool(body.get("discard"))
 
     def fn():
         w = sublime.active_window()
@@ -2389,6 +2390,13 @@ def _close_file(body):
             v = w.active_view()
         if not v:
             return {"error": "no active view"}
+        discarded = False
+        if discard and v.is_dirty():
+            # Mark the tab scratch so Sublime closes it without the "Save Changes?" dialog,
+            # which would otherwise block the main thread until a person answers it. The
+            # unsaved edits are thrown away: only done when the caller asked for discard.
+            v.set_scratch(True)
+            discarded = True
         # Route through a real window command instead of calling v.close()
         # directly. Some hosts (GhostShell's ai_terminal package) hook
         # on_window_command to ask for confirmation before a tab actually
@@ -2402,7 +2410,7 @@ def _close_file(body):
         else:
             group, pos = w.get_view_index(v)
             w.run_command("close_by_index", {"group": group, "index": pos})
-        return {"ok": True}
+        return {"ok": True, "discarded": True} if discarded else {"ok": True}
 
     return _on_main(fn)
 
@@ -5442,11 +5450,15 @@ _MCP_TOOLS = [
      "index (0-based, from get_open_files); with none of the three it closes "
      "whichever tab is active, so name the tab you mean. A name or index that "
      "matches nothing is an error and closes nothing. "
+     "A tab with unsaved edits normally raises Sublime's native \"Save Changes?\" dialog, which "
+     "blocks the main thread until someone answers it; pass discard=true to throw the unsaved "
+     "edits away and close at once (the result then says discarded). "
      "(run_command 'close' with scope='view' does not close a tab: use this tool.)",
      {"type": "object", "properties": {
          "path": {"type": "string", "default": ""},
          "name": {"type": "string", "default": ""},
          "index": {"type": "integer", "default": -1},
+         "discard": {"type": "boolean", "default": False, "description": "Close without saving: unsaved edits are lost. Default false (Sublime asks)."},
      }},
      _p("/close_file")),
     ("toggle_comment",

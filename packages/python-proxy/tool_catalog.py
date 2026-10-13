@@ -284,12 +284,21 @@ TOOLS = [   {   'name': 'add_directory',
                        "case-insensitive match on the tab's title) or index (0-based, from "
                        'get_open_files); with none of the three it closes whichever tab is active, '
                        'so name the tab you mean. A name or index that matches nothing is an error '
-                       "and closes nothing. (run_command 'close' with scope='view' does not close "
-                       'a tab: use this tool.)',
+                       "and closes nothing. A tab with unsaved edits normally raises Sublime's "
+                       'native "Save Changes?" dialog, which blocks the main thread until someone '
+                       'answers it; pass discard=true to throw the unsaved edits away and close at '
+                       "once (the result then says discarded). (run_command 'close' with "
+                       "scope='view' does not close a tab: use this tool.)",
         'inputSchema': {   'type': 'object',
                            'properties': {   'path': {'type': 'string', 'default': ''},
                                              'name': {'type': 'string', 'default': ''},
-                                             'index': {'type': 'integer', 'default': -1}}}},
+                                             'index': {'type': 'integer', 'default': -1},
+                                             'discard': {   'type': 'boolean',
+                                                            'default': False,
+                                                            'description': 'Close without saving: '
+                                                                           'unsaved edits are '
+                                                                           'lost. Default false '
+                                                                           '(Sublime asks).'}}}},
     {   'name': 'close_folder_list',
         'description': 'Removes all the folder(s) from the sidebar and hides it. (WindowCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},

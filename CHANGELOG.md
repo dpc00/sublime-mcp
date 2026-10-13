@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+`close_file` takes `discard` (default false): with it, a tab that has unsaved edits is closed at once and the edits are thrown away, instead of raising Sublime's native "Save Changes?" dialog, which blocks the main thread until someone answers it. The result says `discarded` when it did so. Tried on build 4200: an unsaved tab with 17 characters closed immediately, no dialog, `"discarded": true`. Tool count stays 413; the tool lists were regenerated for the new option.
+
 ## 1.13.1
 
 Window tools no longer give up when the person at the computer is busy, and the real-key path no longer types over them. `ui_click`, `ui_hover` and `ui_press_key` take `wait_idle_s` (up to 120): the call waits that long for the person to stop typing or moving the mouse (they must have been idle for `min_idle_s`, default 8) before it refuses, instead of failing at once and leaving the agent to retry. `ui_press_key` with `method: input` now always checks that idle time first; before, it sent real key events without a check whenever the target window was already in front, so the keys could land in the middle of something the person was typing. The refusal message says how long they have been idle and points at `wait_idle_s`. A popup menu or other native popup of Sublime Text (the `#32768` windows in `list_native_windows`) can be read and operated by passing its own `hwnd` to `ui_screenshot`, `ui_hover` and `ui_click` (x, y count from the menu's top-left corner); tried for real on build 4200: a screenshot of an open Preferences menu, a hover inside it, and a click that waited for idle. The guide (AGENT_GUIDE.md, docs/AGENT_GUIDE.md) says so. Tool count stays 413; the tool lists were regenerated for the new option.
