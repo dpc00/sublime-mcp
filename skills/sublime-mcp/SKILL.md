@@ -72,8 +72,9 @@ computer-use. To close a tab that has no path use `close_file(name=...)` or
 To close a tab that has unsaved edits without Sublime's "Save Changes?" dialog
 (which blocks the main thread), pass `discard=true` (since 1.13.2): the edits are
 thrown away and the result says `discarded`. If the dialog opens anyway, the
-running Sublime still has older plugin code (seen once on portable 4200,
-2026-10-13): answer it with `dismiss_native_window`.
+running Sublime has plugin code older than 1.13.2 (portable 4200 ran 1.12.5
+on 2026-10-13; a portable holds its own copy of the package, so update it):
+answer the dialog with `dismiss_native_window`.
 
 Edit through `str_replace_based_edit_tool` so changes appear in Sublime with undo
 and diff markers. Call `save_file` after an edit unless the user asks to leave the
