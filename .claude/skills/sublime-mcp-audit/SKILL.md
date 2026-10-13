@@ -118,6 +118,9 @@ Where the older text says computer-use is needed for pickers or that scripts are
 ### Age is not a reason; python-version is not a reason (Donald, 2026-10-13)
 Old packages are still worth testing and filing: test every package and file real defects whatever the age (the earlier "maintained only, ~4 years dead are logged, not filed" rule is retired). Never skip or stop at a package whose only problem is a missing `.python-version`: add one containing `3.8` to the unpacked copy, restart, and retest (DXMate: loads and registers 21 commands with it; jtowers/DXMate#2). Packages marked Sublime Text 2 only or deprecated are installed and tried too.
 
+### Paywalled prerequisites (Donald, 2026-10-13)
+If a package needs something behind a paywall (paid tool, paid account), install and test everything that does not need it, say plainly what was not tried, and send the maintainer a short request to run our test technique themselves (link: https://github.com/dpc00/sublime-package-audit, PROCEDURE.md). Ideally; how anyone responds is unknown. Show him the text before it goes (issue or email per the maintainer's channel), start with "Claude reports:", no pressure, no promises.
+
 ### Console reads and the clipboard (2026-10-13)
 `get_console(mode="visible", ...)` reads the console through Donald's clipboard (sentinel, copy, read, restore); his clipboard syncs to his phone, so each visible read put console text on his phone. Default to `mode="captured"`. When a traceback or startup line is needed that captured misses (plugin load errors do show only in the visible read), tell him first and keep it to one read per package, with a small `tail`. A traceback can also be found by reading the package source and the library versions, or from a tee log if one exists.
 
