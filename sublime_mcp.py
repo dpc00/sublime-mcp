@@ -114,6 +114,16 @@ _heartbeat_state = {"count": 0, "last_ts": 0.0}
 _HEARTBEAT_INTERVAL_MS = 200
 
 
+def _gs_hook(kind, view=None, **info):
+    """Report to GhostShell's view tracer (setting debug_view_trace) if loaded."""
+    h = getattr(sublime, "_gs_trace_hook", None)
+    if h is not None:
+        try:
+            h(kind, view, **info)
+        except Exception:
+            pass
+
+
 def _heartbeat_tick():
     _heartbeat_state["count"] += 1
     _heartbeat_state["last_ts"] = time.time()
@@ -1083,6 +1093,7 @@ def _send_to_view(body):
             return {"error": "no view found"}
         if v.is_read_only():
             return {"error": "view is read-only", "name": v.name()}
+        _gs_hook("mcp_focus_view_insert", v)
         w.focus_view(v)
         v.run_command("insert", {"characters": text})
         return {"ok": True, "name": v.name()}
@@ -1256,6 +1267,7 @@ def _capture_console_win(params):
         tr("do_show: set sentinel clipboard")
         sublime.set_clipboard(sentinel)
         tr("do_show: show console panel")
+        _gs_hook("mcp_console_show_panel", snapshot.get("view"))
         snapshot["window"].run_command("show_panel", {"panel": "console"})
         sublime.set_timeout(do_click, 300)
 
@@ -1309,6 +1321,7 @@ def _capture_console_win(params):
         restore_ui()
 
     def do_click():
+        _gs_hook("mcp_console_do_click", snapshot.get("view"))
         if cleanup["cancelled"]:
             restore_ui()
             return
@@ -1416,6 +1429,7 @@ def _capture_console_win(params):
         restore_ui()
 
     def restore_ui():
+        _gs_hook("mcp_console_restore_ui", snapshot.get("view"))
         if cleanup["restore_started"]:
             return
         cleanup["restore_started"] = True
@@ -1423,6 +1437,7 @@ def _capture_console_win(params):
         # Restore the visible panel before focusing the prior view; panel
         # transitions can otherwise steal focus back from the editor.
         previous_panel = snapshot["panel"]
+        _gs_hook("mcp_console_restore_panel", snapshot.get("view"), panel=previous_panel)
         if previous_panel:
             snapshot["window"].run_command("show_panel", {"panel": previous_panel})
         else:
@@ -1437,10 +1452,12 @@ def _capture_console_win(params):
         tr("restore_focus: start")
         previous_view = snapshot["view"]
         if previous_view and previous_view.is_valid():
+            _gs_hook("mcp_console_restore_focus", previous_view)
             snapshot["window"].focus_view(previous_view)
             saved = snapshot.get("selection")
             if saved is not None and [(r.a, r.b) for r in previous_view.sel()] != saved:
                 # A stray click or key must not leave a different selection behind.
+                _gs_hook("mcp_console_restore_selection", previous_view)
                 previous_view.sel().clear()
                 previous_view.sel().add_all([sublime.Region(a, b) for a, b in saved])
         previous_foreground = snapshot["foreground"]
@@ -2122,6 +2139,7 @@ def _goto_line(body):
         if not v:
             return {"error": "no active view"}
         pt = v.text_point(line - 1, col - 1)
+        _gs_hook("mcp_goto_line", v, line=line)
         v.sel().clear()
         v.sel().add(sublime.Region(pt))
         v.show_at_center(pt)
@@ -3013,6 +3031,7 @@ def _select_lines(body):
             return {"error": "no active view"}
         start_pt = v.text_point(begin - 1, 0)
         end_pt = v.full_line(v.text_point(end - 1, 0)).end()
+        _gs_hook("mcp_select_lines", v)
         v.sel().clear()
         v.sel().add(sublime.Region(start_pt, end_pt))
         v.show_at_center(start_pt)
@@ -3111,6 +3130,7 @@ def _open_control_panel(body):
         if not panel.settings().get("mcp_state"):
             panel.settings().set(
                 "mcp_state", {s: (s != "postgres") for s in _CP_SERVERS})
+        _gs_hook("mcp_focus_view_panel", panel)
         w.focus_view(panel)
         _cp_render(panel)
         return {"ok": True, "view": _CP_VIEW_NAME,
@@ -3391,6 +3411,7 @@ def _focus_group(body):
         w = sublime.active_window()
         if group >= w.num_groups():
             return {"error": "group {} out of range (have {})".format(group, w.num_groups())}
+        _gs_hook("mcp_focus_group", None, group=group)
         w.focus_group(group)
         return {"ok": True}
 
@@ -7456,6 +7477,7 @@ class McpStrReplaceCommand(sublime_plugin.TextCommand):
             ],
             annotation_color="#4CAF50",
         )
+        _gs_hook("mcp_show_at_center", self.view)
         self.view.show_at_center(new_region)
         sublime.set_timeout(
             lambda: self.view.erase_regions("mcp_edit"), _EDIT_HIGHLIGHT_MS
@@ -7485,6 +7507,7 @@ class McpInsertTextCommand(sublime_plugin.TextCommand):
             ],
             annotation_color="#2196F3",
         )
+        _gs_hook("mcp_show_at_center", self.view)
         self.view.show_at_center(new_region)
         sublime.set_timeout(
             lambda: self.view.erase_regions("mcp_edit"), _EDIT_HIGHLIGHT_MS
@@ -7496,6 +7519,7 @@ class McpCreateFileCommand(sublime_plugin.TextCommand):
 
     def run(self, edit, file_text):
         self.view.insert(edit, 0, file_text)
+        _gs_hook("mcp_show_at_center", self.view)
         self.view.show_at_center(0)
 
 
