@@ -1,6 +1,6 @@
 import json, os, py_compile, re, subprocess, sys, tempfile
 
-PROJECTS = r"C:\Users\donal\projects"
+PROJECTS = r"C:\Users\donal\tools\forks"  # NOT projects: pybackup commits and pushes everything under projects
 DRY = "--dry" in sys.argv
 
 # repo, issue, file, [(old, new, count)], branch title, what it was

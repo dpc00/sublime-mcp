@@ -1,6 +1,6 @@
 import json, os, subprocess, tempfile
 
-PROJECTS = r"C:\Users\donal\projects"
+PROJECTS = r"C:\Users\donal\tools\forks"  # NOT projects: pybackup commits and pushes everything under projects
 # repo, issue, what was wrong, short title text
 ITEMS = [
     ("jeffrand/CoberturaCoverage", 1, "a trailing comma after the last entry", "remove the trailing comma"),

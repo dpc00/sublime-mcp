@@ -1,6 +1,6 @@
 import json, os, subprocess, sys
 
-PROJECTS = r"C:\Users\donal\projects"
+PROJECTS = r"C:\Users\donal\tools\forks"  # NOT projects: pybackup commits and pushes everything under projects
 REPOS = sys.argv[1:]
 
 

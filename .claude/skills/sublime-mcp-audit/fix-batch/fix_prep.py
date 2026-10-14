@@ -1,6 +1,6 @@
 import json, os, re, subprocess, sys
 
-PROJECTS = r"C:\Users\donal\projects"
+PROJECTS = r"C:\Users\donal\tools\forks"  # NOT projects: pybackup commits and pushes everything under projects
 TARGETS = [
     ("jeffrand/CoberturaCoverage", 1),
     ("tushortz/EasyImport", 1),
