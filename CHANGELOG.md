@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.13.3
 
 `get_view_phantoms` takes `last` (newest N phantoms), `html` (false leaves out the HTML and the empty spacer phantoms) and `max_chars` (cuts each text), and reports `total`. A view with hundreds of phantoms, such as a GhostShell omp tab, returned about 290 KB; `html=false, last=20` returns a few kilobytes. Defaults are unchanged.
 
