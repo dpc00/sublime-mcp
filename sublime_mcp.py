@@ -2053,6 +2053,16 @@ def _get_view_phantoms(params):
     name = params.get("name", [None])[0]
     key = params.get("key", [""])[0].strip()
 
+    def _int(k, default):
+        try:
+            return int(params.get(k, [default])[0])
+        except (TypeError, ValueError):
+            return default
+
+    last = _int("last", 0)
+    max_chars = _int("max_chars", 0)
+    include_html = str(params.get("html", ["true"])[0]).lower() not in ("false", "0", "no")
+
     def fn():
         w = sublime.active_window()
         v, open_views = _find_view_by_name(w, name)
@@ -2076,21 +2086,30 @@ def _get_view_phantoms(params):
                 layout_name = (
                     getattr(layout, "name", None) if layout is not None else None
                 )
-                phantoms.append(
-                    {
-                        "module": getattr(mod, "__name__", None),
-                        "key": phantom_key,
-                        "region": [region.a, region.b],
-                        "layout": layout_name or str(layout),
-                        "content": content,
-                        "text": _clean_phantom_text(content),
-                    }
-                )
+                text = _clean_phantom_text(content)
+                entry = {
+                    "module": getattr(mod, "__name__", None),
+                    "key": phantom_key,
+                    "region": [region.a, region.b],
+                    "layout": layout_name or str(layout),
+                }
+                if include_html:
+                    entry["content"] = content
+                elif not text.strip():
+                    continue            # html=false is for reading: spacer phantoms with no text are left out
+                if max_chars and len(text) > max_chars:
+                    text = text[:max_chars] + " ...[%d more characters]" % (len(text) - max_chars)
+                entry["text"] = text
+                phantoms.append(entry)
+        total = len(phantoms)
+        if last and last > 0:
+            phantoms = phantoms[-last:]
         return {
             "name": v.name(),
             "path": v.file_name(),
             "phantoms": phantoms,
             "count": len(phantoms),
+            "total": total,
         }
 
     return _on_main(fn)
@@ -5227,10 +5246,15 @@ _MCP_TOOLS = [
      _g("/view_chars")),
     ("get_view_phantoms",
      "Return phantom HTML and extracted text from a view by name.\n"
-     "If key is omitted, returns phantoms for all keys.",
+     "If key is omitted, returns phantoms for all keys. Output can be huge for a view with hundreds "
+     "of phantoms (a GhostShell omp tab: about 290 KB): html=false drops the HTML and the empty "
+     "spacer phantoms, last=N keeps only the newest N, max_chars cuts each text.",
      {"type": "object", "properties": {
          "name": {"type": "string", "default": ""},
          "key": {"type": "string", "default": ""},
+         "last": {"type": "integer", "default": 0, "description": "Keep only the newest N phantoms (0 = all)."},
+         "html": {"type": "boolean", "default": True, "description": "false: leave out the HTML and empty phantoms."},
+         "max_chars": {"type": "integer", "default": 0, "description": "Cut each phantom's text to this length (0 = no cut)."},
      }},
      _g("/view_phantoms")),
     ("get_view_regions",

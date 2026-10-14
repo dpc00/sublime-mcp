@@ -1113,10 +1113,26 @@ TOOLS = [   {   'name': 'add_directory',
                                              'index': {'type': 'integer', 'default': -1}}}},
     {   'name': 'get_view_phantoms',
         'description': 'Return phantom HTML and extracted text from a view by name.\n'
-                       'If key is omitted, returns phantoms for all keys.',
+                       'If key is omitted, returns phantoms for all keys. Output can be huge for a '
+                       'view with hundreds of phantoms (a GhostShell omp tab: about 290 KB): '
+                       'html=false drops the HTML and the empty spacer phantoms, last=N keeps only '
+                       'the newest N, max_chars cuts each text.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'name': {'type': 'string', 'default': ''},
-                                             'key': {'type': 'string', 'default': ''}}}},
+                                             'key': {'type': 'string', 'default': ''},
+                                             'last': {   'type': 'integer',
+                                                         'default': 0,
+                                                         'description': 'Keep only the newest N '
+                                                                        'phantoms (0 = all).'},
+                                             'html': {   'type': 'boolean',
+                                                         'default': True,
+                                                         'description': 'false: leave out the HTML '
+                                                                        'and empty phantoms.'},
+                                             'max_chars': {   'type': 'integer',
+                                                              'default': 0,
+                                                              'description': "Cut each phantom's "
+                                                                             'text to this length '
+                                                                             '(0 = no cut).'}}}},
     {   'name': 'get_view_regions',
         'description': 'Return the regions a plugin stored in a view under a region key '
                        '(view.add_regions): begin, end and the first 80 characters of each. '

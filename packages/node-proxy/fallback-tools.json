@@ -1906,7 +1906,7 @@
     },
     {
       "name": "get_view_phantoms",
-      "description": "Return phantom HTML and extracted text from a view by name.\nIf key is omitted, returns phantoms for all keys.",
+      "description": "Return phantom HTML and extracted text from a view by name.\nIf key is omitted, returns phantoms for all keys. Output can be huge for a view with hundreds of phantoms (a GhostShell omp tab: about 290 KB): html=false drops the HTML and the empty spacer phantoms, last=N keeps only the newest N, max_chars cuts each text.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1917,6 +1917,21 @@
           "key": {
             "type": "string",
             "default": ""
+          },
+          "last": {
+            "type": "integer",
+            "default": 0,
+            "description": "Keep only the newest N phantoms (0 = all)."
+          },
+          "html": {
+            "type": "boolean",
+            "default": true,
+            "description": "false: leave out the HTML and empty phantoms."
+          },
+          "max_chars": {
+            "type": "integer",
+            "default": 0,
+            "description": "Cut each phantom's text to this length (0 = no cut)."
           }
         }
       }

@@ -282,6 +282,11 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   with `view.add_regions(key, ...)` (begin, end, first 80 characters); name several keys with
   commas. Sublime cannot list the keys, so read the plugin's source for them. Built-in example:
   after `toggle_bookmark`, key `bookmarks`.
+- **A tab drawn with phantoms** (GhostShell's omp tab: the buffer is only blank lines, the content is
+  in hundreds of phantoms): `get_view_phantoms(name="omp", html=false, last=20, max_chars=500)`
+  returns the newest panels as plain text. Without `html=false` and `last` the answer is about
+  290 KB. It works for any package that lists its `PhantomSet` in a module-level `_phantom_sets`
+  dict (view id to set); GhostShell does since 2026-10-14.
 - **Syntax names:** `get_active_file` and `get_sheets` give `syntax` (the name, or the file name
   when the syntax file has no `name:` line, as with Bicep) and `get_active_file` also gives
   `syntax_path`.
