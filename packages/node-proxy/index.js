@@ -46,6 +46,12 @@ const GATEWAY_FALLBACKS = [
 process.stderr.write(`mcp-commander: BASE=${BASE} platform=${process.platform}\n`);
 
 function ok(data) {
+  // The backend returns a list of MCP content blocks (images from ui_screenshot, also through
+  // batch): pass them on as they are instead of wrapping them as JSON text.
+  if (Array.isArray(data) && data.length && data.every(
+    (b) => b && (b.type === 'image' || b.type === 'text'))) {
+    return { content: data };
+  }
   return { content: [{ type: 'text', text: JSON.stringify(data) }] };
 }
 

@@ -4492,6 +4492,23 @@ def _batch(args):
                 handler(tool_args), schemas_by_name.get(tool_name), tool_args))
         except Exception as e:
             results.append({"error": str(e)})
+    # A tool that returns content blocks (ui_screenshot inline) must reach the client as real
+    # image blocks, not as base64 text inside the JSON: pull the images out, leave a marker.
+    images = []
+    for i, r in enumerate(results):
+        if isinstance(r, list):
+            texts = []
+            for block in r:
+                if isinstance(block, dict) and block.get("type") == "image":
+                    images.append(block)
+                    texts.append("[image {} below]".format(len(images)))
+                elif isinstance(block, dict) and block.get("type") == "text":
+                    texts.append(block.get("text", ""))
+                else:
+                    texts.append(block)
+            results[i] = texts[0] if len(texts) == 1 else texts
+    if images:
+        return [{"type": "text", "text": json.dumps({"results": results})}] + images
     return {"results": results}
 
 
@@ -4946,7 +4963,7 @@ def _ui_screenshot(body):
     if "png" not in res:
         return res
     info = {"hwnd": int(hwnd), "width": res["width"], "height": res["height"]}
-    if body.get("inline"):
+    if body.get("inline", True):
         import base64
         return [{"type": "image", "data": base64.b64encode(res["png"]).decode("ascii"), "mimeType": "image/png"},
                 {"type": "text", "text": json.dumps(info)}]
@@ -5802,13 +5819,14 @@ _MCP_TOOLS = [
          "button": {"type": "string", "description": "Button label for action 'button' (ignores case and & mnemonics)."}}},
      _p("/dismiss_native_window")),
     ("ui_screenshot",
-     "Take a picture of one window of this Sublime Text process (Windows only). The PNG is saved to a "
-     "file and its path is returned (open it with the Read tool); inline=true returns the image itself. Works for a window that is behind others or not focused, and for dialogs. hwnd comes "
+     "Take a picture of one window of this Sublime Text process (Windows only). Returns the image "
+     "itself as an image block (also through batch); inline=false saves a PNG file instead and returns "
+     "its path. Works for a window that is behind others or not focused, and for dialogs. hwnd comes "
      "from list_native_windows (default: the first editor window). Only windows of Sublime Text "
      "itself can be captured, never another program.",
      {"type": "object", "properties": {
          "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
-         "inline": {"type": "boolean", "description": "Return the image itself instead of a file path (default false)."},
+         "inline": {"type": "boolean", "description": "Return the image itself (default true); false saves a file and returns its path."},
          "settle_ms": {"type": "integer", "description": "Milliseconds to wait before the picture so earlier input has been handled (default 200, max 5000)."},}},
      _p("/ui_screenshot")),
     ("ui_press_key",

@@ -19,7 +19,7 @@ import sys
 from typing import Annotated, Any, Optional
 
 import httpx
-from mcp.types import ImageContent
+from mcp.types import ImageContent, TextContent
 from pydantic import Field
 
 try:
@@ -202,12 +202,24 @@ def _build_tool(name: str, description: str, schema: dict):
             for key, value in kwargs.items()
             if not (value is None and key in optional_without_default)
         }
-        return _post("/" + name, **body)
+        result = _post("/" + name, **body)
+        # A list of content blocks (ui_screenshot, also through batch) goes on as real
+        # image/text content, not as JSON text.
+        if isinstance(result, list) and result and all(
+            isinstance(b, dict) and b.get("type") in ("image", "text") for b in result
+        ):
+            return [
+                _image_content(b["data"], b.get("mimeType", "image/png"))
+                if b["type"] == "image"
+                else TextContent(type="text", text=b.get("text", ""))
+                for b in result
+            ]
+        return result
 
     call.__name__ = name
     call.__doc__ = description
-    call.__signature__ = inspect.Signature(parameters, return_annotation=dict)
-    annotations["return"] = dict
+    call.__signature__ = inspect.Signature(parameters, return_annotation=Any)
+    annotations["return"] = Any
     call.__annotations__ = annotations
     return call
 

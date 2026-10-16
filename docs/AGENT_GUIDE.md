@@ -325,8 +325,9 @@ by these tools, and Sublime answered again.
 **Looking at and driving Sublime's own windows (Windows only).** `ui_screenshot`,
 `ui_press_key`, `ui_type_text`, `ui_click` and `ui_hover` work on the windows of the Sublime Text
 process only, and need no OS permission prompt, so they also work from a remote session.
-`ui_screenshot(hwnd=...)` saves a PNG of one window (it works for a window behind others, and for
-dialogs) and returns its path: open it with the Read tool (`inline=true` returns the image itself).
+`ui_screenshot(hwnd=...)` takes a picture of one window (it works for a window behind others, and for
+dialogs) and returns the image itself, also through `batch` (`inline=false` saves a PNG and returns its
+path, for a client that cannot show images: open it with the Read tool).
 `ui_press_key(key="Return")` and `ui_type_text(text="cel")` post the key or characters to the window
 without moving focus or the pointer, for example to pick an entry in the command palette or a quick
 panel: open the palette with `run_command show_overlay`, then Return, type the filter, Return. Input

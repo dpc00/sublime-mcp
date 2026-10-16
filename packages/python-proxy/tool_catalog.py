@@ -2657,8 +2657,8 @@ TOOLS = [   {   'name': 'add_directory',
                            'required': ['key']}},
     {   'name': 'ui_screenshot',
         'description': 'Take a picture of one window of this Sublime Text process (Windows only). '
-                       'The PNG is saved to a file and its path is returned (open it with the Read '
-                       'tool); inline=true returns the image itself. Works for a window that is '
+                       'Returns the image itself as an image block (also through batch); '
+                       'inline=false saves a PNG file instead and returns its path. Works for a window that is '
                        'behind others or not focused, and for dialogs. hwnd comes from '
                        'list_native_windows (default: the first editor window). Only windows of '
                        'Sublime Text itself can be captured, never another program.',
@@ -2670,8 +2670,9 @@ TOOLS = [   {   'name': 'add_directory',
                                                                         'window).'},
                                              'inline': {   'type': 'boolean',
                                                            'description': 'Return the image itself '
-                                                                          'instead of a file path '
-                                                                          '(default false).'},
+                                                                          '(default true); false '
+                                                                          'saves a file and returns '
+                                                                          'its path.'},
                                              'settle_ms': {   'type': 'integer',
                                                               'description': 'Milliseconds to wait '
                                                                              'before the picture '
