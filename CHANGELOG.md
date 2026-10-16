@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.7
+
+`ui_screenshot` takes `kind` (`dialog`, `menu`, `editor_window`, `window` or `other`) and captures the first Sublime window of that kind, so one call shows an open native dialog or menu; menus have no title, so `window_title` could not find them. It combines with `window_title`. A plain screenshot, which shows the editor window, now lists any open dialog or menu as `open_popups_not_in_picture` (with its `hwnd`) instead of silently showing the greyed editor. Works while a native dialog has blocked Sublime's main thread. Tried with the File > Open dialog and the File menu.
+
 ## 1.13.6
 
 `ui_screenshot` can be aimed and tuned. `window_title` picks the window whose title contains the text (an unmatched title lists the Sublime windows, so a dialog can be captured by its title); `tab` shows a tab that is not in front for the picture, by part of its name or by 0-based index in the active window, and puts the tab that was in front back afterwards. Because that moves the person's focus for a moment, `tab` first waits for their keyboard and mouse to be idle (`min_idle_s` default 3, `wait_idle_s` default 10) and refuses otherwise, like `ui_click`. `scale` zooms (2 doubles the picture so small text is readable; nearest-neighbour, longest side capped at 4096 pixels) and `max_width` shrinks. `save_dir` (an absolute folder) also keeps the PNG in a dated subfolder and returns `saved_path`. The reply is the image first, then one text block with the size and what was captured.
