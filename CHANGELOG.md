@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.8
+
+`ui_hover` with `screenshot=true` returns the picture itself, image first, like `ui_screenshot`, instead of a temp file path (`inline=false` keeps the path). It also takes `region`, `scale` and `max_width`, so a small hover popup can be cropped and zoomed. A language-server (LSP) hover can take a few seconds to appear, so the tool description now says to use a `dwell_ms` of 3000 to 5000 for those; tried with a 4500 ms dwell over a Python symbol, which showed the pyright popup.
+
 ## 1.13.7
 
 `ui_screenshot` takes `kind` (`dialog`, `menu`, `editor_window`, `window` or `other`) and captures the first Sublime window of that kind, so one call shows an open native dialog or menu; menus have no title, so `window_title` could not find them. It combines with `window_title`. A plain screenshot, which shows the editor window, now lists any open dialog or menu as `open_popups_not_in_picture` (with its `hwnd`) instead of silently showing the greyed editor. Works while a native dialog has blocked Sublime's main thread. Tried with the File > Open dialog and the File menu.
