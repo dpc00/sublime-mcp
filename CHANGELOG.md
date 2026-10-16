@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.5
+
+`ui_screenshot` is now one of the default tools, so eight tools are listed instead of seven and a screenshot is called directly (`batch` still runs it by name). When `batch` runs a tool that returns images it now puts the image blocks first and the JSON text block after them, like a plain screenshot tool's reply; with the text first the Claude phone app showed no picture. `ui_screenshot` takes an optional `region` (`{x, y, width, height}` in pixels of the window picture) and returns only that part. The Node and Python proxies list `ui_screenshot` in their default tools; `discover_tools` no longer returns it (405 hidden tools).
+
 ## 1.13.4
 
 `ui_screenshot` now reaches the client as a real image, also through `batch`, and returns the image itself by default (`inline=false` still saves a PNG and returns its path). Before, `batch` put every result into one `{"results": [...]}` object and the Node and Python proxies wrapped every reply as JSON text, so an image block arrived as base64 text. `batch` now returns a content list when a nested tool returns image blocks: one text block with the JSON results (each image replaced by `[image N below]`), then the image blocks. Both proxies pass a list of image and text blocks through unchanged, and the Python proxy no longer declares a `dict` return type, so it sends no structured-output schema that would conflict with image content. Some clients still flatten or drop MCP images (Continue, Cline CLI, Antigravity ACP, jcode, Copilot CLI); for those use `inline=false`. Tested after a reload in Claude Code and in omp.
