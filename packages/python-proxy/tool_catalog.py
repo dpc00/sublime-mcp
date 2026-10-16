@@ -2657,22 +2657,66 @@ TOOLS = [   {   'name': 'add_directory',
                            'required': ['key']}},
     {   'name': 'ui_screenshot',
         'description': 'Take a picture of one window of this Sublime Text process (Windows only). '
-                       'Returns the image itself as an image block (also through batch); '
-                       'inline=false saves a PNG file instead and returns its path. Works for a '
-                       'window that is behind others or not focused, and for dialogs. hwnd comes '
-                       'from list_native_windows (default: the first editor window). Only windows '
-                       'of Sublime Text itself can be captured, never another program.',
+                       'Returns the image itself as an image block, first in the reply, followed '
+                       'by one text block with the size and what was captured. Works for a window '
+                       'that is behind others or not focused, and for dialogs. Choose the window '
+                       'with window_title (part of its title; an unmatched title lists the '
+                       'windows) or hwnd from list_native_windows; default is the first editor '
+                       'window. tab shows one tab for the picture (part of its name, or its '
+                       '0-based index in the active window) and puts the tab that was in front '
+                       'back afterwards: use it to see a tab that is not in front. region crops, '
+                       'scale zooms (2 doubles the size, to read small text) and max_width '
+                       'shrinks. save_dir (an absolute folder) also keeps the PNG in a dated '
+                       'subfolder and reports saved_path. inline=false returns only a file path. '
+                       'Only windows of Sublime Text itself can be captured, never another '
+                       'program.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'hwnd': {   'type': 'integer',
                                                          'description': 'Window handle from '
                                                                         'list_native_windows '
                                                                         '(default: first editor '
                                                                         'window).'},
+                                             'window_title': {   'type': 'string',
+                                                                 'description': 'Capture the '
+                                                                                'window whose '
+                                                                                'title contains '
+                                                                                'this text '
+                                                                                '(case-insensitive), '
+                                                                                'instead of giving '
+                                                                                'hwnd.'},
+                                             'tab': {   'type': 'string',
+                                                        'description': 'Show this tab for the '
+                                                                       'picture: part of its name, '
+                                                                       'or digits for its 0-based '
+                                                                       'index in the active window '
+                                                                       "(for example '1'). The tab "
+                                                                       'that was in front is '
+                                                                       'restored.'},
+                                             'scale': {   'type': 'number',
+                                                          'description': 'Resize factor: 2 doubles '
+                                                                         'the picture so small '
+                                                                         'text is easier to read, '
+                                                                         '0.5 halves it '
+                                                                         '(nearest-neighbour; the '
+                                                                         'longest side is capped '
+                                                                         'at 4096 pixels).'},
+                                             'max_width': {   'type': 'integer',
+                                                              'description': 'Shrink the picture '
+                                                                             'to at most this many '
+                                                                             'pixels wide (never '
+                                                                             'enlarges).'},
+                                             'save_dir': {   'type': 'string',
+                                                             'description': 'Absolute folder: also '
+                                                                            'save the PNG in a '
+                                                                            'subfolder named by '
+                                                                            'date and return '
+                                                                            'saved_path.'},
                                              'inline': {   'type': 'boolean',
                                                            'description': 'Return the image itself '
                                                                           '(default true); false '
-                                                                          'saves a file and '
-                                                                          'returns its path.'},
+                                                                          'returns only a file '
+                                                                          'path (temp file, or in '
+                                                                          'save_dir when given).'},
                                              'region': {   'type': 'object',
                                                            'description': 'Only this part of the '
                                                                           'window: {x, y, width, '

@@ -128,10 +128,38 @@ def _png(width, height, rgb):
             + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b""))
 
 
-def screenshot(pid, hwnd, settle_ms=200, region=None):
+def _scaled(rgb, w, h, scale, max_width):
+    """Nearest-neighbour resize of packed RGB. ``scale`` multiplies the size (zoom in to read small
+    text); ``max_width`` only ever shrinks. The longest side is capped at 4096 pixels."""
+    try:
+        s = float(scale) if scale else 1.0
+        if max_width:
+            s = min(s, float(max_width) / w)
+    except (TypeError, ValueError):
+        return {"error": "scale and max_width must be numbers"}
+    if s <= 0:
+        return {"error": "scale and max_width must be positive"}
+    s = min(s, 4096.0 / max(w, h))
+    nw, nh = max(1, int(round(w * s))), max(1, int(round(h * s)))
+    if nw == w and nh == h:
+        return {"rgb": rgb, "w": w, "h": h}
+    cols = [min(w - 1, int(x / s)) * 3 for x in range(nw)]
+    rows, last_y, last_row = [], None, b""
+    for y in range(nh):
+        sy = min(h - 1, int(y / s))
+        if sy != last_y:
+            src = rgb[sy * w * 3:(sy + 1) * w * 3]
+            last_row = b"".join([src[c:c + 3] for c in cols])
+            last_y = sy
+        rows.append(last_row)
+    return {"rgb": b"".join(rows), "w": nw, "h": nh}
+
+
+def screenshot(pid, hwnd, settle_ms=200, region=None, scale=None, max_width=None):
     """PNG bytes of window ``hwnd`` of process ``pid`` (works for background windows),
     or an error dict. ``region`` is an optional {x, y, width, height} in pixels of the
-    window picture; the PNG then holds only that part."""
+    window picture; the PNG then holds only that part. ``scale`` (zoom) and ``max_width``
+    (shrink) resize the result."""
     err = _check(pid, hwnd)
     if err:
         return err
@@ -164,6 +192,7 @@ def screenshot(pid, hwnd, settle_ms=200, region=None):
         rgb[0::3] = bgra[2::4]
         rgb[1::3] = bgra[1::4]
         rgb[2::3] = bgra[0::4]
+        out_w, out_h = width, height
         if region:
             try:
                 rx, ry = max(0, int(region.get("x", 0))), max(0, int(region.get("y", 0)))
@@ -174,8 +203,11 @@ def screenshot(pid, hwnd, settle_ms=200, region=None):
             if rw <= 0 or rh <= 0:
                 return {"error": "region is outside the {}x{} window picture".format(width, height)}
             rows = [bytes(rgb[((ry + r) * width + rx) * 3:((ry + r) * width + rx + rw) * 3]) for r in range(rh)]
-            return {"png": _png(rw, rh, b"".join(rows)), "width": rw, "height": rh}
-        return {"png": _png(width, height, bytes(rgb)), "width": width, "height": height}
+            rgb, out_w, out_h = b"".join(rows), rw, rh
+        done = _scaled(bytes(rgb), out_w, out_h, scale, max_width)
+        if "error" in done:
+            return done
+        return {"png": _png(done["w"], done["h"], done["rgb"]), "width": done["w"], "height": done["h"]}
     finally:
         _gdi32.SelectObject(mdc, old)
         _gdi32.DeleteObject(bmp)
