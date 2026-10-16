@@ -2673,6 +2673,18 @@ TOOLS = [   {   'name': 'add_directory',
                                                                           '(default true); false '
                                                                           'saves a file and '
                                                                           'returns its path.'},
+                                             'region': {   'type': 'object',
+                                                           'description': 'Only this part of the '
+                                                                          'window: {x, y, width, '
+                                                                          'height} in pixels of '
+                                                                          'the full window picture '
+                                                                          '(top-left is 0, 0). '
+                                                                          'Omit for the whole '
+                                                                          'window.',
+                                                           'properties': {   'x': {   'type': 'integer'},
+                                                                             'y': {   'type': 'integer'},
+                                                                             'width': {   'type': 'integer'},
+                                                                             'height': {   'type': 'integer'}}},
                                              'settle_ms': {   'type': 'integer',
                                                               'description': 'Milliseconds to wait '
                                                                              'before the picture '

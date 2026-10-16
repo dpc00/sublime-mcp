@@ -4509,7 +4509,9 @@ def _batch(args):
             results[i] = (texts[0] if len(texts) == 1 else
                           "\n".join(t if isinstance(t, str) else json.dumps(t) for t in texts))
     if images:
-        return [{"type": "text", "text": json.dumps({"results": results})}] + images
+        # Image first, like a plain screenshot tool's reply: the phone app shows a thumbnail
+        # for a result that starts with the image.
+        return images + [{"type": "text", "text": json.dumps({"results": results})}]
     return {"results": results}
 
 
@@ -4960,14 +4962,14 @@ def _ui_screenshot(body):
         if not wins:
             return {"error": "no editor window found; pass hwnd from list_native_windows"}
         hwnd = wins[0]["hwnd"]
-    res = ui_input.screenshot(pid, hwnd, body.get("settle_ms", 200))
+    res = ui_input.screenshot(pid, hwnd, body.get("settle_ms", 200), body.get("region"))
     if "png" not in res:
         return res
     info = {"hwnd": int(hwnd), "width": res["width"], "height": res["height"]}
     if body.get("inline", True):
         import base64
         return [{"type": "image", "data": base64.b64encode(res["png"]).decode("ascii"), "mimeType": "image/png"},
-                {"type": "text", "text": json.dumps(info)}]
+                {"type": "text", "text": json.dumps(info)}]  # image first
     import tempfile
     folder = os.path.join(tempfile.gettempdir(), "sublime-mcp-ui")
     os.makedirs(folder, exist_ok=True)
@@ -5828,6 +5830,9 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {
          "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
          "inline": {"type": "boolean", "description": "Return the image itself (default true); false saves a file and returns its path."},
+         "region": {"type": "object", "description": "Only this part of the window: {x, y, width, height} in pixels of the full window picture (top-left is 0, 0). Omit for the whole window.",
+                    "properties": {"x": {"type": "integer"}, "y": {"type": "integer"},
+                                   "width": {"type": "integer"}, "height": {"type": "integer"}}},
          "settle_ms": {"type": "integer", "description": "Milliseconds to wait before the picture so earlier input has been handled (default 200, max 5000)."},}},
      _p("/ui_screenshot")),
     ("ui_press_key",

@@ -128,9 +128,10 @@ def _png(width, height, rgb):
             + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b""))
 
 
-def screenshot(pid, hwnd, settle_ms=200):
+def screenshot(pid, hwnd, settle_ms=200, region=None):
     """PNG bytes of window ``hwnd`` of process ``pid`` (works for background windows),
-    or an error dict."""
+    or an error dict. ``region`` is an optional {x, y, width, height} in pixels of the
+    window picture; the PNG then holds only that part."""
     err = _check(pid, hwnd)
     if err:
         return err
@@ -163,6 +164,17 @@ def screenshot(pid, hwnd, settle_ms=200):
         rgb[0::3] = bgra[2::4]
         rgb[1::3] = bgra[1::4]
         rgb[2::3] = bgra[0::4]
+        if region:
+            try:
+                rx, ry = max(0, int(region.get("x", 0))), max(0, int(region.get("y", 0)))
+                rw = min(width - rx, int(region.get("width", width)))
+                rh = min(height - ry, int(region.get("height", height)))
+            except (AttributeError, TypeError, ValueError):
+                return {"error": "region must be {x, y, width, height} in integer pixels"}
+            if rw <= 0 or rh <= 0:
+                return {"error": "region is outside the {}x{} window picture".format(width, height)}
+            rows = [bytes(rgb[((ry + r) * width + rx) * 3:((ry + r) * width + rx + rw) * 3]) for r in range(rh)]
+            return {"png": _png(rw, rh, b"".join(rows)), "width": rw, "height": rh}
         return {"png": _png(width, height, bytes(rgb)), "width": width, "height": height}
     finally:
         _gdi32.SelectObject(mdc, old)
