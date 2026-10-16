@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.4
+
+`ui_screenshot` now reaches the client as a real image, also through `batch`, and returns the image itself by default (`inline=false` still saves a PNG and returns its path). Before, `batch` put every result into one `{"results": [...]}` object and the Node and Python proxies wrapped every reply as JSON text, so an image block arrived as base64 text. `batch` now returns a content list when a nested tool returns image blocks: one text block with the JSON results (each image replaced by `[image N below]`), then the image blocks. Both proxies pass a list of image and text blocks through unchanged, and the Python proxy no longer declares a `dict` return type, so it sends no structured-output schema that would conflict with image content. Some clients still flatten or drop MCP images (Continue, Cline CLI, Antigravity ACP, jcode, Copilot CLI); for those use `inline=false`. Tested after a reload in Claude Code and in omp.
+
 ## 1.13.3
 
 `get_view_phantoms` takes `last` (newest N phantoms), `html` (false leaves out the HTML and the empty spacer phantoms) and `max_chars` (cuts each text), and reports `total`. A view with hundreds of phantoms, such as a GhostShell omp tab, returned about 290 KB; `html=false, last=20` returns a few kilobytes. Defaults are unchanged.

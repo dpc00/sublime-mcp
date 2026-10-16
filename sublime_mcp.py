@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.13.3"
+__version__ = "1.13.4"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -4506,7 +4506,8 @@ def _batch(args):
                     texts.append(block.get("text", ""))
                 else:
                     texts.append(block)
-            results[i] = texts[0] if len(texts) == 1 else texts
+            results[i] = (texts[0] if len(texts) == 1 else
+                          "\n".join(t if isinstance(t, str) else json.dumps(t) for t in texts))
     if images:
         return [{"type": "text", "text": json.dumps({"results": results})}] + images
     return {"results": results}
