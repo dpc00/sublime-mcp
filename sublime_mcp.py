@@ -4959,18 +4959,27 @@ def _ui_screenshot(body):
     wins = native_windows.list_windows(pid)
     hwnd = body.get("hwnd")
     title = str(body.get("window_title") or "").strip()
+    kind = str(body.get("kind") or "").strip().lower()
     matched = None
-    if hwnd is None and title:
-        hits = [w for w in wins if title.lower() in (w.get("title") or "").lower()]
+    if hwnd is None and (title or kind):
+        hits = [w for w in wins
+                if (not title or title.lower() in (w.get("title") or "").lower())
+                and (not kind or w["kind"] == kind)]
         if not hits:
-            return {"error": "no window of Sublime Text has a title containing {!r}".format(title),
+            what = " and ".join(x for x in ("a title containing {!r}".format(title) if title else "",
+                                            "kind {!r}".format(kind) if kind else "") if x)
+            return {"error": "no window of Sublime Text has " + what,
                     "windows": [{"hwnd": w["hwnd"], "title": w["title"], "kind": w["kind"]} for w in wins]}
-        hwnd, matched = hits[0]["hwnd"], hits[0]["title"]
+        hwnd, matched = hits[0]["hwnd"], hits[0]["title"] or hits[0]["kind"]
+    popups = []
     if hwnd is None:
         editors = [w for w in wins if w["kind"] == "editor_window"]
         if not editors:
             return {"error": "no editor window found; pass hwnd from list_native_windows"}
         hwnd = editors[0]["hwnd"]
+        # A dialog or menu in front of the editor is not in this picture: say so.
+        popups = [{"hwnd": w["hwnd"], "kind": w["kind"], "title": w["title"]}
+                  for w in wins if w["kind"] in ("dialog", "menu")]
     tab = body.get("tab")
     tab_name = None
     previous = []
@@ -5021,6 +5030,8 @@ def _ui_screenshot(body):
     info = {"hwnd": int(hwnd), "width": res["width"], "height": res["height"]}
     if matched:
         info["window_title"] = matched
+    if popups:
+        info["open_popups_not_in_picture"] = popups  # pass kind='dialog' or 'menu', or its hwnd
     if tab_name:
         info["tab"] = tab_name
     saved = None
@@ -5896,8 +5907,10 @@ _MCP_TOOLS = [
      "Take a picture of one window of this Sublime Text process (Windows only). Returns the image "
      "itself as an image block, first in the reply, followed by one text block with the size and "
      "what was captured. Works for a window that is behind others or not focused, and for dialogs. "
-     "Choose the window with window_title (part of its title; an unmatched title lists the windows) "
-     "or hwnd from list_native_windows; default is the first editor window. tab shows one tab for "
+     "Choose the window with window_title (part of its title; an unmatched title lists the windows), "
+     "kind ('dialog' or 'menu' for an open native dialog or menu) or hwnd from list_native_windows; "
+     "default is the first editor window, and a dialog or menu open in front of it is then listed in "
+     "the reply as open_popups_not_in_picture. tab shows one tab for "
      "the picture (part of its name, or its 0-based index in the active window) and puts the tab "
      "that was in front back afterwards: use it to see a tab that is not in front. region crops, "
      "scale zooms (2 doubles the size, to read small text) and max_width shrinks. save_dir (an "
@@ -5907,6 +5920,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {
          "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
          "window_title": {"type": "string", "description": "Capture the window whose title contains this text (case-insensitive), instead of giving hwnd."},
+         "kind": {"type": "string", "enum": ["editor_window", "dialog", "menu", "window", "other"], "description": "Capture the first window of this kind, for example 'dialog' for a native dialog that is open or 'menu' for an open menu (menus have no title). Combine with window_title to narrow it. When a dialog or menu is open and you name no window, the reply lists them as open_popups_not_in_picture."},
          "tab": {"type": "string", "description": "Show this tab for the picture: part of its name, or digits for its 0-based index in the active window (for example '1'). The tab that was in front is restored."},
          "min_idle_s": {"type": "number", "description": "With tab: required seconds since the person last used the keyboard or mouse (default 3), because switching tabs moves their focus."},
          "wait_idle_s": {"type": "number", "description": "With tab: wait up to this many seconds (max 120) for the person to stop typing before giving up (default 10)."},

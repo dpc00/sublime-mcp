@@ -327,7 +327,8 @@ by these tools, and Sublime answered again.
 process only, and need no OS permission prompt, so they also work from a remote session.
 `ui_screenshot` takes a picture of one window (it works for a window behind others, and for dialogs) and
 returns the image itself, first in the reply, also through `batch`. Choose the window with `window_title`
-(part of its title) or `hwnd`; `tab` shows a tab that is not in front for the picture and puts the front
+(part of its title), `kind` (`dialog` or `menu`, for an open native dialog or menu, which a plain screenshot
+does not show; the reply lists them as `open_popups_not_in_picture`) or `hwnd`; `tab` shows a tab that is not in front for the picture and puts the front
 tab back; `region` crops, `scale` zooms (2 doubles the size) and `max_width` shrinks; `save_dir` also keeps
 the PNG and reports `saved_path`; `inline=false` returns only a file path, for a client that cannot show
 images.

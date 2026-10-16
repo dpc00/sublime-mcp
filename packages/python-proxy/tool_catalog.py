@@ -2661,11 +2661,13 @@ TOOLS = [   {   'name': 'add_directory',
                        'by one text block with the size and what was captured. Works for a window '
                        'that is behind others or not focused, and for dialogs. Choose the window '
                        'with window_title (part of its title; an unmatched title lists the '
-                       'windows) or hwnd from list_native_windows; default is the first editor '
-                       'window. tab shows one tab for the picture (part of its name, or its '
-                       '0-based index in the active window) and puts the tab that was in front '
-                       'back afterwards: use it to see a tab that is not in front. region crops, '
-                       'scale zooms (2 doubles the size, to read small text) and max_width '
+                       "windows), kind ('dialog' or 'menu' for an open native dialog or menu) or "
+                       'hwnd from list_native_windows; default is the first editor window, and a '
+                       'dialog or menu open in front of it is then listed in the reply as '
+                       'open_popups_not_in_picture. tab shows one tab for the picture (part of its '
+                       'name, or its 0-based index in the active window) and puts the tab that was '
+                       'in front back afterwards: use it to see a tab that is not in front. region '
+                       'crops, scale zooms (2 doubles the size, to read small text) and max_width '
                        'shrinks. save_dir (an absolute folder) also keeps the PNG in a dated '
                        'subfolder and reports saved_path. inline=false returns only a file path. '
                        'Only windows of Sublime Text itself can be captured, never another '
@@ -2684,6 +2686,24 @@ TOOLS = [   {   'name': 'add_directory',
                                                                                 '(case-insensitive), '
                                                                                 'instead of giving '
                                                                                 'hwnd.'},
+                                             'kind': {   'type': 'string',
+                                                         'enum': [   'editor_window',
+                                                                     'dialog',
+                                                                     'menu',
+                                                                     'window',
+                                                                     'other'],
+                                                         'description': 'Capture the first window '
+                                                                        'of this kind, for example '
+                                                                        "'dialog' for a native "
+                                                                        'dialog that is open or '
+                                                                        "'menu' for an open menu "
+                                                                        '(menus have no title). '
+                                                                        'Combine with window_title '
+                                                                        'to narrow it. When a '
+                                                                        'dialog or menu is open '
+                                                                        'and you name no window, '
+                                                                        'the reply lists them as '
+                                                                        'open_popups_not_in_picture.'},
                                              'tab': {   'type': 'string',
                                                         'description': 'Show this tab for the '
                                                                        'picture: part of its name, '
