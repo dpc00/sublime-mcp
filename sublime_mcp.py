@@ -5994,7 +5994,9 @@ _MCP_TOOLS = [
      "cropped and zoomed), then put the pointer back. x, y are pixels in "
      "the picture ui_screenshot returns. Same safety gates as ui_click: refused unless the person at "
      "the computer has been idle for min_idle_s seconds (default 8) and the target window is the one "
-     "under that point. dwell_ms (default 900, max 5000) is how long to wait before the picture.",
+     "under that point. dwell_ms (default 900, max 5000) is how long to wait before the picture; a "
+     "language-server hover (LSP) can take a few seconds to appear, so use 3000 to 5000 for those "
+     "(tried: a 4500 ms dwell over a Python symbol showed the pyright popup).",
      {"type": "object", "properties": {
          "x": {"type": "integer", "description": "Pixels from the left edge of the window picture."},
          "y": {"type": "integer", "description": "Pixels from the top edge of the window picture."},

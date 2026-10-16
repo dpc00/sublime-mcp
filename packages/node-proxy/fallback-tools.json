@@ -4652,7 +4652,7 @@
     },
     {
       "name": "ui_hover",
-      "description": "Hold the REAL mouse pointer over a point of one window of this Sublime Text process (Windows only) so hover popups and tooltips appear, optionally taking a picture while it is there (screenshot=true returns the picture itself, image first; inline=false saves it and returns the path; region, scale and max_width work as in ui_screenshot, so a small popup can be cropped and zoomed), then put the pointer back. x, y are pixels in the picture ui_screenshot returns. Same safety gates as ui_click: refused unless the person at the computer has been idle for min_idle_s seconds (default 8) and the target window is the one under that point. dwell_ms (default 900, max 5000) is how long to wait before the picture.",
+      "description": "Hold the REAL mouse pointer over a point of one window of this Sublime Text process (Windows only) so hover popups and tooltips appear, optionally taking a picture while it is there (screenshot=true returns the picture itself, image first; inline=false saves it and returns the path; region, scale and max_width work as in ui_screenshot, so a small popup can be cropped and zoomed), then put the pointer back. x, y are pixels in the picture ui_screenshot returns. Same safety gates as ui_click: refused unless the person at the computer has been idle for min_idle_s seconds (default 8) and the target window is the one under that point. dwell_ms (default 900, max 5000) is how long to wait before the picture; a language-server hover (LSP) can take a few seconds to appear, so use 3000 to 5000 for those (tried: a 4500 ms dwell over a Python symbol showed the pyright popup).",
       "inputSchema": {
         "type": "object",
         "properties": {
