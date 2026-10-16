@@ -4977,7 +4977,18 @@ def _ui_screenshot(body):
     settle = body.get("settle_ms", 200)
     if tab not in (None, ""):
         # Show the named tab for the picture, then put back the tab that was in front
-        # (the tab is looked up in the active window).
+        # (the tab is looked up in the active window). Switching tabs moves the person's own
+        # focus for a moment, so, like ui_click, wait for them to stop typing first.
+        try:
+            idle_need = float(body.get("min_idle_s", 3))
+        except (TypeError, ValueError):
+            idle_need = 3.0
+        idle = ui_input.wait_for_idle(idle_need, body.get("wait_idle_s", 10))
+        if idle < idle_need:
+            return {"error": "the person at the computer is typing or using the mouse (idle {:.1f}s, need "
+                             "{:.1f}s); switching tabs now would send their keys to another tab. Try again, "
+                             "pass wait_idle_s to wait longer, or leave out tab".format(idle, idle_need),
+                    "idle_seconds": round(idle, 1)}
         def show_tab():
             w = sublime.active_window()
             name, index = (None, int(tab)) if str(tab).strip().isdigit() else (str(tab), -1)
@@ -5897,6 +5908,8 @@ _MCP_TOOLS = [
          "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
          "window_title": {"type": "string", "description": "Capture the window whose title contains this text (case-insensitive), instead of giving hwnd."},
          "tab": {"type": "string", "description": "Show this tab for the picture: part of its name, or digits for its 0-based index in the active window (for example '1'). The tab that was in front is restored."},
+         "min_idle_s": {"type": "number", "description": "With tab: required seconds since the person last used the keyboard or mouse (default 3), because switching tabs moves their focus."},
+         "wait_idle_s": {"type": "number", "description": "With tab: wait up to this many seconds (max 120) for the person to stop typing before giving up (default 10)."},
          "scale": {"type": "number", "description": "Resize factor: 2 doubles the picture so small text is easier to read, 0.5 halves it (nearest-neighbour; the longest side is capped at 4096 pixels)."},
          "max_width": {"type": "integer", "description": "Shrink the picture to at most this many pixels wide (never enlarges)."},
          "save_dir": {"type": "string", "description": "Absolute folder: also save the PNG in a subfolder named by date and return saved_path."},

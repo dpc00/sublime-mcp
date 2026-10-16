@@ -4765,6 +4765,14 @@
             "type": "string",
             "description": "Show this tab for the picture: part of its name, or digits for its 0-based index in the active window (for example '1'). The tab that was in front is restored."
           },
+          "min_idle_s": {
+            "type": "number",
+            "description": "With tab: required seconds since the person last used the keyboard or mouse (default 3), because switching tabs moves their focus."
+          },
+          "wait_idle_s": {
+            "type": "number",
+            "description": "With tab: wait up to this many seconds (max 120) for the person to stop typing before giving up (default 10)."
+          },
           "scale": {
             "type": "number",
             "description": "Resize factor: 2 doubles the picture so small text is easier to read, 0.5 halves it (nearest-neighbour; the longest side is capped at 4096 pixels)."

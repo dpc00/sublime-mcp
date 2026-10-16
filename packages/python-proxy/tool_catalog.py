@@ -2692,6 +2692,23 @@ TOOLS = [   {   'name': 'add_directory',
                                                                        "(for example '1'). The tab "
                                                                        'that was in front is '
                                                                        'restored.'},
+                                             'min_idle_s': {   'type': 'number',
+                                                               'description': 'With tab: required '
+                                                                              'seconds since the '
+                                                                              'person last used '
+                                                                              'the keyboard or '
+                                                                              'mouse (default 3), '
+                                                                              'because switching '
+                                                                              'tabs moves their '
+                                                                              'focus.'},
+                                             'wait_idle_s': {   'type': 'number',
+                                                                'description': 'With tab: wait up '
+                                                                               'to this many '
+                                                                               'seconds (max 120) '
+                                                                               'for the person to '
+                                                                               'stop typing before '
+                                                                               'giving up (default '
+                                                                               '10).'},
                                              'scale': {   'type': 'number',
                                                           'description': 'Resize factor: 2 doubles '
                                                                          'the picture so small '
