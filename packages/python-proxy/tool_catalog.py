@@ -2536,8 +2536,10 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'ui_hover',
         'description': 'Hold the REAL mouse pointer over a point of one window of this Sublime '
                        'Text process (Windows only) so hover popups and tooltips appear, '
-                       'optionally taking a picture while it is there (screenshot=true saves it '
-                       'and returns the path), then put the pointer back. x, y are pixels in the '
+                       'optionally taking a picture while it is there (screenshot=true returns the '
+                       'picture itself, image first; inline=false saves it and returns the path; '
+                       'region, scale and max_width work as in ui_screenshot, so a small popup can '
+                       'be cropped and zoomed), then put the pointer back. x, y are pixels in the '
                        'picture ui_screenshot returns. Same safety gates as ui_click: refused '
                        'unless the person at the computer has been idle for min_idle_s seconds '
                        '(default 8) and the target window is the one under that point. dwell_ms '
@@ -2558,7 +2560,33 @@ TOOLS = [   {   'name': 'add_directory',
                                                                'description': 'Take a picture '
                                                                               'while the pointer '
                                                                               'is there and return '
-                                                                              'its path.'},
+                                                                              'it (the image '
+                                                                              'itself unless '
+                                                                              'inline=false).'},
+                                             'inline': {   'type': 'boolean',
+                                                           'description': 'With screenshot: return '
+                                                                          'the image itself '
+                                                                          '(default true); false '
+                                                                          'saves a file and '
+                                                                          'returns its path.'},
+                                             'region': {   'type': 'object',
+                                                           'description': 'With screenshot: only '
+                                                                          'this part of the window '
+                                                                          'picture: {x, y, width, '
+                                                                          'height} in pixels.',
+                                                           'properties': {   'x': {   'type': 'integer'},
+                                                                             'y': {   'type': 'integer'},
+                                                                             'width': {   'type': 'integer'},
+                                                                             'height': {   'type': 'integer'}}},
+                                             'scale': {   'type': 'number',
+                                                          'description': 'With screenshot: resize '
+                                                                         'factor (2 doubles the '
+                                                                         'picture).'},
+                                             'max_width': {   'type': 'integer',
+                                                              'description': 'With screenshot: '
+                                                                             'shrink the picture '
+                                                                             'to at most this many '
+                                                                             'pixels wide.'},
                                              'dwell_ms': {   'type': 'integer',
                                                              'description': 'Milliseconds the '
                                                                             'pointer rests before '

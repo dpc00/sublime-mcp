@@ -5148,11 +5148,17 @@ def _ui_hover(body):
     if body.get("x") is None or body.get("y") is None:
         return {"error": "x and y are required (pixels in the picture ui_screenshot returns)"}
     res = ui_input.hover(pid, hwnd, body.get("x"), body.get("y"), body.get("dwell_ms", 900),
-                         body.get("hold_ms", 0), bool(body.get("screenshot")), body.get("min_idle_s", 8), body.get("wait_idle_s", 0))
+                         body.get("hold_ms", 0), bool(body.get("screenshot")), body.get("min_idle_s", 8), body.get("wait_idle_s", 0),
+                         {"region": body.get("region"), "scale": body.get("scale"), "max_width": body.get("max_width")})
     shot = res.pop("shot", None)
     if shot is not None:
         if "png" not in shot:
             res["screenshot_error"] = shot.get("error")
+        elif body.get("inline", True):
+            # The picture itself, first in the reply, like ui_screenshot.
+            import base64
+            return [{"type": "image", "data": base64.b64encode(shot["png"]).decode("ascii"), "mimeType": "image/png"},
+                    {"type": "text", "text": json.dumps(res)}]
         else:
             import tempfile
             folder = os.path.join(tempfile.gettempdir(), "sublime-mcp-ui")
@@ -5983,7 +5989,9 @@ _MCP_TOOLS = [
     ("ui_hover",
      "Hold the REAL mouse pointer over a point of one window of this Sublime Text process (Windows "
      "only) so hover popups and tooltips appear, optionally taking a picture while it is there "
-     "(screenshot=true saves it and returns the path), then put the pointer back. x, y are pixels in "
+     "(screenshot=true returns the picture itself, image first; inline=false saves it and returns "
+     "the path; region, scale and max_width work as in ui_screenshot, so a small popup can be "
+     "cropped and zoomed), then put the pointer back. x, y are pixels in "
      "the picture ui_screenshot returns. Same safety gates as ui_click: refused unless the person at "
      "the computer has been idle for min_idle_s seconds (default 8) and the target window is the one "
      "under that point. dwell_ms (default 900, max 5000) is how long to wait before the picture.",
@@ -5991,7 +5999,13 @@ _MCP_TOOLS = [
          "x": {"type": "integer", "description": "Pixels from the left edge of the window picture."},
          "y": {"type": "integer", "description": "Pixels from the top edge of the window picture."},
          "hwnd": {"type": "integer", "description": "Window handle from list_native_windows (default: first editor window)."},
-         "screenshot": {"type": "boolean", "description": "Take a picture while the pointer is there and return its path."},
+         "screenshot": {"type": "boolean", "description": "Take a picture while the pointer is there and return it (the image itself unless inline=false)."},
+         "inline": {"type": "boolean", "description": "With screenshot: return the image itself (default true); false saves a file and returns its path."},
+         "region": {"type": "object", "description": "With screenshot: only this part of the window picture: {x, y, width, height} in pixels.",
+                    "properties": {"x": {"type": "integer"}, "y": {"type": "integer"},
+                                   "width": {"type": "integer"}, "height": {"type": "integer"}}},
+         "scale": {"type": "number", "description": "With screenshot: resize factor (2 doubles the picture)."},
+         "max_width": {"type": "integer", "description": "With screenshot: shrink the picture to at most this many pixels wide."},
          "dwell_ms": {"type": "integer", "description": "Milliseconds the pointer rests before the picture (default 900)."},
          "hold_ms": {"type": "integer", "description": "Extra milliseconds to keep the pointer there afterwards (default 0)."},
          "min_idle_s": {"type": "number", "description": "Required seconds since the person last used the mouse or keyboard (default 8)."},

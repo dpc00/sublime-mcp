@@ -464,7 +464,7 @@ def click(pid, hwnd, x, y, button="left", double=False, min_idle_s=8.0, settle_m
     return {"ok": True, "method": "pointer", "hwnd": hwnd, "screen": [sx, sy], "idle_seconds": round(idle, 1)}
 
 
-def hover(pid, hwnd, x, y, dwell_ms=900, hold_ms=0, capture=False, min_idle_s=8.0, wait_idle_s=0):
+def hover(pid, hwnd, x, y, dwell_ms=900, hold_ms=0, capture=False, min_idle_s=8.0, wait_idle_s=0, shot_opts=None):
     """Move the real pointer to picture position (x, y) of window ``hwnd`` and leave it there for
     ``dwell_ms`` (so hover popups can appear), optionally taking a picture while it is there, then
     keep it ``hold_ms`` longer and put it back. Same gates as ``click``: refused unless the person at
@@ -507,7 +507,8 @@ def hover(pid, hwnd, x, y, dwell_ms=900, hold_ms=0, capture=False, min_idle_s=8.
         _user32.SetCursorPos(sx, sy)
         time.sleep(dwell / 1000.0)
         if capture:
-            shot = screenshot(pid, hwnd, 0)
+            opts = shot_opts or {}
+            shot = screenshot(pid, hwnd, 0, opts.get("region"), opts.get("scale"), opts.get("max_width"))
         time.sleep(hold / 1000.0)
     finally:
         _user32.SetCursorPos(old.x, old.y)
