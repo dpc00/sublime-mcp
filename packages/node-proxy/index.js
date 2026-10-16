@@ -22,6 +22,7 @@ const DEFAULT_TOOL_NAMES = new Set([
   'str_replace_based_edit_tool',
   'save_file',
   'discover_tools',
+  'ui_screenshot',
 ]);
 const GATEWAY_FALLBACKS = [
   {

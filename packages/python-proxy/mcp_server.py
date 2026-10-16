@@ -5,7 +5,7 @@ presents it as MCP tools to Claude Code (or any MCP client).
 
 Tools are built from `tool_catalog.py`, which is generated from the
 backend's `_MCP_TOOLS` by `tools/generate_fallback_catalog.py`. The proxy
-advertises the focused seven-tool surface; advanced backend capabilities are
+advertises the focused eight-tool surface; advanced backend capabilities are
 found with `discover_tools` and invoked through `batch`.
 
 Requirements: pip install mcp httpx
@@ -69,6 +69,7 @@ DEFAULT_TOOL_NAMES = frozenset({
     "str_replace_based_edit_tool",
     "save_file",
     "discover_tools",
+    "ui_screenshot",
 })
 
 GATEWAY_FALLBACKS = (

@@ -3,7 +3,7 @@
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.
 
-Seven workflow tools are shown by default; the complete typed catalog (413
+Eight workflow tools are shown by default; the complete typed catalog (413
 tools) remains available through `discover_tools` and `batch`. Prefer a named capability over
 `run_command`, which often opens UI that steals focus from the agent chat.
 
@@ -17,10 +17,10 @@ passing an ST cursor into an `lsp_*` tool.
 
 ## Quick start
 
-Seven tools are listed and are called directly: `get_help`, `get_active_file`,
+Eight tools are listed and are called directly: `get_help`, `get_active_file`, `ui_screenshot`,
 `project_search`, `str_replace_based_edit_tool`, `save_file`, `batch`, `discover_tools`.
 Every other tool is hidden. Find it with `discover_tools`, run it with `batch`.
-`discover_tools` never returns the seven listed tools, so do not search for them.
+`discover_tools` never returns the eight listed tools, so do not search for them.
 
 ```
 discover_tools(query="sort lines")                    # find a tool by words
@@ -71,7 +71,7 @@ the file reaches the disk when `save_file` runs. `str_replace` and `insert` edit
 they also need `save_file`. `create` does not make missing folders. To open an existing file use
 the hidden tool `open_file(path=...)`.
 
-Hidden tools (everything except the seven) are only reachable through `batch`; calling one
+Hidden tools (everything except the eight) are only reachable through `batch`; calling one
 directly gives "No such tool". `get_sheets` returns every tab's full settings (over 100 lines per
 tab) unless you pass `settings=false`, which gives a compact list; the hidden `get_open_files`
 returns just each tab's path, name and dirty flag.

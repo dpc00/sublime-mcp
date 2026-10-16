@@ -7127,6 +7127,7 @@ _MCP_DEFAULT_TOOL_NAMES = frozenset({
     "str_replace_based_edit_tool",
     "save_file",
     "discover_tools",
+    "ui_screenshot",
 })
 
 # MCP tool-name HTTP aliases for node-proxy dynamic discovery (POST /{tool.name}).
