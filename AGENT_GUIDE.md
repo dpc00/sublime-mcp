@@ -150,6 +150,40 @@ get_commands()                     # command ids, scopes, packages, palette capt
 `project_search` `where` accepts folder paths, `*.py`, `-*.md`, `${project}`,
 `${open_files}`, `${folder:Name}`.
 
+## Typing into a GhostShell terminal tab (Claude Code and other agent CLIs)
+
+Observed 2026-10-17 on build 4200 with Claude Code 2.1.302 in a GhostShell tab; reproduced,
+cause found, fixed in GhostShell, verified.
+
+```
+batch(calls=[{"tool": "run_command", "args": {"command": "ai_terminal_send_string", "args": {"string": "your prompt\r"}}}])
+```
+
+- **Text that ends in Enter used to be left in the prompt box, not submitted.** Claude Code
+  appears to read a burst of text as a paste and to take an Enter in the same read, or within
+  about 100 ms after it, as part of the paste (GhostShell's own notes cite Claude Code's
+  `usePasteHandler.ts` for this). Measured: text of 60 characters or fewer still submitted; 120
+  or more stayed in the box. Two writes back to back (0 ms apart) failed the same way. A gap of
+  20, 50, 100, 150 or 200 ms before the Enter submitted 250 characters; 100 and 200 ms did
+  1500; 300 ms worked at 120 to 500.
+- **Fixed in GhostShell:** `ai_terminal_send_string` and `ai_terminal_send_string_window` now
+  write a trailing `\r`, `\n` or `\r\n` as a separate write `submit_enter_delay_ms` (default
+  150) after the text. One call with the text plus `\r` now submits (tested with 250 and
+  1500 characters, `\n`, `\r\n`, two calls sent one after the other, and the window variant).
+  To check that a GhostShell has the fix, look for `submit_enter_delay_ms` in its
+  `ai_terminal.sublime-settings`.
+- **With an older GhostShell, send the text with no Enter, then the `\r` in a second call** at
+  least 300 ms later, and do not put the `\r` in the first call.
+- **Escape: do not send a raw `\x1b`.** In the tab tested, a lone `\x1b` did not close a Claude
+  Code panel; the real Escape key did. Use `ui_press_key` with `method="post"` (`Escape`,
+  `Return`, arrows). GhostShell's own key encoder gives `\x1b[27u` for Escape there, which
+  suggests Claude Code has the kitty keyboard protocol turned on. A raw `\r` is fine for Enter.
+- **Check that the text was submitted**, not only sent: read the terminal text with
+  `eval_python` (`view.substr(sublime.Region(0, view.size()))`) or take a `ui_screenshot`. A
+  submitted prompt is followed by the reply; an unsubmitted one is still on the `❯` line.
+- A string sent before the shell has printed its prompt is dropped. After `ai_terminal_open_here`
+  wait a few seconds, and confirm the prompt with a screenshot before sending.
+
 ## Packages, menus, palette and input panels (no eval_python needed)
 
 Call these through `batch`; find more with `discover_tools`.
