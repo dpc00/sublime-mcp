@@ -12,7 +12,9 @@ to turn a one-time investigation into a small, reusable skill file instead.
 
 ## Toolset
 
-Eight workflow tools are advertised by default. `discover_tools` lists a tree of
+Eight workflow tools are advertised by default (`discover_tools`, `batch`,
+`get_help`, `get_active_file`, `project_search`, `save_file`,
+`str_replace_based_edit_tool`, `ui_screenshot`). `discover_tools` lists a tree of
 categories (`category=`) or searches (`query=`) the
 complete internal catalog of 413 typed Sublime capabilities, and `batch` invokes
 discovered capabilities without flooding the model's initial tool context.
@@ -25,6 +27,36 @@ tools' behaviour is in `tools/st_hand_written_behavior.json`. Since 1.10.0,
 `list_native_windows` and `dismiss_native_window` (Windows) list and dismiss a
 native dialog or menu while it blocks Sublime's main thread. See
 [AGENT_GUIDE.md](AGENT_GUIDE.md).
+
+### What it can do now (1.10 to 1.13)
+
+- **See and operate Sublime's own windows (Windows only, 1.13).** `ui_screenshot`
+  returns a real image of any Sublime window, also one behind others, an open
+  dialog or menu (`kind`, `window_title`), a not-front tab (`tab`), cropped or
+  zoomed (`region`, `scale`, `max_width`); it is one of the eight default tools,
+  and the image reaches the client as an image, also through `batch` and the
+  proxies. `ui_press_key`, `ui_type_text`, `ui_click` and `ui_hover` (with a
+  picture of the popup, including language-server hovers) operate palettes,
+  quick panels and menus. Real mouse and keys wait until the person at the
+  computer has been idle (`wait_idle_s`), so they never type over them.
+- **Work through native dialogs (1.10, 1.12.4).** `list_native_windows` and
+  `dismiss_native_window` list and dismiss a dialog or menu that has blocked
+  Sublime's main thread; `close_file` with `discard` closes a tab with unsaved
+  edits without the Save Changes dialog.
+- **Drive quick panels and menus (1.12).** `get_quick_panel`, `pick_quick_panel`
+  (with `wait_ms` for a list that is still loading) and `click_menu_item`;
+  `install_package` now persists the install, `get_view_regions` and
+  `get_view_phantoms` (with `last`, `html`, `max_chars`) inspect what a plugin drew.
+- **Share one Sublime between agents (1.12.0).** `claim_resource`,
+  `release_resource` and `list_claims` let agents take turns on the input and
+  control panels.
+- **Safer by default.** Browser-origin requests are refused (1.12.2), the
+  visible-console read only touches Sublime's own window and restores focus and
+  clipboard (1.12.1), `eval_python` cannot take down the plugin host with
+  `sys.exit()` (1.12.3), and Windows-only tools are hidden on other platforms
+  (1.11.2).
+- **A tool tree (1.11).** `discover_tools` with no arguments walks 12 categories
+  instead of dumping a catalog.
 
 Agent how-to: [AGENT_GUIDE.md](AGENT_GUIDE.md) (also served live by
 `get_help`). Release history: [CHANGELOG.md](CHANGELOG.md).
