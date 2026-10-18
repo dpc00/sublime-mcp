@@ -63,5 +63,18 @@ console (`get_console`) for the errors the dialog was about.
 
 ## Menus and popups
 
-An open native menu or popup has no title and blocks the main thread the same way. List it, close it
-(`dismiss_native_window`, or Escape through `ui_press_key`), then carry on.
+An open native menu has no title and blocks the main thread the same way a dialog does. Reproduced
+2026-10-18 (portable 4215): `run_command` with `context_menu` opens the editor's right-click menu,
+the call returns "main-thread timeout after 5s" (HTTP 500), `list_native_windows` then shows
+`main_thread_blocked: true` and a window of kind `menu`, and `dismiss_native_window` on its `hwnd`
+(action `close`) frees the main thread at once. Until it is closed, every other tool call times out
+too, and so does anything else waiting on Sublime, including the agent itself.
+
+So:
+
+- Do not open menus through `run_command` unless the menu is the thing under test. To run a menu
+  entry, use `click_menu_item` with the caption path (it runs the command without opening the menu),
+  or `run_command` with the entry's own command.
+- If a menu is opened on purpose, `list_native_windows` and `dismiss_native_window` it as the very next
+  call, before anything else.
+- After a timeout, look first (`list_native_windows`); do not retry the failed call in a loop.
