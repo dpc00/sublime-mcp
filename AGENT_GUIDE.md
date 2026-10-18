@@ -352,7 +352,8 @@ error quotes the dialog's text. Read it: it often says what is wrong (a package 
 library, a save prompt). Read it, make sense of it and act on it: it says what is wrong, so fix the cause, and
 if it comes back, do whatever it takes to stop it. Then dismiss it at once with `dismiss_native_window`; a dialog
 left open blocks the window and the workflow. The watchdog appends every dialog's text to
-`sublime-mcp-freeze.log` when it opens, so nothing is lost by dismissing it.
+`sublime-mcp-freeze.log` when it opens, so nothing is lost by dismissing it. If nobody answers an information-only dialog (a single OK button) within
+8 seconds, the watchdog dismisses it, after logging it.
 
 ## When a native dialog blocks Sublime (Windows)
 

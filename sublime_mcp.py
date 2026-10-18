@@ -133,6 +133,7 @@ def _heartbeat_tick(token):
 
 
 _FREEZE_THRESHOLD_SECONDS = 3.0
+_AUTO_DISMISS_SECONDS = 8.0
 _FREEZE_LOG_MAX_BYTES = 256 * 1024
 
 
@@ -155,7 +156,7 @@ def _freeze_watchdog(token, path):
     Write what it is doing to a file, once per stall, and how long the stall lasted when it ends. Nobody
     has to be able to call a tool while Sublime is frozen; read the file afterwards."""
     stalled_since = None
-    seen_dialogs = set()
+    seen_dialogs = {}
     while token["alive"]:
         time.sleep(0.5)
         last = _heartbeat_state["last_ts"]
@@ -180,16 +181,26 @@ def _freeze_watchdog(token, path):
                 stalled_since = None
         except Exception:
             pass
-        # Keep the text of every dialog that opens: a person dismisses it, and the text says what was wrong.
+        # Keep the text of every dialog that opens: it says what was wrong. An information-only dialog (a
+        # single OK button) that nobody has answered for _AUTO_DISMISS_SECONDS is dismissed here, after
+        # its text is in the log: dialogs left open block the window and the workflow.
         try:
             current = {}
             for d in _open_dialogs_notice():
                 current[(d["title"], d["message"])] = d
+            now = time.time()
             for key, d in current.items():
                 if key not in seen_dialogs:
+                    seen_dialogs[key] = now
                     _freeze_log_write(path, "\n=== native {} opened {} ===\n{}\n{}\nbuttons: {}\n".format(
                         d["kind"], time.strftime("%Y-%m-%d %H:%M:%S"), d["title"], d["message"], d["buttons"]))
-            seen_dialogs = set(current)
+                elif (d["kind"] == "dialog" and d["buttons"] == ["OK"] and d.get("hwnd")
+                      and now - seen_dialogs[key] >= _AUTO_DISMISS_SECONDS):
+                    native_windows.dismiss(_sublime_process_id(), hwnd=d["hwnd"], action="ok")
+                    seen_dialogs[key] = now + 3600      # do not try again for this one
+                    _freeze_log_write(path, "--- dismissed the dialog above (OK) after {:.0f}s ---\n".format(
+                        _AUTO_DISMISS_SECONDS))
+            seen_dialogs = {k: v for k, v in seen_dialogs.items() if k in current}
         except Exception:
             pass
 
@@ -4538,7 +4549,7 @@ def _open_dialogs_notice():
         windows = native_windows.list_windows(_sublime_process_id())
     except Exception:
         return []
-    return [{"kind": w.get("kind"), "title": w.get("title"),
+    return [{"kind": w.get("kind"), "title": w.get("title"), "hwnd": w.get("hwnd"),
              "message": "\n".join(w.get("messages") or []),
              "buttons": [b.get("text") for b in w.get("buttons") or []]}
             for w in windows if w.get("kind") in ("dialog", "menu")]
