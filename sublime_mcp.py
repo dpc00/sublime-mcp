@@ -86,74 +86,6 @@ _PORT = 9500 if sys.platform == "win32" else 9501
 
 # ── main-thread dispatch ──────────────────────────────────────────────────────
 
-# Reentrancy depth around _on_main's fn() -- surfaced in the diagnostics
-# tool as dispatch.depth, so a nested/stuck dispatch is visible from the
-# outside instead of guessed at.
-_mcp_dispatch_depth = [0]
-
-
-# ── diagnostics ────────────────────────────────────────────────────────────────
-#
-# Everything here answers questions this plugin gave no way to answer from
-# the outside: is the main thread actually stuck (heartbeat), what was it
-# doing when a call timed out (in-flight dispatch label + live stack dump,
-# capturable from any thread via sys._current_frames() without needing the
-# wedged thread's cooperation), and is the on_activated/on_load suppression
-# above actually firing the way it's supposed to (per-event counters).
-# Nothing here uses a ring buffer of its own -- lifecycle prints (diff
-# open/accept/reject/close, slow/timed-out dispatches) go through plain
-# print(), which _install_console_capture() already routes into the
-# existing /console_log tool, so there is exactly one log to check instead
-# of two.
-
-_SLOW_DISPATCH_SECONDS = 0.5  # print() calls slower than this, not every call
-
-_diag_started_at = time.time()
-
-_heartbeat_state = {"count": 0, "last_ts": 0.0}
-_HEARTBEAT_INTERVAL_MS = 200
-
-
-def _gs_hook(kind, view=None, **info):
-    """Report to GhostShell's view tracer (setting debug_view_trace) if loaded."""
-    h = getattr(sublime, "_gs_trace_hook", None)
-    if h is not None:
-        try:
-            h(kind, view, **info)
-        except Exception:
-            pass
-
-
-def _heartbeat_tick():
-    _heartbeat_state["count"] += 1
-    _heartbeat_state["last_ts"] = time.time()
-    sublime.set_timeout(_heartbeat_tick, _HEARTBEAT_INTERVAL_MS)
-
-
-def _start_heartbeat():
-    if _heartbeat_state["count"] == 0:
-        _heartbeat_tick()
-
-
-def _main_thread_stack(limit=None):
-    """A live stack trace of ST's main thread, callable from any thread
-    (limit: keep only the innermost N frames).
-
-    sys._current_frames() reads every thread's current frame directly from
-    the interpreter, so this works even while the main thread is wedged --
-    unlike everything else in this file, it does not need _on_main() (and
-    therefore does not need the main thread's cooperation) to answer "what
-    is it doing right now".
-    """
-    frame = sys._current_frames().get(threading.main_thread().ident)
-    if frame is None:
-        return "main thread frame unavailable (main_thread ident={})".format(
-            threading.main_thread().ident
-        )
-    frames = traceback.format_stack(frame)
-    return "".join(frames[-limit:] if limit else frames)
-
-
 _in_flight_dispatch = {"label": None, "started": None}
 
 
@@ -218,17 +150,11 @@ def _on_main(fn):
     label = _dispatch_label(fn)
 
     def _dispatch():
-        _mcp_dispatch_depth[0] += 1
         _in_flight_dispatch["label"] = label
         _in_flight_dispatch["started"] = time.time()
-        start = time.time()
         try:
             return fn()
         finally:
-            elapsed = time.time() - start
-            if elapsed > _SLOW_DISPATCH_SECONDS:
-                print("[sublime-mcp] slow dispatch {} took {:.2f}s".format(label, elapsed))
-            _mcp_dispatch_depth[0] -= 1
             _in_flight_dispatch["label"] = None
             _in_flight_dispatch["started"] = None
 
@@ -248,11 +174,6 @@ def _on_main(fn):
 
     sublime.set_timeout(_run, 0)
     if not done.wait(5.0):
-        print(
-            # innermost frames only: a full import-time stack is 5 KB and fills every console read
-            "[sublime-mcp] _on_main TIMEOUT after 5s dispatching {}\nmain thread, innermost frames "
-            "(get_main_thread_stack has all):\n{}".format(label, _main_thread_stack(4))
-        )
         raise TimeoutError(_main_thread_timeout_message(label))
     if exc[0]:
         raise exc[0]
@@ -1093,7 +1014,6 @@ def _send_to_view(body):
             return {"error": "no view found"}
         if v.is_read_only():
             return {"error": "view is read-only", "name": v.name()}
-        _gs_hook("mcp_focus_view_insert", v)
         w.focus_view(v)
         v.run_command("insert", {"characters": text})
         return {"ok": True, "name": v.name()}
@@ -1267,7 +1187,6 @@ def _capture_console_win(params):
         tr("do_show: set sentinel clipboard")
         sublime.set_clipboard(sentinel)
         tr("do_show: show console panel")
-        _gs_hook("mcp_console_show_panel", snapshot.get("view"))
         snapshot["window"].run_command("show_panel", {"panel": "console"})
         sublime.set_timeout(do_click, 300)
 
@@ -1321,7 +1240,6 @@ def _capture_console_win(params):
         restore_ui()
 
     def do_click():
-        _gs_hook("mcp_console_do_click", snapshot.get("view"))
         if cleanup["cancelled"]:
             restore_ui()
             return
@@ -1429,7 +1347,6 @@ def _capture_console_win(params):
         restore_ui()
 
     def restore_ui():
-        _gs_hook("mcp_console_restore_ui", snapshot.get("view"))
         if cleanup["restore_started"]:
             return
         cleanup["restore_started"] = True
@@ -1437,7 +1354,6 @@ def _capture_console_win(params):
         # Restore the visible panel before focusing the prior view; panel
         # transitions can otherwise steal focus back from the editor.
         previous_panel = snapshot["panel"]
-        _gs_hook("mcp_console_restore_panel", snapshot.get("view"), panel=previous_panel)
         if previous_panel:
             snapshot["window"].run_command("show_panel", {"panel": previous_panel})
         else:
@@ -1452,12 +1368,10 @@ def _capture_console_win(params):
         tr("restore_focus: start")
         previous_view = snapshot["view"]
         if previous_view and previous_view.is_valid():
-            _gs_hook("mcp_console_restore_focus", previous_view)
             snapshot["window"].focus_view(previous_view)
             saved = snapshot.get("selection")
             if saved is not None and [(r.a, r.b) for r in previous_view.sel()] != saved:
                 # A stray click or key must not leave a different selection behind.
-                _gs_hook("mcp_console_restore_selection", previous_view)
                 previous_view.sel().clear()
                 previous_view.sel().add_all([sublime.Region(a, b) for a, b in saved])
         previous_foreground = snapshot["foreground"]
@@ -2158,7 +2072,6 @@ def _goto_line(body):
         if not v:
             return {"error": "no active view"}
         pt = v.text_point(line - 1, col - 1)
-        _gs_hook("mcp_goto_line", v, line=line)
         v.sel().clear()
         v.sel().add(sublime.Region(pt))
         v.show_at_center(pt)
@@ -3050,7 +2963,6 @@ def _select_lines(body):
             return {"error": "no active view"}
         start_pt = v.text_point(begin - 1, 0)
         end_pt = v.full_line(v.text_point(end - 1, 0)).end()
-        _gs_hook("mcp_select_lines", v)
         v.sel().clear()
         v.sel().add(sublime.Region(start_pt, end_pt))
         v.show_at_center(start_pt)
@@ -3149,7 +3061,6 @@ def _open_control_panel(body):
         if not panel.settings().get("mcp_state"):
             panel.settings().set(
                 "mcp_state", {s: (s != "postgres") for s in _CP_SERVERS})
-        _gs_hook("mcp_focus_view_panel", panel)
         w.focus_view(panel)
         _cp_render(panel)
         return {"ok": True, "view": _CP_VIEW_NAME,
@@ -3430,7 +3341,6 @@ def _focus_group(body):
         w = sublime.active_window()
         if group >= w.num_groups():
             return {"error": "group {} out of range (have {})".format(group, w.num_groups())}
-        _gs_hook("mcp_focus_group", None, group=group)
         w.focus_group(group)
         return {"ok": True}
 
@@ -3665,56 +3575,6 @@ def _health(params):
     }
 
 
-def _main_thread_stack_tool(params):
-    return {"stack": _main_thread_stack()}
-
-
-def _diagnostics(params):
-    """One-call snapshot to tell 'main thread wedged' from 'slow' from 'fine'.
-
-    Deliberately does not go through _on_main: reads plain module-level
-    state (ints/dicts, safe enough for a diagnostic snapshot under the GIL)
-    and sys._current_frames() directly, so it still answers when the main
-    thread itself is the thing under suspicion.
-    """
-    _install_console_capture()
-    now = time.time()
-    heartbeat_age = (
-        now - _heartbeat_state["last_ts"] if _heartbeat_state["last_ts"] else None
-    )
-    in_flight = None
-    if _in_flight_dispatch["label"]:
-        in_flight = {
-            "label": _in_flight_dispatch["label"],
-            "running_for_seconds": round(now - _in_flight_dispatch["started"], 3),
-        }
-    console = _console_state or {}
-    return {
-        "uptime_seconds": round(now - _diag_started_at, 1),
-        "heartbeat": {
-            "ticks": _heartbeat_state["count"],
-            "seconds_since_last_tick": (
-                round(heartbeat_age, 3) if heartbeat_age is not None else None
-            ),
-            "expected_interval_ms": _HEARTBEAT_INTERVAL_MS,
-            # A couple of missed ticks can be a busy main thread; several
-            # seconds of silence is the "alive, listening, unresponsive"
-            # wedge pattern seen this session -- worth flagging outright
-            # rather than making the caller do that arithmetic.
-            "likely_wedged": heartbeat_age is not None and heartbeat_age > 2.0,
-        },
-        "dispatch": {
-            "depth": _mcp_dispatch_depth[0],
-            "in_flight": in_flight,
-        },
-        "console_capture": {
-            "entries_buffered": len(console.get("entries", [])),
-            "dropped": console.get("dropped", 0),
-        },
-        "main_thread_stack": _main_thread_stack(),
-    }
-
-
 _GET = {
     "/active_file": _get_active_file,
     "/selection": _get_selection,
@@ -3753,8 +3613,6 @@ _GET = {
     "/layout": _get_layout,
     "/mcp_tools": _get_mcp_tools,
     "/health": _health,
-    "/diagnostics": _diagnostics,
-    "/main_thread_stack": _main_thread_stack_tool,
 }
 
 _POST = {
@@ -6572,21 +6430,6 @@ _MCP_TOOLS = [
     ("transformer",
      "Apply a transformer (case conversion, encoding, etc.) to the current selection (TextCommand). A general-purpose text-transform base command.",
      {"type": "object", "properties": {}}, _p("/transformer")),
-    ("diagnostics",
-     "One-call plugin health snapshot: main-thread heartbeat freshness (and a "
-     "likely_wedged flag), the currently in-flight _on_main dispatch (if any) "
-     "with its label and running time, console-capture buffer size, and a "
-     "live main-thread stack trace. Answers 'wedged vs slow vs fine' without "
-     "needing the main thread's cooperation -- use this before assuming a "
-     "timeout means the server is dead.",
-     {"type": "object", "properties": {}}, _g("/diagnostics")),
-    ("main_thread_stack",
-     "Return ST's main thread's current Python stack trace right now, read "
-     "directly via sys._current_frames() from whichever thread handles this "
-     "request. Works even while the main thread is wedged, since it needs no "
-     "cooperation from it -- use this to see exactly what a stuck call is "
-     "doing instead of guessing from symptoms.",
-     {"type": "object", "properties": {}}, _g("/main_thread_stack")),
     # BEGIN GENERATED ST COMMAND TOOLS (tools/generate_st_command_tools.py)
     ("add_directory",
      "Opens an OS dialog box to prompt for a folder to the 'Where' field in the 'Find in Files' panel. (WindowCommand)",
@@ -7585,7 +7428,6 @@ def _stop_servers():
 def plugin_loaded():
     _install_quick_panel_recorder()
     _start_servers()
-    _start_heartbeat()
 
 
 def plugin_unloaded():
@@ -7640,7 +7482,6 @@ class McpStrReplaceCommand(sublime_plugin.TextCommand):
             ],
             annotation_color="#4CAF50",
         )
-        _gs_hook("mcp_show_at_center", self.view)
         self.view.show_at_center(new_region)
         sublime.set_timeout(
             lambda: self.view.erase_regions("mcp_edit"), _EDIT_HIGHLIGHT_MS
@@ -7670,7 +7511,6 @@ class McpInsertTextCommand(sublime_plugin.TextCommand):
             ],
             annotation_color="#2196F3",
         )
-        _gs_hook("mcp_show_at_center", self.view)
         self.view.show_at_center(new_region)
         sublime.set_timeout(
             lambda: self.view.erase_regions("mcp_edit"), _EDIT_HIGHLIGHT_MS
@@ -7682,7 +7522,6 @@ class McpCreateFileCommand(sublime_plugin.TextCommand):
 
     def run(self, edit, file_text):
         self.view.insert(edit, 0, file_text)
-        _gs_hook("mcp_show_at_center", self.view)
         self.view.show_at_center(0)
 
 

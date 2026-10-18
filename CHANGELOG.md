@@ -2,7 +2,7 @@
 
 ## 1.14.3
 
-The code is the 1.13.8 code again. The heartbeat change from 1.14.0 (stopping the diagnostics timer on reload) is reverted, so nothing in sublime_mcp.py differs from 1.13.8 except the version number.
+Back to a plain pass-through. The debugging code is out of the plugin: the `diagnostics` and `main_thread_stack` tools (and their `/diagnostics` and `/main_thread_stack` routes), the 200 ms heartbeat that fed them, the slow-dispatch and timeout console prints, and the GhostShell trace hooks. That leaves 411 tools (was 413). Nothing else about the commands changes. Tool lists, the tool tree and the fallback catalogs are regenerated. The debugging aids now live in a separate plugin, HangWatch, outside this project.
 
 ## 1.14.2
 

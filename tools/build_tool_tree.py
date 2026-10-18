@@ -159,7 +159,7 @@ put("run/macros", "toggle_record_macro run_macro play_macro run_macro_file save_
 put("packages_and_dev/packages", "search_packages install_package install_package_control")
 put("packages_and_dev/create", "new_build_system new_plugin new_snippet new_syntax")
 put("packages_and_dev/diagnostics", "profile_plugins profile_syntax_definition syntax_definition_compatibility "
-    "syntax_definition_compatability run_syntax_tests diagnostics main_thread_stack")
+    "syntax_definition_compatability run_syntax_tests")
 put("app/windows", "new_window close_window resize_window")
 put("app/native_dialogs", "list_native_windows dismiss_native_window ui_press_key ui_type_text ui_click ui_hover")
 put("app/coordination", "claim_resource release_resource list_claims")

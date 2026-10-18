@@ -57,19 +57,6 @@
     "visual_change_pct": 0.0
    }
   },
-  "diagnostics": {
-   "no_args": {
-    "args_used": {},
-    "changes": [],
-    "new_processes": [],
-    "new_windows": [],
-    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"uptime_seconds\\\": 27.9, \\\"heartbeat\\\": {",
-    "tags": [
-     "NO_OBSERVABLE_EFFECT"
-    ],
-    "visual_change_pct": 0.0
-   }
-  },
   "discover_tools": {
    "no_args": {
     "args_used": {},
@@ -807,19 +794,6 @@
     "new_processes": [],
     "new_windows": [],
     "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"locations\\\": []}\"}]}}",
-    "tags": [
-     "NO_OBSERVABLE_EFFECT"
-    ],
-    "visual_change_pct": 0.0
-   }
-  },
-  "main_thread_stack": {
-   "no_args": {
-    "args_used": {},
-    "changes": [],
-    "new_processes": [],
-    "new_windows": [],
-    "response": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"stack\\\": \\\"main thread frame unavailable",
     "tags": [
      "NO_OBSERVABLE_EFFECT"
     ],

@@ -277,8 +277,6 @@
    "diagnostics": {
     "description": "Profiling, syntax tests and diagnostics",
     "tools": [
-     "diagnostics",
-     "main_thread_stack",
      "profile_plugins",
      "profile_syntax_definition",
      "run_syntax_tests",

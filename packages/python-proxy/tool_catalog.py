@@ -517,14 +517,6 @@ TOOLS = [   {   'name': 'add_directory',
         'description': "Auto-detect the file's indentation style (tabs vs spaces, width) and set "
                        "the view's indent settings accordingly.",
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'diagnostics',
-        'description': 'One-call plugin health snapshot: main-thread heartbeat freshness (and a '
-                       'likely_wedged flag), the currently in-flight _on_main dispatch (if any) '
-                       'with its label and running time, console-capture buffer size, and a live '
-                       "main-thread stack trace. Answers 'wedged vs slow vs fine' without needing "
-                       "the main thread's cooperation -- use this before assuming a timeout means "
-                       'the server is dead.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'discover_tools',
         'description': 'Find advanced Sublime tools hidden from the default tool surface. With no '
                        'arguments it lists the top-level categories; category=<path> opens a '
@@ -1270,13 +1262,6 @@ TOOLS = [   {   'name': 'add_directory',
                            'required': ['symbol']}},
     {   'name': 'lower_case',
         'description': 'Convert the current selection(s) to lower case.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'main_thread_stack',
-        'description': "Return ST's main thread's current Python stack trace right now, read "
-                       'directly via sys._current_frames() from whichever thread handles this '
-                       'request. Works even while the main thread is wedged, since it needs no '
-                       'cooperation from it -- use this to see exactly what a stuck call is doing '
-                       'instead of guessing from symptoms.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'move',
         'description': 'Moves the selection caret(s) by the specified unit. (TextCommand)',
