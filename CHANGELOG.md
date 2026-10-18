@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.15.0
 
 Every tool now passes Sublime's own command and arguments through unchanged: no second names for a real command, no arguments chosen inside the plugin, no tool that does nothing. That leaves 381 tools (was 411). This is a breaking change for anyone who called a removed name; before 1.14.4 most of them did nothing.
 
