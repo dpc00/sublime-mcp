@@ -6831,7 +6831,7 @@ _MCP_TOOLS = [
      _p("/open_project_or_workspace")),
     ("open_recent_file",
      "Opens a recently opened file. (WindowCommand)",
-     {"type": "object", "properties": {}},
+     {"type": "object", "properties": {"index": {"type": "integer", "description": "The index of the recent file to open, 0 being the most recent. Without it the command does nothing."}}},
      _p("/open_recent_file")),
     ("open_recent_folder",
      "Opens a recently opened folder. (WindowCommand)",

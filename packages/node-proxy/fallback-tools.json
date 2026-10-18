@@ -2722,7 +2722,12 @@
       "description": "Opens a recently opened file. (WindowCommand)",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "index": {
+            "type": "integer",
+            "description": "The index of the recent file to open, 0 being the most recent. Without it the command does nothing."
+          }
+        }
       }
     },
     {

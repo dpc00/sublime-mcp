@@ -1574,6 +1574,13 @@
   "open_recent_file": {
    "command_type": "window",
    "doc_string": "Opens a recently opened file.",
+   "args": [
+    {
+     "name": "index",
+     "doc_string": "The index of the recent file to open, 0 being the most recent. Without it the command does nothing.",
+     "type": "int"
+    }
+   ],
    "type": "core"
   },
   "open_recent_folder": {

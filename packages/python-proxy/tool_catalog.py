@@ -1533,7 +1533,13 @@ TOOLS = [   {   'name': 'add_directory',
                                                                               'window.'}}}},
     {   'name': 'open_recent_file',
         'description': 'Opens a recently opened file. (WindowCommand)',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'index': {   'type': 'integer',
+                                                          'description': 'The index of the recent '
+                                                                         'file to open, 0 being '
+                                                                         'the most recent. Without '
+                                                                         'it the command does '
+                                                                         'nothing.'}}}},
     {   'name': 'open_recent_folder',
         'description': 'Opens a recently opened folder. (WindowCommand)',
         'inputSchema': {   'type': 'object',

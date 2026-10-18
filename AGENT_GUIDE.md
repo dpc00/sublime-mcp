@@ -339,28 +339,40 @@ Observed on build 4200 (2026-10-07).
 Every tool is a Sublime command passed straight through, so each does exactly what the command does in
 the editor. Know these before calling a tool you have not used (checked on 1.14.3, build 4215):
 
-- **They open a web page:** `html_print` (Sublime's print: the active tab as HTML in the browser, with the
-  print prompt), `open_in_browser`, `open_context_url`, `open_url`, `get_help`, `show_changelog`,
-  `purchase_license`, `upgrade_license`, `show_license_window`. `remove_license` removes the licence.
+- **They open a web page in the default browser:** `html_print` (the active tab as an HTML file), `open_in_browser`,
+  `open_url`, `purchase_license`, `upgrade_license`. Close the browser window afterwards. `open_context_url`
+  acts on a link under a right-click, so called alone it does nothing. `show_changelog`, `show_license_window`,
+  `show_about_window`, `show_progress_window` and `update_check` open Sublime windows ("Changelog", "Enter License",
+  "Sublime Text", "Indexing Status", "Update"); `dismiss_native_window` with `action="close"` closes them.
 - **They quit Sublime:** `exit` and `hot_exit` (hot exit keeps unsaved buffers for the next start). `close_window` and `close_all` leave Sublime running with an empty window.
 - **They change settings or create files:** `increase_font_size`, `decrease_font_size` (adds `font_size`),
   `ignore_word`, `add_word` (add `ignored_words`, `added_words`), `set_setting`, `open_file_settings`
   (creates an empty settings file in `User` and makes it the active tab, which the browser tools above then use).
 - **They open a native dialog and block the main thread until it is closed:** the `prompt_*` tools
   (`prompt_open_file`, `prompt_open_folder`, `prompt_add_folder`, `prompt_save_as`, ...), `save`, `save_file`
-  on an untitled buffer, `save_project_and_workspace_as`, `save_workspace_as`, and `primary_j_changed`
-  ("Key Binding Changed"). The call returns "main-thread timeout after 5s"; `list_native_windows` shows the
+  on an untitled buffer, `save_project_and_workspace_as`, `save_workspace_as`, `save_macro` (after a recorded
+  macro), `primary_j_changed` ("Key Binding Changed"), `close_folder_list` ("Confirm Remove Folders": Remove or
+  Cancel), `delete_file` and `delete_folder` with `prompt=true` (OK or Cancel), `remove_license` ("Remove license key?":
+  Remove or Cancel; it removes the licence) and the `sublime_merge_*` tools when Sublime Merge is not installed
+  ("Sublime Merge Not Found": Download or Cancel). The call returns "main-thread timeout after 5s"; `list_native_windows` shows the
   dialog and `dismiss_native_window` closes it. Open, Select Folder and Save As have Cancel, not OK: answer
   Cancel (`action="button", button="Cancel"`); OK on a dialog with no OK button fails and leaves the
   main thread blocked. `run_command` with `context_menu` opens a popup menu that blocks the same way.
 - **`replace_in_files` asks "Confirm Replace":** answer it with `dismiss_native_window` (`action="button"`, `button="Replace"` or `"Cancel"`). On Replace, the changes are made in the matching files' open buffers (the files open with unsaved changes); write them with `save_all`.
+- **Tools that depend on state you must set first:** `focus_by_index` needs several tabs selected;
+  `move_to_group` needs the target group to exist and the layout to have settled; `toggle_overwrite` changes how
+  typed keys (`ui_type_text`) land, not `insert`; `toggle_save_all_on_build` decides whether `build` saves
+  every modified file first; `next_modification`, `prev_modification`, `revert_hunk` and `revert_modification`
+  need a saved file with unsaved edits; `close_deleted_files` closes a tab only after Sublime has noticed the
+  file is gone.
 - **They install packages:** `install_package` installs the package; the libraries it depends on come from
   `satisfy_libraries`. A package loads the moment it is installed, so to install one that needs libraries
   (its libraries are named in its install message): add the package to `ignored_packages`,
   `install_package`, run `satisfy_libraries`, then remove it from `ignored_packages`.
 - **They ask a question in an overlay or picker, and wait for the answer:** `rename_file`, `rename_path`,
   `new_file_at`, `new_folder`, `view_resource`, `quick_panel`, `prompt_goto_line`, `select_color_scheme`,
-  `select_theme`, `set_file_type`, `set_build_system`, `paste_from_history`, `open_recent_*`,
+  `select_theme`, `set_file_type`, `set_build_system`, `paste_from_history`, `build` (when the build system has
+  variants, such as Python), `open_recent_*` (they take `index`, 0 being the most recent),
   `goto_symbol_in_project`, `prompt_select_workspace`. Answer with `ui_type_text` and `ui_press_key`
   (`Return` to accept, `Escape` to cancel, `Down` to move), then check the result. A picker opened by a plugin
   can also be read with `get_quick_panel` and answered with `pick_quick_panel`. `rename_file` pre-selects the
