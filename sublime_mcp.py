@@ -124,15 +124,27 @@ def _gs_hook(kind, view=None, **info):
             pass
 
 
-def _heartbeat_tick():
+def _heartbeat_tick(token):
+    if not token["alive"]:
+        return
     _heartbeat_state["count"] += 1
     _heartbeat_state["last_ts"] = time.time()
-    sublime.set_timeout(_heartbeat_tick, _HEARTBEAT_INTERVAL_MS)
+    sublime.set_timeout(lambda: _heartbeat_tick(token), _HEARTBEAT_INTERVAL_MS)
 
 
 def _start_heartbeat():
-    if _heartbeat_state["count"] == 0:
-        _heartbeat_tick()
+    # One chain per load. Each chain owns a token that plugin_unloaded kills; without that,
+    # every package reload (module globals reset) left the old 5 Hz chain running and added a new one.
+    _stop_heartbeat()
+    token = {"alive": True}
+    _heartbeat_state["token"] = token
+    _heartbeat_tick(token)
+
+
+def _stop_heartbeat():
+    token = _heartbeat_state.pop("token", None)
+    if token:
+        token["alive"] = False
 
 
 def _main_thread_stack(limit=None):
@@ -7589,6 +7601,7 @@ def plugin_loaded():
 
 
 def plugin_unloaded():
+    _stop_heartbeat()
     _stop_servers()
     _remove_quick_panel_recorder()
 
