@@ -4159,14 +4159,6 @@
       }
     },
     {
-      "name": "split_line",
-      "description": "Split the line at the cursor position (Ctrl+Enter equivalent in some keymaps).",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
       "name": "split_selection_into_lines",
       "description": "Split the current selection into one cursor per line (Ctrl+Shift+L).",
       "inputSchema": {

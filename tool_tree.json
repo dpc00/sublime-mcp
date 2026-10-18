@@ -160,7 +160,6 @@
      "reindent",
      "sort_lines",
      "sort_selection",
-     "split_line",
      "swap_line_down",
      "swap_line_up",
      "toggle_comment",

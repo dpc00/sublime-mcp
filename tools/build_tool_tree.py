@@ -101,7 +101,7 @@ put("tabs/panes", "get_layout set_layout focus_group focus_to_left focus_to_righ
 put("editing/basic", "replace_selection replace_lines insert undo redo soft_undo soft_redo "
     "redo_or_repeat overwrite toggle_overwrite echo noop append replace_all")
 put("editing/clipboard", "paste paste_from_history paste_and_indent cut copy yank paste_selection_clipboard copy_as_html")
-put("editing/lines", "duplicate_line sort_lines join_lines split_line swap_line_up swap_line_down move_line_up "
+put("editing/lines", "duplicate_line sort_lines join_lines swap_line_up swap_line_down move_line_up "
     "move_line_down indent unindent reindent auto_indent wrap_lines permute_lines transpose transpose_chars "
     "sort_selection permute_selection old_wrap_lines wrap_block toggle_comment")
 put("editing/case_and_whitespace", "upper_case lower_case title_case swap_case toggle_case convert_ident_case "
