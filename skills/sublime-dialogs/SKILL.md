@@ -61,20 +61,27 @@ few seconds and call again). Do not retry in a loop against a blocked main threa
 Call `list_native_windows()` again: dialogs often come in twos (one per plugin load). Then check the
 console (`get_console`) for the errors the dialog was about.
 
-## Menus and popups
+## Menus and popups: test the real menu
 
-An open native menu has no title and blocks the main thread the same way a dialog does. Reproduced
-2026-10-18 (portable 4215): `run_command` with `context_menu` opens the editor's right-click menu,
-the call returns "main-thread timeout after 5s" (HTTP 500), `list_native_windows` then shows
-`main_thread_blocked: true` and a window of kind `menu`, and `dismiss_native_window` on its `hwnd`
-(action `close`) frees the main thread at once. Until it is closed, every other tool call times out
-too, and so does anything else waiting on Sublime, including the agent itself.
+A menu is part of what is being tested, so open the real one and use it with the real mouse, as a
+person would. Do not swap in a shortcut that runs the entry's command without the menu; that proves
+nothing about the menu.
 
-So:
+An open native menu blocks Sublime's main thread: while it is open every tool that needs the main
+thread times out ("main-thread timeout after 5s"), and so does anything else waiting on Sublime. The
+tools that work without the main thread are `list_native_windows`, `dismiss_native_window`,
+`ui_screenshot` and `ui_click`/`ui_press_key`. Procedure, tried 2026-10-18 in the 4215 portable with
+the editor's right-click menu (`run_command` `context_menu`):
 
-- Do not open menus through `run_command` unless the menu is the thing under test. To run a menu
-  entry, use `click_menu_item` with the caption path (it runs the command without opening the menu),
-  or `run_command` with the entry's own command.
-- If a menu is opened on purpose, `list_native_windows` and `dismiss_native_window` it as the very next
-  call, before anything else.
-- After a timeout, look first (`list_native_windows`); do not retry the failed call in a loop.
+1. Open the menu. The call that opens it returns the timeout error after 5 s; that is expected, send
+   it from a thread or ignore the error.
+2. `list_native_windows()`: `main_thread_blocked: true` and a window of kind `menu`; note its `hwnd`.
+3. `ui_screenshot(hwnd=<menu hwnd>)`: the picture of the open menu, to read the items and pick a point.
+4. `ui_click(x, y, hwnd=<menu hwnd>, wait_idle_s=60)`: x, y count from the menu's top-left corner in
+   that picture. (Tried: clicked "Select All"; the menu closed, `main_thread_blocked` went back to
+   `false`, and the buffer selection was the whole text.)
+5. Check the effect through a normal tool (here `eval_python` reading the selection).
+
+If no click is wanted, close the menu with `dismiss_native_window(hwnd, action="close")` as the very
+next call. Never leave a menu open, and after any timeout look with `list_native_windows` before
+retrying.
