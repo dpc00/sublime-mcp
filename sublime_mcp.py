@@ -3828,7 +3828,7 @@ _POST = {
     "/select_to_mark": _vc("select_to_mark"),
     "/swap_with_mark": _vc("swap_with_mark"),
     "/delete_to_mark": _vc("delete_to_mark"),
-    "/add_to_kill_ring": _vc("add_to_kill_ring", forward=False),
+    "/add_to_kill_ring": _vc("add_to_kill_ring"),
     "/jump_back": _vc("jump_back"),
     "/jump_forward": _vc("jump_forward"),
     "/fold_unfold": _vc("fold_unfold"),
@@ -6423,9 +6423,11 @@ _MCP_TOOLS = [
      "Delete the text between the cursor and the previously set mark (TextCommand).",
      {"type": "object", "properties": {}}, _p("/delete_to_mark")),
     ("add_to_kill_ring",
-     "Add the current selection to the kill ring (TextCommand, used by yank). forward=false (default) adds the "
-     "selection; forward=true is the variant used when killing forward.",
-     {"type": "object", "properties": {"forward": {"type": "boolean", "default": False}}}, _p("/add_to_kill_ring")),
+     "Add the selected text to the kill ring, Sublime's Emacs-style clipboard (TextCommand). forward is required: "
+     "for a cursor with nothing selected, forward=true takes the character after it and forward=false the "
+     "character before it.",
+     {"type": "object", "properties": {"forward": {"type": "boolean", "description": "Direction for empty selections."}},
+      "required": ["forward"]}, _p("/add_to_kill_ring")),
     ("jump_back",
      "Jump back in the navigation history (TextCommand). Equivalent to Alt+- (jump back through edit/cursor history).",
      {"type": "object", "properties": {}}, _p("/jump_back")),

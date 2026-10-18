@@ -24,11 +24,15 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Alias of ensure_newline_at_eof — add a trailing newline at EOF if absent.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'add_to_kill_ring',
-        'description': 'Add the current selection to the kill ring (TextCommand, used by yank). '
-                       'forward=false (default) adds the selection; forward=true is the variant '
-                       'used when killing forward.',
+        'description': "Add the selected text to the kill ring, Sublime's Emacs-style clipboard "
+                       '(TextCommand). forward is required: for a cursor with nothing selected, '
+                       'forward=true takes the character after it and forward=false the character '
+                       'before it.',
         'inputSchema': {   'type': 'object',
-                           'properties': {'forward': {'type': 'boolean', 'default': False}}}},
+                           'properties': {   'forward': {   'type': 'boolean',
+                                                            'description': 'Direction for empty '
+                                                                           'selections.'}},
+                           'required': ['forward']}},
     {   'name': 'add_where_snippet',
         'description': "Adds a snippet to the 'Where' field in the 'Find in Files' panel. "
                        '(WindowCommand)',
