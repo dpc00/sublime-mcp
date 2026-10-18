@@ -963,22 +963,25 @@
     },
     {
       "name": "edit_settings",
-      "description": "Open a settings file for editing in a split view: the default settings on the left, your own on the right (WindowCommand edit_settings). resource is the settings name without the extension, e.g. 'Preferences' or 'Python'; or pass base_file and user_file as Sublime's own commands do.",
+      "description": "Open a settings file for editing in a split view: the package's settings on the left, your own on the right (WindowCommand edit_settings). Arguments go to Sublime unchanged, as in its Preferences > Settings menu entry: base_file is the settings file, e.g. ${packages}/Default/Preferences.sublime-settings (a package's settings are ${packages}/<Package>/<Name>.sublime-settings); user_file is optional; default is the text the new user file starts with, e.g. a comment and {\\n\\t$0\\n}.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "resource": {
-            "type": "string",
-            "description": "e.g. 'Preferences'."
-          },
           "base_file": {
             "type": "string",
             "description": "e.g. ${packages}/Default/Preferences.sublime-settings"
           },
           "user_file": {
             "type": "string"
+          },
+          "default": {
+            "type": "string",
+            "description": "Starting text for a new user file."
           }
-        }
+        },
+        "required": [
+          "base_file"
+        ]
       }
     },
     {

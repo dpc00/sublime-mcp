@@ -3286,24 +3286,6 @@ def _close_unmodified(body):
     return _on_main(fn)
 
 
-def _edit_settings(body):
-    """edit_settings takes base_file (and user_file); accept the bare settings name as a shorthand for base_file."""
-    args = {k: v for k, v in body.items() if v is not None and k != "resource"}
-    resource = body.get("resource")
-    if resource and "base_file" not in args:
-        args["base_file"] = "${packages}/Default/%s.sublime-settings" % resource
-    args.setdefault("default", "// Settings in here override those in the default file on the left.\n{\n\t$0\n}\n")
-
-    def fn():
-        w = sublime.active_window()
-        if not w:
-            return {"error": "no active window"}
-        w.run_command("edit_settings", args)
-        return {"ok": True}
-
-    return _on_main(fn)
-
-
 def _ac(cmd):
     def handler(body):
         args = {k: v for k, v in body.items() if v is not None}
@@ -3812,7 +3794,7 @@ _POST = {
     "/copy_path": _wc("copy_path"),
     "/switch_file": _wc("switch_file"),
     "/open_file_settings": _wc("open_file_settings"),
-    "/edit_settings": _edit_settings,
+    "/edit_settings": _wc("edit_settings"),
     "/new_build_system": _wc("new_build_system"),
     "/new_plugin": _wc("new_plugin"),
     "/new_snippet": _wc("new_snippet"),
@@ -6294,12 +6276,15 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/open_file_settings")),
     ("edit_settings",
-     "Open a settings file for editing in a split view: the default settings on the left, your own on the right "
-     "(WindowCommand edit_settings). resource is the settings name without the extension, e.g. 'Preferences' or "
-     "'Python'; or pass base_file and user_file as Sublime's own commands do.",
-     {"type": "object", "properties": {"resource": {"type": "string", "description": "e.g. 'Preferences'."},
-                                       "base_file": {"type": "string", "description": "e.g. ${packages}/Default/Preferences.sublime-settings"},
-                                       "user_file": {"type": "string"}}},
+     "Open a settings file for editing in a split view: the package's settings on the left, your own on the right "
+     "(WindowCommand edit_settings). Arguments go to Sublime unchanged, as in its Preferences > Settings menu "
+     "entry: base_file is the settings file, e.g. ${packages}/Default/Preferences.sublime-settings (a package's "
+     "settings are ${packages}/<Package>/<Name>.sublime-settings); user_file is optional; default is the text "
+     "the new user file starts with, e.g. a comment and {\\n\\t$0\\n}.",
+     {"type": "object", "properties": {"base_file": {"type": "string", "description": "e.g. ${packages}/Default/Preferences.sublime-settings"},
+                                       "user_file": {"type": "string"},
+                                       "default": {"type": "string", "description": "Starting text for a new user file."}},
+      "required": ["base_file"]},
      _p("/edit_settings")),
     ("new_build_system",
      "Create a new build system file (WindowCommand).",
