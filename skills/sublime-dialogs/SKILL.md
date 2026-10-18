@@ -26,8 +26,11 @@ works while the main thread is blocked. Call it, do not guess. A window titled `
 
 1. **Read the text.** It says what is wrong. Make sense of it.
 2. **Act on it.** Fix the cause, not the symptom:
-   - "needs the Package Control libraries X": install the libraries (`Package Control: Satisfy
-     Libraries`, or `install_package`, which now does it) and reload the package.
+   - "needs the Package Control libraries X": `install_package` installs only the package, not the
+     libraries it depends on, and a package loads the moment it is installed. Run `Package Control:
+     Satisfy Libraries` (run_command `satisfy_libraries`), then reload the package. To avoid the
+     dialog altogether next time: add the package to `ignored_packages` first, `install_package`,
+     `satisfy_libraries`, then remove it from `ignored_packages`, so it loads once with its libraries.
    - A save/close prompt for a file you opened: you own that file, answer it and move on.
    - A package error: read that package's console output and settings, correct it.
 3. **Close it** with `dismiss_native_window` (OK for information dialogs; for a choice, the button

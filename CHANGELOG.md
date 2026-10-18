@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-`install_package` now installs the libraries the package needs. Before, it installed only the package, so a package such as MarkdownGlance (which needs Markdown and pymdown-extensions) loaded, found them missing and opened a native dialog. The package is now kept in `ignored_packages` until its libraries are in, then loaded once, so it opens no dialog. Tried by installing MarkdownGlance 0.6.0 from scratch in two portable builds (4200 on Python 3.8, 4215 on 3.14): both libraries installed, no dialog, and the side-by-side preview of a changelog rendered.
-
 The freeze watchdog and `get_main_thread_stack` now find Sublime's UI thread on the Python 3.8 host (builds before 4205), where it is not Python's main thread; before, the stack was reported as unavailable there.
 
 ## 1.14.1
