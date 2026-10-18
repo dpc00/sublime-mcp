@@ -2,7 +2,7 @@
 
 Usage: python sweep.py --port 9510 --root D:/st_portable_4215 --exe D:/st_portable_4215/sublime_text.exe
 Needs the portable running with sublime-mcp loaded (HTTP bridge on --port). Never point it at the main
-Sublime. Ask the owner before running it; read SKILL.md section 3 first.
+Sublime. Ask the owner before running it; read AGENT_GUIDE.md "Tools with side effects" first.
 
 For each tool: call it with the minimum arguments (required ones, empty values), clear any native dialog
 or menu it opened (Cancel if there is a Cancel button, else OK, else close), ping the main thread, and

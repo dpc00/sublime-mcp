@@ -298,6 +298,34 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
 - **`exit`** replies first and closes Sublime 300 ms later, so the call returns `ok` and the
   connection then drops (restart, then reconnect the server).
 
+## Tools with side effects
+
+Every tool is a Sublime command passed straight through, so each does exactly what the command does in
+the editor. Know these before calling a tool you have not used (checked on 1.14.3, build 4215):
+
+- **They open a web page:** `html_print` (Sublime's print: the active tab as HTML in the browser, with the
+  print prompt), `open_in_browser`, `open_context_url`, `open_url`, `get_help`, `show_changelog`,
+  `purchase_license`, `upgrade_license`, `show_license_window`. `remove_license` removes the licence.
+- **They quit Sublime:** `exit`, `hot_exit`; `close_window` and `close_all` do too when it is the last window.
+- **They change settings or create files:** `increase_font_size`, `decrease_font_size` (adds `font_size`),
+  `ignore_word`, `add_word` (add `ignored_words`, `added_words`), `set_setting`, `open_file_settings`
+  (creates an empty settings file in `User` and makes it the active tab, which the browser tools above then use).
+- **They open a native dialog and block the main thread until it is closed:** the `prompt_*` tools
+  (`prompt_open_file`, `prompt_open_folder`, `prompt_add_folder`, `prompt_save_as`, ...), `save`, `save_file`
+  on an untitled buffer, `save_project_and_workspace_as`, `save_workspace_as`, and `primary_j_changed`
+  ("Key Binding Changed"). The call returns "main-thread timeout after 5s"; `list_native_windows` shows the
+  dialog and `dismiss_native_window` closes it. Open, Select Folder and Save As have Cancel, not OK: answer
+  Cancel (`action="button", button="Cancel"`); OK on a dialog with no OK button fails and leaves the
+  main thread blocked. `run_command` with `context_menu` opens a popup menu that blocks the same way.
+- **They install packages:** `install_package` installs only the package, not the libraries it depends on,
+  and a package loads the moment it is installed, so a package that needs libraries (MarkdownGlance needs
+  Markdown and pymdown-extensions) opens a "needs the Package Control libraries" dialog. To avoid it: add
+  the package to `ignored_packages`, `install_package`, run `satisfy_libraries`, remove it from
+  `ignored_packages`.
+- **A tool called with empty arguments** answers `{"error": "<name> required"}`: validation, not a failure.
+- `ui_click`, `ui_hover` and `ui_press_key` refuse while the person at the keyboard has used the mouse or
+  keyboard in the last 8 seconds; pass `wait_idle_s` (up to 120) instead of retrying.
+
 ## When a native dialog blocks Sublime (Windows)
 
 If a tool call fails with "main-thread timeout after 5s", or a command just
