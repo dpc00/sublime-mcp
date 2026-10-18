@@ -342,7 +342,7 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
 - **They open a web page:** `html_print` (Sublime's print: the active tab as HTML in the browser, with the
   print prompt), `open_in_browser`, `open_context_url`, `open_url`, `get_help`, `show_changelog`,
   `purchase_license`, `upgrade_license`, `show_license_window`. `remove_license` removes the licence.
-- **They quit Sublime:** `exit`, `hot_exit`; `close_window` and `close_all` do too when it is the last window.
+- **They quit Sublime:** `exit` and `hot_exit` (hot exit keeps unsaved buffers for the next start). `close_window` and `close_all` leave Sublime running with an empty window.
 - **They change settings or create files:** `increase_font_size`, `decrease_font_size` (adds `font_size`),
   `ignore_word`, `add_word` (add `ignored_words`, `added_words`), `set_setting`, `open_file_settings`
   (creates an empty settings file in `User` and makes it the active tab, which the browser tools above then use).
