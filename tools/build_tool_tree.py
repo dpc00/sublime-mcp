@@ -32,7 +32,7 @@ DESCRIPTIONS = {
     "selection/marks_and_history": "Mark, kill ring, jump back and forward",
     "search": "Find, replace and go to symbols",
     "search/find_in_file": "Find and replace inside the current file",
-    "search/find_in_files": "Find and replace across files and folders",
+    "search/find_in_files": "Find in Folder and the Find in Files panel's options",
     "search/symbols": "Symbols, definitions and references",
     "search/bookmarks": "Bookmarks",
     "read": "Read state from the editor without changing it",

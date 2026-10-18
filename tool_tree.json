@@ -435,7 +435,7 @@
     ]
    },
    "find_in_files": {
-    "description": "Find and replace across files and folders",
+    "description": "Find in Folder and the Find in Files panel's options",
     "tools": [
      "find_in_folder",
      "toggle_use_buffer",
