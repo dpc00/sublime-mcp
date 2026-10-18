@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+Every tool now passes Sublime's own command and arguments through unchanged: no second names for a real command, no arguments chosen inside the plugin, no tool that does nothing. That leaves 381 tools (was 411). This is a breaking change for anyone who called a removed name; before 1.14.4 most of them did nothing.
+
+- **Removed, because Sublime has no such command** (checked in Sublime's own packages and by running on build 4215): `shrink_selection` (it ran `single_selection`, which has its own tool), `split_line` (it ran `insert` with a newline; use `insert`), `tab` (an internal base class; it had been pointed at `indent`), `auto_complete_prev` (with the popup open it did nothing; move through the popup with `move`), and `syntax_definition_compatability` and `syntax_definition_compatibility` (no effect, no menu entry).
+- **Removed, second names for a real command that has its own tool:** `move_line_up`, `move_line_down` (`swap_line_up`, `swap_line_down`), `auto_indent` (`reindent`), `reopen_closed_file` (`reopen_last_file`), `next_pane`, `prev_pane` (`focus_neighboring_group`), `move_view` (`move_to_group`), `expand_selection_to_indentation`, `_to_scope`, `_to_brackets` (`expand_selection` with `to`), `set_indent_tabs`, `set_indent_spaces` (`set_setting`), `close_others`, `close_other_tabs` (`close_others_by_index`), `new_view` (`new_file`), `transpose_chars` (`transpose`), `toggle_case` (`swap_case`), `trim_whitespace`, `trim_whitespaces` (`trim_trailing_white_space`), `add_missing_newline` (`ensure_newline_at_eof`), `play_macro` (`run_macro`).
+- **Removed, bundles of several commands in an order the plugin chose:** `find_in_files`, `replace_in_files`, `find_and_replace`. Use `run_command` with Sublime's `show_panel` (`{"panel": "find_in_files", "pattern": ..., "replace_pattern": ..., "where": ...}`, or `"panel": "replace"` for one file) and then `replace_all`; `AGENT_GUIDE.md` has the details. `project_search` is unchanged.
+- **Replaced:** `quick_panel` is now `show_overlay` (`overlay` is `goto` or `command_palette`, with `show_files` and `text`), so the overlay is chosen by the caller.
+- **Now plain pass-throughs:** `fold_unfold` runs Sublime's own toggle (1.14.4 had replaced it with plugin logic); `edit_settings` takes `base_file`, `user_file` and `default` and no longer builds paths or default text; `close_unmodified` takes `group` and `index` like `close_others_by_index`; `add_to_kill_ring` requires `forward`; `focus_neighboring_group` takes `forward`; `expand_selection` requires `to` (`smart`, `line`, `line_prev`, `scope`, `brackets`, `tag`, `indentation`). The `_vc` and `_wc` helpers no longer add default arguments.
+- Checked by running and kept: `append`, `fold_all`, `open_project_or_workspace`.
+
 ## 1.14.5
 
 - `open_recent_file` takes an `index` (0 is the most recent file). Without it the command opens nothing; the argument was missing from the tool.
