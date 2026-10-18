@@ -7645,10 +7645,50 @@ def _stop_servers():
     print("sublime-mcp: stopped")
 
 
+def _show_freeze_log(window=None, only_if_new=False):
+    """Open the freeze log in a tab. only_if_new: do nothing unless it grew since it was last shown."""
+    path = _freeze_log_path()
+    marker = path + ".seen"
+    try:
+        size = os.path.getsize(path)
+    except OSError:
+        if not only_if_new:
+            sublime.status_message("MCP Commander: no freeze has been recorded")
+        return
+    if only_if_new:
+        try:
+            with open(marker, encoding="utf-8") as f:
+                if size <= int(f.read().strip() or 0):
+                    return
+        except (OSError, ValueError):
+            pass
+    window = window or sublime.active_window()
+    if window is None:
+        return
+    view = window.open_file(path)
+    sublime.set_timeout(lambda: view.is_valid() and view.run_command("move_to", {"to": "eof"}), 300)
+    try:
+        with open(marker, "w", encoding="utf-8") as f:
+            f.write(str(size))
+    except OSError:
+        pass
+    if only_if_new:
+        sublime.status_message("MCP Commander: Sublime froze earlier; the details are in this tab")
+
+
+class McpShowFreezeLogCommand(sublime_plugin.WindowCommand):
+    """MCP Commander: Show Freeze Log. What the main thread was doing when Sublime last stopped answering."""
+
+    def run(self):
+        _show_freeze_log(self.window)
+
+
 def plugin_loaded():
     _install_quick_panel_recorder()
     _start_servers()
     _start_heartbeat()
+    # A freeze recorded by the watchdog shows itself the next time Sublime starts; nobody has to remember it.
+    sublime.set_timeout(lambda: _show_freeze_log(only_if_new=True), 3000)
 
 
 def plugin_unloaded():

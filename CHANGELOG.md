@@ -4,7 +4,7 @@
 
 Fixes a slowdown in long sessions. The 200 ms heartbeat was never stopped, and a package reload reset its guard, so each reload left the old timer chain running and started another. `plugin_unloaded` now stops the heartbeat, and starting it stops any earlier chain.
 
-A freeze watchdog records what Sublime's main thread was doing whenever it stops answering for 3 seconds. A background thread watches the heartbeat and appends the main-thread stack, the in-flight tool call and the open native windows to `sublime-mcp-freeze.log` in Sublime's Cache folder (`%LOCALAPPDATA%\Sublime Text\Cache`), then notes how long the stall lasted. Nothing has to be called while Sublime is frozen; read the file afterwards. Tried with a 6 s stall.
+A freeze watchdog records what Sublime's main thread was doing whenever it stops answering for 3 seconds. A background thread watches the heartbeat and appends the main-thread stack, the in-flight tool call and the open native windows to `sublime-mcp-freeze.log` in Sublime's Cache folder (`%LOCALAPPDATA%\Sublime Text\Cache`), then notes how long the stall lasted. Nothing has to be called while Sublime is frozen; read the file afterwards. The log opens in a tab by itself the next time Sublime starts after a freeze, and the command palette has `MCP Commander: Show Freeze Log`. Tried with a 6 s stall and a reload.
 
 ## 1.13.8
 
