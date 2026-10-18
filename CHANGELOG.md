@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.14.0
 
 Fixes a slowdown in long sessions. The 200 ms heartbeat was never stopped, and a package reload reset its guard, so each reload left the old timer chain running and started another. `plugin_unloaded` now stops the heartbeat, and starting it stops any earlier chain.
 
