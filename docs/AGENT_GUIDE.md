@@ -298,6 +298,16 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
 - **`exit`** replies first and closes Sublime 300 ms later, so the call returns `ok` and the
   connection then drops (restart, then reconnect the server).
 
+## After a freeze: the freeze log
+
+When Sublime's main thread stops answering for 3 seconds, a watchdog thread inside the plugin writes
+what it was doing to `sublime-mcp-freeze.log` in Sublime's Cache folder (on Windows
+`%LOCALAPPDATA%\Sublime Text\Cache`): the main-thread stack, the sublime-mcp tool call in flight and the
+native windows that were open, then how long the stall lasted. It needs no tool call, so it works when
+Sublime is too frozen to answer one. After a restart the log opens in a tab by itself; the Command
+Palette has `MCP Commander: Show Freeze Log`. When the user reports that Sublime or an agent froze or
+hung, read that file first.
+
 ## When a native dialog blocks Sublime (Windows)
 
 If a tool call fails with "main-thread timeout after 5s", or a command just
