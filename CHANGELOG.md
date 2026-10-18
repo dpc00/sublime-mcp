@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.3
+
+The code is the 1.13.8 code again. The heartbeat change from 1.14.0 (stopping the diagnostics timer on reload) is reverted, so nothing in sublime_mcp.py differs from 1.13.8 except the version number.
+
 ## 1.14.2
 
 Pure pass-through again: sublime-mcp adds nothing around Sublime's commands. 1.14.0 and 1.14.1 added a freeze watchdog (a background thread that wrote Sublime's main-thread stack to `sublime-mcp-freeze.log`, opened that log in a tab at the next start, and added the `MCP Commander: Show Freeze Log` command); it is removed, with its README and guide text. How an agent handles dialogs, the Update window and freezes is now the `sublime-dialogs` skill (`skills/sublime-dialogs/SKILL.md`), not code. The heartbeat fix from 1.14.0 stays: the 200 ms heartbeat was never stopped, and a package reload reset its guard, so each reload left the old timer chain running and started another (a slowdown in long sessions); `plugin_unloaded` now stops it and starting it stops any earlier chain. 1.14.0 and 1.14.1 also changed the line endings of every file they touched to CRLF; 1.14.2 restores LF.
