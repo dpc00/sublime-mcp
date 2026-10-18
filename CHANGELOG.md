@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.14.5
+
+- `open_recent_file` takes an `index` (0 is the most recent file). Without it the command opens nothing; the argument was missing from the tool.
+- `AGENT_GUIDE.md`: the tools with side effects now list the dialogs, Sublime windows, pickers and prerequisites found by running every generated tool and checking its effect (build 4215): `close_folder_list`, `delete_file` and `delete_folder` prompts, `remove_license`, the `sublime_merge_*` dialog, `save_macro`, the Changelog, Update, About and Indexing windows, the build variant picker, and the tools that need state set first. `close_window` and `close_all` do not quit Sublime; `exit` and `hot_exit` do.
+- Guides and skills no longer name other authors' packages.
+
 ## 1.14.4
 
 Bugs found by testing the tools with real arguments and checking their effects (build 4215):
