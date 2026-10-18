@@ -4911,6 +4911,15 @@ def _search_packages(body):
     return {"packages": results[:limit], "total_matches": len(results)}
 
 
+def _reload_package_plugins(package):
+    """Reload a package's top-level plugin modules (main thread), as Sublime does when a file changes."""
+    for name in sorted(n for n in list(sys.modules) if n.split(".")[0] == package and n.count(".") == 1):
+        try:
+            sublime_plugin.reload_plugin(name)
+        except Exception as e:
+            print("sublime-mcp: reloading {} failed: {}".format(name, e))
+
+
 def _install_package(body):
     package = body.get("package", "").strip()
     if not package:
@@ -4949,6 +4958,18 @@ def _install_package(body):
                 sublime.set_timeout(
                     lambda: sublime.save_settings("Package Control.sublime-settings"), 0
                 )
+                # install_package does not fetch the libraries the package depends on (Package
+                # Control's own Install Package command and "Satisfy Libraries" do), so a package
+                # such as MarkdownGlance loaded, found Markdown missing and opened a dialog.
+                required = pm.find_required_libraries()
+                missing = pm.find_missing_libraries(required_libraries=required)
+                if missing:
+                    if not pm.install_libraries(libraries=required, fail_early=False):
+                        print("sublime-mcp: install_package '{}': a required library did not install; "
+                              "see the console".format(package))
+                    else:
+                        # The package already ran once without them; run it again now they exist.
+                        sublime.set_timeout(lambda: _reload_package_plugins(package), 0)
         except Exception as e:
             print("sublime-mcp: install_package '{}' error: {}".format(package, e))
 

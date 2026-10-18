@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+`install_package` now installs the libraries the package needs. Before, it installed only the package, so a package such as MarkdownGlance (which needs Markdown and pymdown-extensions) loaded, found them missing and opened a native dialog, twice. After installing, the tool finds the missing libraries, installs them (as Package Control's Satisfy Libraries does) and reloads the package's plugin modules, so it works without a restart. Tried by installing MarkdownGlance 0.6.0 from scratch: both libraries installed, no dialog, and the side-by-side preview of a changelog rendered.
+
 ## 1.14.1
 
 Documentation only. The README and both `AGENT_GUIDE.md` copies now describe the freeze log (`sublime-mcp-freeze.log` in Sublime's Cache folder, opened in a tab at the next start, and `MCP Commander: Show Freeze Log`) that 1.14.0 added; 1.14.0 was released without that text.
