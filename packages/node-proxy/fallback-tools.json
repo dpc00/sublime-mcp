@@ -4088,14 +4088,6 @@
       }
     },
     {
-      "name": "shrink_selection",
-      "description": "Shrink a multi-cursor selection back to a single cursor (reverse of expand_selection).",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
       "name": "single_selection",
       "description": "Collapse multiple selections/cursors down to a single selection (Escape equivalent).",
       "inputSchema": {

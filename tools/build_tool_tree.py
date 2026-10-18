@@ -113,7 +113,7 @@ put("editing/snippets_macros_fields", "insert_snippet expand_snippet next_field 
     "hide_auto_complete replace_completion_with_auto_complete")
 put("editing/delete", "left_delete right_delete delete_word delete_to_mark")
 put("selection/select", "get_selection select_all expand_selection expand_selection_to_paragraph "
-    "expand_selection_to_indentation expand_selection_to_scope expand_selection_to_brackets shrink_selection "
+    "expand_selection_to_indentation expand_selection_to_scope expand_selection_to_brackets "
     "split_selection_into_lines single_selection invert_selection select_lines unselect_others unselect_to_left "
     "unselect_to_right select_to_left select_to_right old_expand_selection_to_paragraph drag_select "
     "find_all_under select_all_bookmarks select_bookmark")

@@ -514,7 +514,6 @@
      "select_lines",
      "select_to_left",
      "select_to_right",
-     "shrink_selection",
      "single_selection",
      "split_selection_into_lines",
      "unselect_others",

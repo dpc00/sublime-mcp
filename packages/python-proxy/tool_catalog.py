@@ -2251,10 +2251,6 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Print the syntax scope at the cursor to the ST console (TextCommand). '
                        'Useful for debugging syntax-highlighting or writing snippet scopes.',
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'shrink_selection',
-        'description': 'Shrink a multi-cursor selection back to a single cursor (reverse of '
-                       'expand_selection).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'single_selection',
         'description': 'Collapse multiple selections/cursors down to a single selection (Escape '
                        'equivalent).',
