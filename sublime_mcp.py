@@ -77,7 +77,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.14.1"
+__version__ = "1.14.2"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -129,58 +129,7 @@ def _heartbeat_tick(token):
         return
     _heartbeat_state["count"] += 1
     _heartbeat_state["last_ts"] = time.time()
-    # The thread that runs Sublime's callbacks. On the Python 3.8 host it is not threading.main_thread().
-    _heartbeat_state["ui_thread"] = threading.get_ident()
     sublime.set_timeout(lambda: _heartbeat_tick(token), _HEARTBEAT_INTERVAL_MS)
-
-
-_FREEZE_THRESHOLD_SECONDS = 3.0
-_FREEZE_LOG_MAX_BYTES = 256 * 1024
-
-
-def _freeze_log_path():
-    return os.path.join(sublime.cache_path(), "sublime-mcp-freeze.log")
-
-
-def _freeze_log_write(path, text):
-    try:
-        if os.path.getsize(path) > _FREEZE_LOG_MAX_BYTES:
-            os.replace(path, path + ".old")
-    except OSError:
-        pass
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(text)
-
-
-def _freeze_watchdog(token, path):
-    """Background thread: when the heartbeat stops for _FREEZE_THRESHOLD_SECONDS, the main thread is stuck.
-    Write what it is doing to a file, once per stall, and how long the stall lasted when it ends. Nobody
-    has to be able to call a tool while Sublime is frozen; read the file afterwards."""
-    stalled_since = None
-    while token["alive"]:
-        time.sleep(0.5)
-        last = _heartbeat_state["last_ts"]
-        if not last:
-            continue
-        age = time.time() - last
-        try:
-            if age >= _FREEZE_THRESHOLD_SECONDS and stalled_since is None:
-                stalled_since = last
-                in_flight = dict(_in_flight_dispatch)
-                try:
-                    windows = native_windows.list_windows(_sublime_process_id()) if native_windows.SUPPORTED else None
-                except Exception as e:
-                    windows = "listing failed: {}".format(e)
-                _freeze_log_write(path, "\n=== main thread stalled {} (no heartbeat for {:.1f}s) ===\n"
-                                        "in-flight sublime-mcp dispatch: {}\nnative windows: {}\n"
-                                        "main thread stack:\n{}\n".format(
-                                            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(last)), age,
-                                            in_flight, windows, _main_thread_stack()))
-            elif stalled_since is not None and last > stalled_since:
-                _freeze_log_write(path, "--- main thread recovered after {:.1f}s ---\n".format(last - stalled_since))
-                stalled_since = None
-        except Exception:
-            pass
 
 
 def _start_heartbeat():
@@ -190,8 +139,6 @@ def _start_heartbeat():
     token = {"alive": True}
     _heartbeat_state["token"] = token
     _heartbeat_tick(token)
-    threading.Thread(target=_freeze_watchdog, args=(token, _freeze_log_path()), daemon=True,
-                     name="sublime-mcp-freeze-watchdog").start()
 
 
 def _stop_heartbeat():
@@ -210,7 +157,7 @@ def _main_thread_stack(limit=None):
     therefore does not need the main thread's cooperation) to answer "what
     is it doing right now".
     """
-    frame = sys._current_frames().get(_heartbeat_state.get("ui_thread") or threading.main_thread().ident)
+    frame = sys._current_frames().get(threading.main_thread().ident)
     if frame is None:
         return "main thread frame unavailable (main_thread ident={})".format(
             threading.main_thread().ident
@@ -7647,50 +7594,10 @@ def _stop_servers():
     print("sublime-mcp: stopped")
 
 
-def _show_freeze_log(window=None, only_if_new=False):
-    """Open the freeze log in a tab. only_if_new: do nothing unless it grew since it was last shown."""
-    path = _freeze_log_path()
-    marker = path + ".seen"
-    try:
-        size = os.path.getsize(path)
-    except OSError:
-        if not only_if_new:
-            sublime.status_message("MCP Commander: no freeze has been recorded")
-        return
-    if only_if_new:
-        try:
-            with open(marker, encoding="utf-8") as f:
-                if size <= int(f.read().strip() or 0):
-                    return
-        except (OSError, ValueError):
-            pass
-    window = window or sublime.active_window()
-    if window is None:
-        return
-    view = window.open_file(path)
-    sublime.set_timeout(lambda: view.is_valid() and view.run_command("move_to", {"to": "eof"}), 300)
-    try:
-        with open(marker, "w", encoding="utf-8") as f:
-            f.write(str(size))
-    except OSError:
-        pass
-    if only_if_new:
-        sublime.status_message("MCP Commander: Sublime froze earlier; the details are in this tab")
-
-
-class McpShowFreezeLogCommand(sublime_plugin.WindowCommand):
-    """MCP Commander: Show Freeze Log. What the main thread was doing when Sublime last stopped answering."""
-
-    def run(self):
-        _show_freeze_log(self.window)
-
-
 def plugin_loaded():
     _install_quick_panel_recorder()
     _start_servers()
     _start_heartbeat()
-    # A freeze recorded by the watchdog shows itself the next time Sublime starts; nobody has to remember it.
-    sublime.set_timeout(lambda: _show_freeze_log(only_if_new=True), 3000)
 
 
 def plugin_unloaded():

@@ -1,18 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.14.2
 
-The freeze watchdog and `get_main_thread_stack` now find Sublime's UI thread on the Python 3.8 host (builds before 4205), where it is not Python's main thread; before, the stack was reported as unavailable there.
+Pure pass-through again: sublime-mcp adds nothing around Sublime's commands. 1.14.0 and 1.14.1 added a freeze watchdog (a background thread that wrote Sublime's main-thread stack to `sublime-mcp-freeze.log`, opened that log in a tab at the next start, and added the `MCP Commander: Show Freeze Log` command); it is removed, with its README and guide text. How an agent handles dialogs, the Update window and freezes is now the `sublime-dialogs` skill (`skills/sublime-dialogs/SKILL.md`), not code. The heartbeat fix from 1.14.0 stays: the 200 ms heartbeat was never stopped, and a package reload reset its guard, so each reload left the old timer chain running and started another (a slowdown in long sessions); `plugin_unloaded` now stops it and starting it stops any earlier chain. 1.14.0 and 1.14.1 also changed the line endings of every file they touched to CRLF; 1.14.2 restores LF.
 
 ## 1.14.1
 
-Documentation only. The README and both `AGENT_GUIDE.md` copies now describe the freeze log (`sublime-mcp-freeze.log` in Sublime's Cache folder, opened in a tab at the next start, and `MCP Commander: Show Freeze Log`) that 1.14.0 added; 1.14.0 was released without that text.
+Documentation only: the README and both `AGENT_GUIDE.md` copies described the freeze log that 1.14.0 added (removed again in 1.14.2).
 
 ## 1.14.0
 
-Fixes a slowdown in long sessions. The 200 ms heartbeat was never stopped, and a package reload reset its guard, so each reload left the old timer chain running and started another. `plugin_unloaded` now stops the heartbeat, and starting it stops any earlier chain.
-
-A freeze watchdog records what Sublime's main thread was doing whenever it stops answering for 3 seconds. A background thread watches the heartbeat and appends the main-thread stack, the in-flight tool call and the open native windows to `sublime-mcp-freeze.log` in Sublime's Cache folder (`%LOCALAPPDATA%\Sublime Text\Cache`), then notes how long the stall lasted. Nothing has to be called while Sublime is frozen; read the file afterwards. The log opens in a tab by itself the next time Sublime starts after a freeze, and the command palette has `MCP Commander: Show Freeze Log`. Tried with a 6 s stall and a reload.
+The heartbeat fix described under 1.14.2, and the freeze watchdog and freeze log (removed in 1.14.2).
 
 ## 1.13.8
 

@@ -198,10 +198,6 @@ The MCP server starts automatically when ST loads the plugin. To stop or
 restart it, run "MCP Commander: Server Status" from the Command
 Palette. Check View > Show Console for startup confirmation.
 
-If Sublime freezes, a watchdog records what its main thread was doing (the stack, the tool call in
-flight, the open native windows) in `sublime-mcp-freeze.log` in Sublime's Cache folder. The log opens
-in a tab the next time Sublime starts, and `MCP Commander: Show Freeze Log` opens it on demand.
-
 ## Agent skill
 
 Two skills ship with sublime-mcp: `skills/sublime-mcp` (how an agent uses the

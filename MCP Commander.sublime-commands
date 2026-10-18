@@ -8,10 +8,6 @@
         "command": "mcp_connection_doctor"
     },
     {
-        "caption": "MCP Commander: Show Freeze Log",
-        "command": "mcp_show_freeze_log"
-    },
-    {
         "caption": "Preferences: MCP Commander Settings",
         "command": "edit_settings",
         "args": {
