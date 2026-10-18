@@ -155,6 +155,7 @@ def _freeze_watchdog(token, path):
     Write what it is doing to a file, once per stall, and how long the stall lasted when it ends. Nobody
     has to be able to call a tool while Sublime is frozen; read the file afterwards."""
     stalled_since = None
+    seen_dialogs = set()
     while token["alive"]:
         time.sleep(0.5)
         last = _heartbeat_state["last_ts"]
@@ -177,6 +178,18 @@ def _freeze_watchdog(token, path):
             elif stalled_since is not None and last > stalled_since:
                 _freeze_log_write(path, "--- main thread recovered after {:.1f}s ---\n".format(last - stalled_since))
                 stalled_since = None
+        except Exception:
+            pass
+        # Keep the text of every dialog that opens: a person dismisses it, and the text says what was wrong.
+        try:
+            current = {}
+            for d in _open_dialogs_notice():
+                current[(d["title"], d["message"])] = d
+            for key, d in current.items():
+                if key not in seen_dialogs:
+                    _freeze_log_write(path, "\n=== native {} opened {} ===\n{}\n{}\nbuttons: {}\n".format(
+                        d["kind"], time.strftime("%Y-%m-%d %H:%M:%S"), d["title"], d["message"], d["buttons"]))
+            seen_dialogs = set(current)
         except Exception:
             pass
 
@@ -246,10 +259,13 @@ def _timeout_message(label, windows):
                 "answers it.")
     blocking = [w for w in windows if w.get("kind") in _BLOCKING_WINDOW_KINDS]
     if blocking:
-        names = ", ".join('"{}" ({})'.format(w.get("title") or w.get("class") or "untitled", w.get("kind"))
+        names = ", ".join('"{}" ({}){}'.format(
+            w.get("title") or w.get("class") or "untitled", w.get("kind"),
+            ': "{}"'.format(" ".join(w.get("messages") or [])) if w.get("messages") else "")
                           for w in blocking)
         return (head + " A native window blocks Sublime's main thread until it is dismissed: " + names +
-                ". list_native_windows shows it and dismiss_native_window answers it; both work while "
+                ". Read its text: it may say what is wrong. Do not dismiss it without the person's say-so. "
+                "list_native_windows shows it and dismiss_native_window answers it; both work while "
                 "Sublime is blocked.")
     return (head + " No native dialog or menu is open, so the main thread is busy, not blocked by a "
             "dialog (for example a package is loading or installing). It was running {}. Call again in "
@@ -4510,6 +4526,45 @@ def _with_arg_warning(result, schema, args):
     return result
 
 
+_DIALOG_NOTICE_SKIP = ("list_native_windows", "dismiss_native_window")
+
+
+def _open_dialogs_notice():
+    """The native dialogs and menus Sublime has open right now, or [] (Windows only; reads Win32 from
+    the calling thread, so it works while the main thread is blocked behind a dialog)."""
+    if not native_windows.SUPPORTED:
+        return []
+    try:
+        windows = native_windows.list_windows(_sublime_process_id())
+    except Exception:
+        return []
+    return [{"kind": w.get("kind"), "title": w.get("title"),
+             "message": "\n".join(w.get("messages") or []),
+             "buttons": [b.get("text") for b in w.get("buttons") or []]}
+            for w in windows if w.get("kind") in ("dialog", "menu")]
+
+
+def _with_dialog_notice(result, tool_name):
+    """Put every open native dialog into the tool result, so the caller sees what Sublime is complaining
+    about without having to remember to look. The dialog stays open: it is the person's to dismiss, and
+    its text is the evidence."""
+    if tool_name in _DIALOG_NOTICE_SKIP:
+        return result
+    dialogs = _open_dialogs_notice()
+    if not dialogs:
+        return result
+    note = ("A native dialog or menu is open in Sublime and was left open. Read it: it may explain a "
+            "problem. Do not dismiss it without the person's say-so; dismiss_native_window answers it.")
+    if isinstance(result, dict):
+        result = dict(result)
+        result["native_dialogs_open"] = dialogs
+        result["native_dialogs_note"] = note
+    elif isinstance(result, list):
+        result = list(result) + [{"type": "text", "text": json.dumps(
+            {"native_dialogs_open": dialogs, "native_dialogs_note": note})}]
+    return result
+
+
 _BATCH_MAX_CALLS = 50
 _PROJECT_SEARCH_TIMEOUT_SECONDS = 120.0
 _project_search_lock = threading.Lock()
@@ -7602,7 +7657,8 @@ def _mcp_dispatch(msg):
                 entry = next((t for t in _MCP_TOOLS if t[0] == tool_name), None)
             if entry is None:
                 raise ValueError("Unknown tool: " + str(tool_name))
-            data = _with_arg_warning(entry[3](tool_args), entry[2], tool_args)
+            data = _with_dialog_notice(
+                _with_arg_warning(entry[3](tool_args), entry[2], tool_args), tool_name)
             if isinstance(data, list):
                 result = {"content": data}
             else:

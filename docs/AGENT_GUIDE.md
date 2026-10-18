@@ -308,6 +308,15 @@ Sublime is too frozen to answer one. After a restart the log opens in a tab by i
 Palette has `MCP Commander: Show Freeze Log`. When the user reports that Sublime or an agent froze or
 hung, read that file first.
 
+## Open dialogs are reported in every tool result
+
+When Sublime has a native dialog or menu open, every tool result (MCP `tools/call`) carries
+`native_dialogs_open` (kind, title, the dialog's text, its buttons) and a note. A "main-thread timeout"
+error quotes the dialog's text. Read it: it often says what is wrong (a package that cannot find a
+library, a save prompt). The dialog is left open; do not dismiss it without the person's say-so, because
+once it is gone so is the message. The watchdog also appends every dialog's text to
+`sublime-mcp-freeze.log` when it opens.
+
 ## When a native dialog blocks Sublime (Windows)
 
 If a tool call fails with "main-thread timeout after 5s", or a command just
