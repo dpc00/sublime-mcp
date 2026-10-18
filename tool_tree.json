@@ -414,7 +414,6 @@
     "tools": [
      "cancel_find",
      "find_all",
-     "find_and_replace",
      "find_in_file",
      "find_next",
      "find_prev",
@@ -438,9 +437,7 @@
    "find_in_files": {
     "description": "Find and replace across files and folders",
     "tools": [
-     "find_in_files",
      "find_in_folder",
-     "replace_in_files",
      "toggle_use_buffer",
      "toggle_use_gitignore"
     ]

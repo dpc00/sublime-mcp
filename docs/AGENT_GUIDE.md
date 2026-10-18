@@ -6,7 +6,7 @@ Canonical copy for repo readers. `get_help` serves
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.
 
-Eight workflow tools are shown by default; the complete typed catalog (387
+Eight workflow tools are shown by default; the complete typed catalog (384
 tools) remains available through `discover_tools` and `batch`. Prefer a named capability over
 `run_command`, which often opens UI that steals focus from the agent chat.
 
@@ -322,7 +322,7 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
   dialog and `dismiss_native_window` closes it. Open, Select Folder and Save As have Cancel, not OK: answer
   Cancel (`action="button", button="Cancel"`); OK on a dialog with no OK button fails and leaves the
   main thread blocked. `run_command` with `context_menu` opens a popup menu that blocks the same way.
-- **`replace_in_files` asks "Confirm Replace":** answer it with `dismiss_native_window` (`action="button"`, `button="Replace"` or `"Cancel"`). On Replace, the changes are made in the matching files' open buffers (the files open with unsaved changes); write them with `save_all`.
+- **Find and replace in files:** there is no tool for it; use `run_command` with Sublime's own commands. First `show_panel` with `{"panel": "find_in_files", "pattern": ..., "replace_pattern": ..., "where": ..., "regex": false, "case_sensitive": false, "whole_word": false, "preserve_case": false}` (the Replace box is filled by `replace_pattern`), then `replace_all`. Sublime asks "Confirm Replace": answer it with `dismiss_native_window` (`action="button"`, `button="Replace"` or `"Cancel"`). On Replace, the changes are made in the matching files' open buffers (the files open with unsaved changes); write them with `save_all`. For one file use `{"panel": "replace", ...}` with the same arguments and then `replace_all`. To search without the panel use `project_search`.
 - **Tools that depend on state you must set first:** `focus_by_index` needs several tabs selected;
   `move_to_group` needs the target group to exist and the layout to have settled; `toggle_overwrite` changes how
   typed keys (`ui_type_text`) land, not `insert`; `toggle_save_all_on_build` decides whether `build` saves

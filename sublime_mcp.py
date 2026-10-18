@@ -2388,163 +2388,6 @@ def _open_folder(body):
     return _on_main(fn)
 
 
-def _find_in_files(body):
-    """Open ST's native Find in Files panel (Ctrl+Shift+H equivalent) and run a search.
-
-    Routes through ST's real C++ find engine — NOT a Python re-implementation.
-    The three-box Find / Replace / Where panel is shown so the user can see
-    exactly what is being searched. Honors the full ST "Where" syntax:
-
-      - Plain globs:        "*.py, *.sublime-settings"
-      - Exclusion globs:    "-*.md, -*.min.js"
-      - Folder paths:        "C:\\Users\\donal\\projects\\SText\\ai"
-      - ${project}           all project folders
-      - ${folder:Name}      a project folder whose name contains 'Name'
-      - ${open_files}       only currently-open files
-      - <project filters>   the project's include/exclude settings
-      - Combinations:       "C:\\path\\to\\dir, *.py, -test_*.py"
-
-    Body params:
-      pattern          str  — search string (or regex if regex=True)
-      replace          str  — optional. If given, the Replace box is populated
-                             (does not auto-execute; use replace_in_files for that)
-      where            str  — "Where" filter, see syntax above. Empty = all
-                             project folders.
-      case_sensitive   bool — default False
-      regex            bool — treat pattern as regex, default False (literal)
-      whole_word       bool — default False
-      preserve_case    bool — default False (only meaningful for replace)
-      in_selection     bool — ignored for find_in_files (panel-level only)
-      show_panel       bool — default True. If False, search runs but the panel
-                             is not shown (background mode).
-    """
-    pattern = body.get("pattern", "")
-    if not pattern:
-        return {"error": "pattern required"}
-    args = {
-        "panel": "find_in_files",
-        "pattern": pattern,
-        "where": body.get("where", ""),
-        "case_sensitive": bool(body.get("case_sensitive", False)),
-        "regex": bool(body.get("regex", False)),
-        "whole_word": bool(body.get("whole_word", False)),
-    }
-    if body.get("replace", ""):
-        args["replace_pattern"] = body["replace"]
-        args["preserve_case"] = bool(body.get("preserve_case", False))
-    show = bool(body.get("show_panel", True))
-    if not show:
-        return _project_search(body)
-    def fn():
-        w = sublime.active_window()
-        w.run_command("show_panel", args)
-        return {"ok": True, "panel_open": show, "pattern": pattern,
-                "where": args["where"], "case_sensitive": args["case_sensitive"],
-                "regex": args["regex"], "whole_word": args["whole_word"]}
-    return _on_main(fn)
-
-
-def _replace_in_files(body):
-    """Run the Replace half of Find in Files (Ctrl+Shift+H → Replace All).
-
-    Executes ST's native replace_in_files command and shows the diff preview
-    panel so the user can review every replacement before it is committed.
-    Same `where` syntax as _find_in_files.
-
-    Body params: pattern, replace (required), where, case_sensitive, regex,
-                 whole_word, preserve_case, show_panel (default True).
-    """
-    pattern = body.get("pattern", "")
-    replace = body.get("replace", "")
-    if not pattern:
-        return {"error": "pattern required"}
-    if replace == "":
-        # Allow replace to be empty string (deletion), but require the key
-        if "replace" not in body:
-            return {"error": "replace required (use empty string for deletion)"}
-    args = {
-        "panel": "find_in_files",
-        "pattern": pattern,
-        "replace_pattern": replace,
-        "where": body.get("where", ""),
-        "case_sensitive": bool(body.get("case_sensitive", False)),
-        "regex": bool(body.get("regex", False)),
-        "whole_word": bool(body.get("whole_word", False)),
-        "preserve_case": bool(body.get("preserve_case", False)),
-    }
-    show = bool(body.get("show_panel", True))
-    def fn():
-        w = sublime.active_window()
-        w.run_command("show_panel", args)
-        w.run_command("replace_all")    # the panel's Replace button; Sublime asks "Confirm Replace"
-        return {"ok": True, "panel_open": show, "pattern": pattern,
-                "replace": replace, "where": args["where"]}
-    return _on_main(fn)
-
-
-def _find_and_replace(body):
-    """Open the single-file Find & Replace panel (Ctrl+H equivalent) on the
-    active view and run the requested operation.
-
-    Body params:
-      pattern          str  — search string (or regex if regex=True)
-      replace          str  — replacement string. $1, $2 backrefs supported in
-                             regex mode.
-      case_sensitive   bool — default False
-      regex            bool — default False (literal)
-      whole_word       bool — default False
-      preserve_case    bool — default False
-      in_selection     bool — restrict to current selection, default False
-      wrap             bool — wrap at end of file, default True
-      show_panel       bool — default True. If False, run replace_all silently.
-      replace_all      bool — default False. If True, perform Replace All on
-                             the active view without opening the panel.
-    """
-    pattern = body.get("pattern", "")
-    if not pattern:
-        return {"error": "pattern required"}
-    args = {
-        "panel": "replace",
-        "pattern": pattern,
-        # The Replace box of the Find panel is filled by "replace_pattern"; a "replace" argument is ignored.
-        "replace_pattern": body.get("replace", ""),
-        "case_sensitive": bool(body.get("case_sensitive", False)),
-        "regex": bool(body.get("regex", False)),
-        "whole_word": bool(body.get("whole_word", False)),
-        "preserve_case": bool(body.get("preserve_case", False)),
-    }
-    if body.get("in_selection"):
-        args["in_selection"] = True
-    if "wrap" in body:
-        args["wrap"] = bool(body["wrap"])
-    replace_all = bool(body.get("replace_all", False))
-    show = bool(body.get("show_panel", True))
-    def fn():
-        v = _active_view()
-        if not v:
-            return {"error": "no active view"}
-        w = v.window() or sublime.active_window()
-        if replace_all:
-            # replace_all takes no arguments: it uses the Find panel's current Find and Replace boxes.
-            # Fill them first (the panel is opened, then closed again), or it replaces whatever an
-            # earlier search left there.
-            w.run_command("show_panel", args)
-            v.run_command("replace_all")
-            w.run_command("hide_panel")
-            return {"ok": True, "replace_all": True, "pattern": pattern}
-        if show:
-            w.run_command("show_panel", args)
-            return {"ok": True, "panel_open": True, "pattern": pattern}
-        # Silent single replace: fill the panel's boxes, select the next match, replace it, close the panel
-        # (replace_next alone only selects the match the first time).
-        w.run_command("show_panel", args)
-        v.run_command("find_next")
-        v.run_command("replace_next")
-        w.run_command("hide_panel")
-        return {"ok": True, "panel_open": False, "pattern": pattern}
-    return _on_main(fn)
-
-
 def _next_result(body):
     """Jump to the next find-in-files / build result. Visible in the view."""
     def fn():
@@ -2873,8 +2716,8 @@ def _pick_quick_panel(body):
 
 def _find_in_file(body):
     """Find all occurrences of pattern in the active file. Returns list of
-    {line, col, text}. Does not open a panel — for the interactive Find panel
-    use find_and_replace with replace_all=False and show_panel=True.
+    {line, col, text}. Does not open a panel — for Sublime's Find panel use
+    run_command with show_panel (panel="find").
 
     Body params: pattern (required), case_sensitive, regex."""
     pattern = body.get("pattern", "")
@@ -3632,10 +3475,7 @@ _POST = {
     "/save_file": _save_file,
     "/save_all": _save_all,
     "/close_file": _close_file,
-    "/find_in_files": _find_in_files,
     "/find_in_file": _find_in_file,
-    "/replace_in_files": _replace_in_files,
-    "/find_and_replace": _find_and_replace,
     "/next_result": _next_result,
     "/prev_result": _prev_result,
     "/toggle_bookmark": _toggle_bookmark,
@@ -5482,7 +5322,7 @@ _MCP_TOOLS = [
      _p("/insert_snippet")),
     ("find_in_file",
      "Find all occurrences of pattern in the active file. Returns list of {line, col, text}. "
-     "Does NOT open a panel — for the interactive Find/Replace panel use find_and_replace. "
+     "Does NOT open a panel — for Sublime's Find/Replace panels use run_command with show_panel (see the guide). "
      "Use case_sensitive=True for case-sensitive match, regex=True to treat pattern as a "
      "regular expression (Python re syntax).",
      {"type": "object", "properties": {
@@ -5491,60 +5331,6 @@ _MCP_TOOLS = [
          "regex": {"type": "boolean", "default": False},
      }, "required": ["pattern"]},
      _p("/find_in_file")),
-    ("find_in_files",
-     "Open ST's native Find in Files panel (Ctrl+Shift+H equivalent) and run a search. "
-     "Routes through ST's real C++ find engine, NOT a Python reimplementation. The three-box "
-     "Find / Replace / Where panel is shown so the user sees exactly what is being searched. "
-     "The `where` parameter accepts the full ST Where syntax: globs (*.py, -*.md), folder "
-     "paths, ${project}, ${folder:Name}, ${open_files}, <project filters>, or combinations "
-     "separated by commas. Pass show_panel=False for a silent background search.",
-     {"type": "object", "properties": {
-         "pattern": {"type": "string", "description": "Search string or regex"},
-         "replace": {"type": "string", "description": "Optional Replace box text. Does not auto-execute; use replace_in_files for that."},
-         "where": {"type": "string", "description": "Where filter: globs, folder paths, ${project}, ${folder:Name}, ${open_files}, <project filters>"},
-         "case_sensitive": {"type": "boolean", "default": False},
-         "regex": {"type": "boolean", "default": False},
-         "whole_word": {"type": "boolean", "default": False},
-         "preserve_case": {"type": "boolean", "default": False},
-         "show_panel": {"type": "boolean", "default": True},
-     }, "required": ["pattern"]},
-     _p("/find_in_files")),
-    ("replace_in_files",
-     "Fill the Find in Files panel and press its Replace button (Find in Files, Replace). Sublime then asks "
-     "'Confirm Replace': answer it with dismiss_native_window (action='button', button='Replace' or 'Cancel'). "
-     "On Replace, the changes are made in the matching files' open buffers (the files open with unsaved "
-     "changes); write them to disk with save_all. Same `where` syntax as find_in_files. Replace string may be "
-     "empty for deletion. Regex capture-group backrefs ($1, $2) supported when regex=True.",
-     {"type": "object", "properties": {
-         "pattern": {"type": "string"},
-         "replace": {"type": "string", "description": "Replacement string (use empty string for deletion)"},
-         "where": {"type": "string"},
-         "case_sensitive": {"type": "boolean", "default": False},
-         "regex": {"type": "boolean", "default": False},
-         "whole_word": {"type": "boolean", "default": False},
-         "preserve_case": {"type": "boolean", "default": False},
-         "show_panel": {"type": "boolean", "default": True},
-     }, "required": ["pattern", "replace"]},
-     _p("/replace_in_files")),
-    ("find_and_replace",
-     "Open the single-file Find & Replace panel (Ctrl+H equivalent) on the active view, "
-     "or perform a silent replace_all on it. For multi-file replace use replace_in_files. "
-     "Supports regex with $1/$2 backrefs in replace, preserve_case, whole_word, in_selection, "
-     "and wrap. By default opens the panel (show_panel=True); pass replace_all=True and "
-     "show_panel=False to do a silent Replace All without the panel.",
-     {"type": "object", "properties": {
-         "pattern": {"type": "string"},
-         "replace": {"type": "string"},
-         "case_sensitive": {"type": "boolean", "default": False},
-         "regex": {"type": "boolean", "default": False},
-         "whole_word": {"type": "boolean", "default": False},
-         "preserve_case": {"type": "boolean", "default": False},
-         "in_selection": {"type": "boolean", "default": False},
-         "wrap": {"type": "boolean", "default": True},
-         "show_panel": {"type": "boolean", "default": True},
-         "replace_all": {"type": "boolean", "default": False},
-     }, "required": ["pattern", "replace"]},
-     _p("/find_and_replace")),
     ("next_result",
      "Jump to the next find-in-files or build result. Visible in the view (cursor moves).",
      {"type": "object", "properties": {}},
@@ -6192,7 +5978,7 @@ _MCP_TOOLS = [
      _p("/exec")),
     ("find_in_folder",
      "Open the Find in Files panel with its Where box set to the given folders (WindowCommand find_in_folder, "
-     "the sidebar's Find in Folder). To search, use project_search or find_in_files.",
+     "the sidebar's Find in Folder). To search, use project_search.",
      {"type": "object", "properties": {"dirs": {"type": "array", "items": {"type": "string"}, "description": "Folder path(s) to search."}},
       "required": ["dirs"]},
      _p("/find_in_folder")),

@@ -712,31 +712,12 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Searches and selects all text matches, which are the same as the selected '
                        'text or the word under the caret. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'find_and_replace',
-        'description': 'Open the single-file Find & Replace panel (Ctrl+H equivalent) on the '
-                       'active view, or perform a silent replace_all on it. For multi-file replace '
-                       'use replace_in_files. Supports regex with $1/$2 backrefs in replace, '
-                       'preserve_case, whole_word, in_selection, and wrap. By default opens the '
-                       'panel (show_panel=True); pass replace_all=True and show_panel=False to do '
-                       'a silent Replace All without the panel.',
-        'inputSchema': {   'type': 'object',
-                           'properties': {   'pattern': {'type': 'string'},
-                                             'replace': {'type': 'string'},
-                                             'case_sensitive': {   'type': 'boolean',
-                                                                   'default': False},
-                                             'regex': {'type': 'boolean', 'default': False},
-                                             'whole_word': {'type': 'boolean', 'default': False},
-                                             'preserve_case': {'type': 'boolean', 'default': False},
-                                             'in_selection': {'type': 'boolean', 'default': False},
-                                             'wrap': {'type': 'boolean', 'default': True},
-                                             'show_panel': {'type': 'boolean', 'default': True},
-                                             'replace_all': {'type': 'boolean', 'default': False}},
-                           'required': ['pattern', 'replace']}},
     {   'name': 'find_in_file',
         'description': 'Find all occurrences of pattern in the active file. Returns list of {line, '
-                       'col, text}. Does NOT open a panel — for the interactive Find/Replace panel '
-                       'use find_and_replace. Use case_sensitive=True for case-sensitive match, '
-                       'regex=True to treat pattern as a regular expression (Python re syntax).',
+                       "col, text}. Does NOT open a panel — for Sublime's Find/Replace panels use "
+                       'run_command with show_panel (see the guide). Use case_sensitive=True for '
+                       'case-sensitive match, regex=True to treat pattern as a regular expression '
+                       '(Python re syntax).',
         'inputSchema': {   'type': 'object',
                            'properties': {   'pattern': {   'type': 'string',
                                                             'description': 'Search string or regex '
@@ -745,43 +726,10 @@ TOOLS = [   {   'name': 'add_directory',
                                                                    'default': False},
                                              'regex': {'type': 'boolean', 'default': False}},
                            'required': ['pattern']}},
-    {   'name': 'find_in_files',
-        'description': "Open ST's native Find in Files panel (Ctrl+Shift+H equivalent) and run a "
-                       "search. Routes through ST's real C++ find engine, NOT a Python "
-                       'reimplementation. The three-box Find / Replace / Where panel is shown so '
-                       'the user sees exactly what is being searched. The `where` parameter '
-                       'accepts the full ST Where syntax: globs (*.py, -*.md), folder paths, '
-                       '${project}, ${folder:Name}, ${open_files}, <project filters>, or '
-                       'combinations separated by commas. Pass show_panel=False for a silent '
-                       'background search.',
-        'inputSchema': {   'type': 'object',
-                           'properties': {   'pattern': {   'type': 'string',
-                                                            'description': 'Search string or '
-                                                                           'regex'},
-                                             'replace': {   'type': 'string',
-                                                            'description': 'Optional Replace box '
-                                                                           'text. Does not '
-                                                                           'auto-execute; use '
-                                                                           'replace_in_files for '
-                                                                           'that.'},
-                                             'where': {   'type': 'string',
-                                                          'description': 'Where filter: globs, '
-                                                                         'folder paths, '
-                                                                         '${project}, '
-                                                                         '${folder:Name}, '
-                                                                         '${open_files}, <project '
-                                                                         'filters>'},
-                                             'case_sensitive': {   'type': 'boolean',
-                                                                   'default': False},
-                                             'regex': {'type': 'boolean', 'default': False},
-                                             'whole_word': {'type': 'boolean', 'default': False},
-                                             'preserve_case': {'type': 'boolean', 'default': False},
-                                             'show_panel': {'type': 'boolean', 'default': True}},
-                           'required': ['pattern']}},
     {   'name': 'find_in_folder',
         'description': 'Open the Find in Files panel with its Where box set to the given folders '
                        "(WindowCommand find_in_folder, the sidebar's Find in Folder). To search, "
-                       'use project_search or find_in_files.',
+                       'use project_search.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'dirs': {   'type': 'array',
                                                          'items': {'type': 'string'},
@@ -1844,28 +1792,6 @@ TOOLS = [   {   'name': 'add_directory',
                        'Text 4215: shows an in-app panel, popup or overlay (dismiss with '
                        'hide_overlay, hide_panel or hide_popup).',
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'replace_in_files',
-        'description': 'Fill the Find in Files panel and press its Replace button (Find in Files, '
-                       "Replace). Sublime then asks 'Confirm Replace': answer it with "
-                       "dismiss_native_window (action='button', button='Replace' or 'Cancel'). On "
-                       "Replace, the changes are made in the matching files' open buffers (the "
-                       'files open with unsaved changes); write them to disk with save_all. Same '
-                       '`where` syntax as find_in_files. Replace string may be empty for deletion. '
-                       'Regex capture-group backrefs ($1, $2) supported when regex=True.',
-        'inputSchema': {   'type': 'object',
-                           'properties': {   'pattern': {'type': 'string'},
-                                             'replace': {   'type': 'string',
-                                                            'description': 'Replacement string '
-                                                                           '(use empty string for '
-                                                                           'deletion)'},
-                                             'where': {'type': 'string'},
-                                             'case_sensitive': {   'type': 'boolean',
-                                                                   'default': False},
-                                             'regex': {'type': 'boolean', 'default': False},
-                                             'whole_word': {'type': 'boolean', 'default': False},
-                                             'preserve_case': {'type': 'boolean', 'default': False},
-                                             'show_panel': {'type': 'boolean', 'default': True}},
-                           'required': ['pattern', 'replace']}},
     {   'name': 'replace_lines',
         'description': 'Replace lines begin through end (inclusive, 1-based) in the active file '
                        'with text.\n'

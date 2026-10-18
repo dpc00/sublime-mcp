@@ -4,7 +4,7 @@ Moved out of `AGENT_GUIDE.md` (which `get_help` serves) to keep that guide short
 
 ## Sublime Text command tools (since 1.9.0)
 
-160 of the 387 tools are generated wrappers named exactly after a Sublime Text
+160 of the 384 tools are generated wrappers named exactly after a Sublime Text
 command (`add_word`, `fold_all`, `invert_selection`, `scroll_to_eof`, `chain`,
 `build`, `close_others_by_index`, ...). They come from a snapshot of
 CommandsBrowser's Sublime Text command list, written by
@@ -62,7 +62,7 @@ arguments, once more with sandbox arguments. What was seen is in
   `tools/st_hand_written_behavior.json`): `install_package_control` blocks the main
   thread behind a native window; `customize_color_scheme`, `customize_theme`,
   `edit_syntax_settings` and `run_syntax_tests` open a window that does not block;
-  `arithmetic`, `exec`, `prompt_goto_line`, `rename_file`, `replace_in_files`,
+  `arithmetic`, `exec`, `prompt_goto_line`, `rename_file`,
   `run_build`, `select_color_scheme`, `select_theme`, `show_panel`, `show_scope_name`,
   `toggle_menu`, `toggle_status_bar`, `toggle_tabs` and `view_resource` leave a
   panel, popup or overlay open; `open_folder` starts another program; 158 showed no

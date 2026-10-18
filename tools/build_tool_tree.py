@@ -118,11 +118,11 @@ put("selection/select", "get_selection select_all expand_selection expand_select
     "find_all_under select_all_bookmarks select_bookmark")
 put("selection/marks_and_history", "clear_location set_mark select_to_mark swap_with_mark add_to_kill_ring jump_back jump_forward "
     "add_jump_record")
-put("search/find_in_file", "find_in_file find_and_replace next_result prev_result find_all find_next find_prev "
+put("search/find_in_file", "find_in_file next_result prev_result find_all find_next find_prev "
     "find_under find_under_expand find_under_expand_skip find_under_prev replace_next slurp_find_string "
     "slurp_replace_string toggle_case_sensitive toggle_regex toggle_whole_word toggle_preserve_case "
     "toggle_in_selection toggle_highlight cancel_find")
-put("search/find_in_files", "find_in_files replace_in_files find_in_folder toggle_use_buffer toggle_use_gitignore")
+put("search/find_in_files", "find_in_folder toggle_use_buffer toggle_use_gitignore")
 put("search/symbols", "get_symbols lookup_symbol goto_definition goto_reference auto_complete_goto_definition "
     "open_symbol_definition goto_symbol_in_project goto_line prompt_goto_line show_scope_name")
 put("search/bookmarks", "get_bookmarks toggle_bookmark next_bookmark prev_bookmark clear_bookmarks")
