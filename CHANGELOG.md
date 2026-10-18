@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.14.1
+
+Documentation only. The README and both `AGENT_GUIDE.md` copies now describe the freeze log (`sublime-mcp-freeze.log` in Sublime's Cache folder, opened in a tab at the next start, and `MCP Commander: Show Freeze Log`) that 1.14.0 added; 1.14.0 was released without that text.
+
 ## 1.14.0
 
 Fixes a slowdown in long sessions. The 200 ms heartbeat was never stopped, and a package reload reset its guard, so each reload left the old timer chain running and started another. `plugin_unloaded` now stops the heartbeat, and starting it stops any earlier chain.
