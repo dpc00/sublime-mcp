@@ -3255,21 +3255,6 @@ def _wc(cmd):
     return handler
 
 
-def _close_unmodified(body):
-    """Close the tabs without unsaved changes in the active tab's group (Sublime's close_unmodified; its
-    group=-1, index=-1 default means "the tab that was right-clicked" and does nothing without one)."""
-    def fn():
-        w = sublime.active_window()
-        sheet = w.active_sheet() if w else None
-        if sheet is None:
-            return {"error": "no active tab"}
-        group, index = w.get_sheet_index(sheet)
-        w.run_command("close_unmodified", {"group": group, "index": index})
-        return {"ok": True}
-
-    return _on_main(fn)
-
-
 def _ac(cmd):
     def handler(body):
         args = {k: v for k, v in body.items() if v is not None}
@@ -3689,7 +3674,7 @@ _POST = {
     # ── Phase B batch 1: selection / edit / view ops ────────────────────────
     "/new_file": _wc("new_file"),
     "/close_all": _wc("close_all"),
-    "/close_unmodified": _close_unmodified,
+    "/close_unmodified": _wc("close_unmodified"),
     "/close_pane": _wc("close_pane"),
     "/close_transient": _wc("close_transient"),
     "/clone_file": _wc("clone_file"),
@@ -5880,8 +5865,10 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/close_all")),
     ("close_unmodified",
-     "Close the tabs without unsaved changes in the active tab's group (Close Unmodified Tabs).",
-     {"type": "object", "properties": {}},
+     "Close Unmodified Tabs (WindowCommand close_unmodified, from the tab context menu). group and index name "
+     "the tab the menu was opened on; without them (Sublime's default -1, -1 means the right-clicked tab) "
+     "it does nothing. Get them from get_sheet_index.",
+     {"type": "object", "properties": {"group": {"type": "integer", "description": "The index of the target group."}, "index": {"type": "integer", "description": "The index within the target group."}}},
      _p("/close_unmodified")),
     ("close_pane",
      "Close the current pane/group and all views inside it.",

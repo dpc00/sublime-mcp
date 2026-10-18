@@ -348,9 +348,17 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Close all transient views (preview tabs) in the current window.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'close_unmodified',
-        'description': "Close the tabs without unsaved changes in the active tab's group (Close "
-                       'Unmodified Tabs).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'description': 'Close Unmodified Tabs (WindowCommand close_unmodified, from the tab '
+                       'context menu). group and index name the tab the menu was opened on; '
+                       "without them (Sublime's default -1, -1 means the right-clicked tab) it "
+                       'does nothing. Get them from get_sheet_index.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'group': {   'type': 'integer',
+                                                          'description': 'The index of the target '
+                                                                         'group.'},
+                                             'index': {   'type': 'integer',
+                                                          'description': 'The index within the '
+                                                                         'target group.'}}}},
     {   'name': 'close_unmodified_to_right_by_index',
         'description': 'Closes all unmodified views of a group right of the one identified by '
                        'index. (WindowCommand)',
