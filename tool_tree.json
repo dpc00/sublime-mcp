@@ -165,7 +165,6 @@
      "add_where_snippet",
      "auto_complete",
      "auto_complete_open_link",
-     "auto_complete_prev",
      "auto_indent_tag",
      "clear_fields",
      "close_tag",
@@ -263,9 +262,7 @@
     "tools": [
      "profile_plugins",
      "profile_syntax_definition",
-     "run_syntax_tests",
-     "syntax_definition_compatability",
-     "syntax_definition_compatibility"
+     "run_syntax_tests"
     ]
    },
    "packages": {

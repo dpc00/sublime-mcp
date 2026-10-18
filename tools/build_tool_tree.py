@@ -109,7 +109,7 @@ put("editing/case_and_whitespace", "upper_case lower_case title_case swap_case c
     "expand_tabs unexpand_tabs detect_indentation rot13 "
     "encode_html_entities transformer arithmetic")
 put("editing/snippets_macros_fields", "insert_snippet expand_snippet next_field prev_field clear_fields close_tag "
-    "auto_indent_tag add_where_snippet commit_completion auto_complete auto_complete_prev auto_complete_open_link "
+    "auto_indent_tag add_where_snippet commit_completion auto_complete auto_complete_open_link "
     "hide_auto_complete replace_completion_with_auto_complete")
 put("editing/delete", "left_delete right_delete delete_word delete_to_mark")
 put("selection/select", "get_selection select_all expand_selection expand_selection_to_paragraph "
@@ -157,8 +157,8 @@ put("run/build_and_exec", "exec")
 put("run/macros", "toggle_record_macro run_macro run_macro_file save_macro")
 put("packages_and_dev/packages", "search_packages install_package install_package_control")
 put("packages_and_dev/create", "new_build_system new_plugin new_snippet new_syntax")
-put("packages_and_dev/diagnostics", "profile_plugins profile_syntax_definition syntax_definition_compatibility "
-    "syntax_definition_compatability run_syntax_tests")
+put("packages_and_dev/diagnostics", "profile_plugins profile_syntax_definition "
+    "run_syntax_tests")
 put("app/windows", "new_window close_window resize_window")
 put("app/native_dialogs", "list_native_windows dismiss_native_window ui_press_key ui_type_text ui_click ui_hover")
 put("app/coordination", "claim_resource release_resource list_claims")

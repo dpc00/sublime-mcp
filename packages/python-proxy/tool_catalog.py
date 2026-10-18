@@ -109,10 +109,6 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Opens the first link in the details pane of the AC panel, when the AC '
                        'panel is visible. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'auto_complete_prev',
-        'description': 'Goes to the previous entry in the AC panel, when the AC panel is visible. '
-                       '(TextCommand)',
-        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'auto_indent_tag',
         'description': 'Re-indent the enclosing HTML/XML tag structure (TextCommand). Useful for '
                        'fixing nested tag indentation.',
@@ -2265,14 +2261,6 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'switch_file',
         'description': 'Switch between files with the same base name and different extensions '
                        '(WindowCommand).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'syntax_definition_compatability',
-        'description': 'Checks to see the syntax compatability of the currently active '
-                       '<b>.sublime-syntax</b> file. Any incompatible regex patterns (which '
-                       "doesn't conform to sregex) is shown in an output panel. (WindowCommand)",
-        'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'syntax_definition_compatibility',
-        'description': 'Check syntax definition compatibility (ApplicationCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'title_case',
         'description': 'Convert the current selection(s) to Title Case.',

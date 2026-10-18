@@ -3,7 +3,7 @@
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.
 
-Eight workflow tools are shown by default; the complete typed catalog (384
+Eight workflow tools are shown by default; the complete typed catalog (381
 tools) remains available through `discover_tools` and `batch`. Prefer a named capability over
 `run_command`, which often opens UI that steals focus from the agent chat.
 
@@ -202,7 +202,9 @@ drive_input_panel(text="<name>", action="submit")   # fill and submit/cancel an 
   built-in items have no caption in the menu file, so use the command name: `Selection > select_all`.
   (Or find the item with `get_menu_items` and `run_command` its command and args.)
 - `show_overlay` opens Goto Anything (`overlay="goto"`) or the command palette
-  (`overlay="command_palette"`), with the same arguments as Sublime's own keymap.
+  (`overlay="command_palette"`), with the same arguments as Sublime's own keymap. To move through an
+  open completion popup use `move` (`by="lines"`, `forward=true` or `false`): Sublime has no separate
+  next/previous command for it (tried on build 4215).
 - `drive_input_panel` works on input panels (prompts such as "Packages to install
   (comma-separated)"). If several agents share the Sublime, call `claim_resource`
   with `resource="input_panel"` first.
