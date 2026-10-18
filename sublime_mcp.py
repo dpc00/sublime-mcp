@@ -4553,8 +4553,9 @@ def _with_dialog_notice(result, tool_name):
     dialogs = _open_dialogs_notice()
     if not dialogs:
         return result
-    note = ("A native dialog or menu is open in Sublime and was left open. Read it: it may explain a "
-            "problem. Do not dismiss it without the person's say-so; dismiss_native_window answers it.")
+    note = ("A native dialog or menu is open in Sublime. Read its text, record it for the person (the "
+            "watchdog also writes it to sublime-mcp-freeze.log), then dismiss it at once with "
+            "dismiss_native_window: dialogs left open clog the workflow.")
     if isinstance(result, dict):
         result = dict(result)
         result["native_dialogs_open"] = dialogs
