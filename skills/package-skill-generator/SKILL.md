@@ -13,13 +13,13 @@ MCP server.
 
 **Why a skill instead of a server, and when that's not the answer:**
 confirmed directly (2026-09-08, against three real, structurally different
-packages -- Debugger, GotoRelated, OpenFileOverSSH) that the generic loop
+packages) that the generic loop
 (discover -> read the target's real source -> call it with `run_command`/
 `eval_python`) is sufficient on its own for an agent that already has that
 generic access. A dedicated MCP server was never actually *required* for
 control in any of those three cases -- confirmed by directly reading even
-debugger-mcp's own deepest handlers (e.g. `mcp_debugger_get_variables`),
-which turned out to be a couple of lines wrapping `core.run(...)`, not
+the deepest handler of a package that shipped its own MCP server, which
+turned out to be a couple of lines wrapping the package's own call, not
 bespoke logic that justified a ~2,000-line standalone package. A skill
 captures the one genuinely valuable thing those bigger builds were for --
 the *investigation* (the real dispatch table, the async-bridging trick,
@@ -44,7 +44,7 @@ Same investigative work as before, because it's the part that's actually
 valuable, independent of what the output format is:
 
 Call `get_package_mcp_info(package)`. **This alone is not enough for
-anything but the most trivial package** -- confirmed against Debugger:
+anything but the most trivial package** -- confirmed against a debugger package:
 introspection surfaced only 5 commands and missed ~28 of the ~33 real
 actions a single dispatch-style command drives, because most were never
 exposed via `.sublime-commands`. Read the `python_files` it lists --
@@ -53,8 +53,8 @@ particularly anything that looks like a command-dispatch table
 `session.py`) -- via `str_replace_based_edit_tool` or `eval_python`, not
 just the introspection result.
 
-Also confirmed independently on OpenFileOverSSH and a fresh install of
-Debugger: a package installed or loaded moments ago may not be in
+Also confirmed independently on a second package and a fresh install:
+a package installed or loaded moments ago may not be in
 `sys.modules` yet, and `get_package_mcp_info` will report an empty result
 that means "not loaded," not "genuinely has nothing." Check `sys.modules`
 before trusting a zero. Don't hand-edit `sys.modules`/`sublime_plugin`'s
@@ -62,7 +62,7 @@ own bookkeeping to force this -- it desyncs the plugin host from reality;
 wait, or ask for a restart.
 
 **Check for async before documenting any live-state or control call as a
-one-liner.** Confirmed via debugger-mcp's own source: calling an
+one-liner.** Confirmed from a package's own source: calling an
 `async def` method directly, unawaited, silently does nothing -- it just
 builds a coroutine object. If a target method is async, find and document
 the package's own sync-bridge (e.g. a `core.run(coro)`-style helper) and
@@ -70,8 +70,8 @@ show it in the skill, not a bare call.
 
 Treat the target's internals as unstable, non-public API: any documented
 attribute-access snippet should use `getattr(obj, "x", None)` defensively,
-matching how the real debugger-mcp does it -- a Package Control package's
-internal shape can change between versions with no notice.
+matching how a package that ships its own MCP server does it -- a
+package's internal shape can change between versions with no notice.
 
 ## Step 2 — coverage audit, before writing the skill
 

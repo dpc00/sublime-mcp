@@ -12,7 +12,7 @@ On the first Sublime operation, call `get_help` once. The guide is long (about 1
 every `get_help` result lists the section headings.
 
 ST tools use **1-based** line/column (`get_active_file`, `open_file`,
-`goto_line`, `replace_lines`). lsp-mcp uses **0-based**. Subtract 1 when
+`goto_line`, `replace_lines`). Language-server tools use **0-based**. Subtract 1 when
 passing an ST cursor into an `lsp_*` tool.
 
 ## Quick start
@@ -138,7 +138,7 @@ get_active_file()                  # path, full content, 1-based line/col, is_di
 get_cursor_context(lines=10)       # ±N lines, numbered
 get_selection()                    # highlighted text
 get_sheets()                       # every tab: stable id, group/index, selection/focus, path/name
-get_sheet_content(index=2)         # untitled / scratch / Terminus too
+get_sheet_content(index=2)         # untitled / scratch / terminal tabs too
 open_file(path=..., line=42, col=1)
 save_all()
 revert_file()                      # active view only
@@ -189,12 +189,12 @@ batch(calls=[{"tool": "run_command", "args": {"command": "ai_terminal_send_strin
 Call these through `batch`; find more with `discover_tools`.
 
 ```
-search_packages(query="terminus")             # Package Control search
-install_package(package="Terminus")           # exact name; installs in the background, watch the console
+search_packages(query="<name>")                # package manager search
+install_package(package="<exact name>")       # exact name; installs in the background, watch the console
 get_menu_items(caption="Command Palette")     # menu items with their command and args (filters: menu, caption, command)
 run_command(command="show_overlay", args={"overlay": "command_palette", "text": "Install Package"})
 get_command_palette(caption="Install")        # palette entries (filters: package, command, caption)
-drive_input_panel(text="Terminus", action="submit")   # fill and submit/cancel an open input panel
+drive_input_panel(text="<name>", action="submit")   # fill and submit/cancel an open input panel
 ```
 
 - `click_menu_item` runs an installed menu item by caption path, e.g.
@@ -207,19 +207,19 @@ drive_input_panel(text="Terminus", action="submit")   # fill and submit/cancel a
   (comma-separated)"). If several agents share the Sublime, call `claim_resource`
   with `resource="input_panel"` first.
 - Limitation (tool survey 2026-10-07): there is no tool that lists the items of an
-  open quick-panel picker (for example the Package Control "Install Package" list)
+  open quick-panel picker (for example the package manager's "Install Package" list)
   or picks one. Close it with `hide_overlay`, or have the user pick.
 - `context_menu` opens a native menu that blocks the main thread; see the next
   section.
 
 ## Removing packages, making folders, saving to disk
 
-Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
+Observed on build 4200 (2026-10-07).
 
 - **Remove a package:** call `run_command(command="remove_package")`. Do not open
-  the palette with the text "Package Control: Remove Package": the palette ranks
+  the palette with the text "Remove Package": the palette ranks
   "Remove Channel" first, and its Return opens the channel list. The list that
-  `remove_package` opens also contains `MCP Commander` and `Package Control`, so
+  `remove_package` opens also contains `MCP Commander` and other packages, so
   type the package name to filter the list and check the highlighted entry before
   confirming. A list opened right after a removal is stale until the status bar
   says "Package X successfully removed".
@@ -283,7 +283,7 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
 
 ## Installs, restarts and quick panels
 
-- **Language-server wrappers (`LSP-*`) installed during a session** start their server only
+- **Language-server packages installed during a session** start their server only
   after Sublime restarts, and many need a separate syntax package and a Node or binary
   download, so the status can read "(installing...)" for minutes.
 - **Installs can take minutes, and the status text does not tell you when they end.** Large
@@ -291,8 +291,8 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   fetches seven, one by one) keep "Installing package ..." in the status bar until the very
   end. Watch the real state instead: the package folder or `.sublime-package`, its
   `package-metadata.json`, and `get_command_palette(package=...)`, which stays empty until the
-  commands are registered. Package Control logs "Package X successfully installed" last.
-- **After `run_command exit` and a new start,** three things happen. A Package Control dialog
+  commands are registered. The package manager logs "Package X successfully installed" last.
+- **After `run_command exit` and a new start,** three things happen. A package manager dialog
   "Sublime Text needs to be restarted for installed or updated libraries" can open (answer OK);
   an "Update Available" window can open and disable the main window (close it; its buttons are
   not accessible elements, use its Close button); and the sublime-mcp server may or may not
@@ -301,13 +301,13 @@ Observed on build 4200 with Package Control 4.2.8 (2026-10-07).
   title bar. Replacing a package between Python hosts (release on 3.3, master on 3.8) in the
   same session gives false "No module named" errors; restart Sublime first.
 - **Quick panels:** several packages ask for a decision in a quick panel (FileManager's delete asks
-  "Confirm - Send item to trash"; Package Control's pickers). `get_quick_panel` lists the items of
+  "Confirm - Send item to trash"; the package manager's pickers). `get_quick_panel` lists the items of
   the panel and `pick_quick_panel` picks one (by index or text) or cancels it with index -1.
   They only see panels opened by packages in the same plugin host as sublime-mcp; the command
   palette, Goto Anything and panels from the other host give an error, and then the keyboard is
   the only way. Picking runs the package's own callback, so pick only items you mean to run (some
   pickers open files, folders or browser tabs). `drive_input_panel` only fills input panels.
-  **Package Control's Install Package / Remove Package lists take up to ~15 s to appear after
+  **The package manager's Install Package / Remove Package lists take up to ~15 s to appear after
   Enter** (the status bar says "Loading packages..."): pass `wait_ms` (at most 60000) to
   `pick_quick_panel` or `get_quick_panel`, for example `pick_quick_panel(text="Bicep",
   wait_ms=30000)`, and the call waits for the panel instead of failing with "no recorded quick
@@ -354,9 +354,9 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
   Cancel (`action="button", button="Cancel"`); OK on a dialog with no OK button fails and leaves the
   main thread blocked. `run_command` with `context_menu` opens a popup menu that blocks the same way.
 - **`replace_in_files` asks "Confirm Replace":** answer it with `dismiss_native_window` (`action="button"`, `button="Replace"` or `"Cancel"`). On Replace, the changes are made in the matching files' open buffers (the files open with unsaved changes); write them with `save_all`.
-- **They install packages:** `install_package` installs the package; Package Control's libraries come from
+- **They install packages:** `install_package` installs the package; the libraries it depends on come from
   `satisfy_libraries`. A package loads the moment it is installed, so to install one that needs libraries
-  (MarkdownGlance needs Markdown and pymdown-extensions): add the package to `ignored_packages`,
+  (its libraries are named in its install message): add the package to `ignored_packages`,
   `install_package`, run `satisfy_libraries`, then remove it from `ignored_packages`.
 - **They ask a question in an overlay or picker, and wait for the answer:** `rename_file`, `rename_path`,
   `new_file_at`, `new_folder`, `view_resource`, `quick_panel`, `prompt_goto_line`, `select_color_scheme`,
@@ -442,14 +442,14 @@ may be the window that hosts your session; pass `hwnd` of the window you mean.
 **A dialog that appears after `run_command` has returned.** `ok` from `run_command` only
 means the command was dispatched. A command that shows its dialog from a timer, a worker
 thread or `sublime.error_message` does so a moment later, so a `list_native_windows` in the
-same `batch` can come back without it (seen with Package Control's and several packages'
+same `batch` can come back without it (seen with several packages'
 error dialogs). Pass `settle_ms` (for example 300): `run_command` then waits up to that long
 and returns every dialog that was not open before the command as `dialogs`, with the same
 fields as `list_native_windows`. Without `settle_ms` nothing changes. When `get_console`
 fails for lack of focus while a dialog is open, the error now names the dialog.
 
 **What `list_native_windows` cannot read.** The message of a Windows task dialog (one whose
-buttons have custom text, such as "Install Terminus" / "Cancel") comes back with an empty
+buttons have custom text, such as "Install <package>" / "Cancel") comes back with an empty
 `messages` list, although the buttons are listed. Read it with computer-use
 (`get_window_state` shows it as the dialog's main text). With computer-use, a click by
 `element_index` on those buttons may do nothing; a click at the button's pixel position

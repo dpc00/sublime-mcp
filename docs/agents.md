@@ -162,7 +162,7 @@ lsp_format_document(file_path=...)                    # then sublime-mcp save_fi
 
 - `lsp_hover_info` — signature + markdown docs at the call site
 - `lsp_get_symbols` — file outline
-- `get_sheets` + `get_sheet_content` — any tab, including untitled / Terminus
+- `get_sheets` + `get_sheet_content` — any tab, including untitled / terminal tabs
 
 ### Debugging
 

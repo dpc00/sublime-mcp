@@ -71,7 +71,7 @@ has blocked Sublime's main thread and the other tools time out; call them throug
 - A dialog can open a moment after `run_command` returned ok, so a `list_native_windows` in the
   same batch may miss it: pass `settle_ms=300` to `run_command` and read `dialogs` in the result.
 - `list_native_windows` returns no message text for a task dialog with custom button text (for
-  example "Install Terminus" / "Cancel"); read it with computer-use.
+  example "Install <package>" / "Cancel"); read it with computer-use.
 
 ## Reading the console
 
