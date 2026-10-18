@@ -313,9 +313,10 @@ hung, read that file first.
 When Sublime has a native dialog or menu open, every tool result (MCP `tools/call`) carries
 `native_dialogs_open` (kind, title, the dialog's text, its buttons) and a note. A "main-thread timeout"
 error quotes the dialog's text. Read it: it often says what is wrong (a package that cannot find a
-library, a save prompt). Read it, record what it says (tell the person; the watchdog also appends every
-dialog's text to `sublime-mcp-freeze.log` when it opens), then dismiss it at once with `dismiss_native_window`:
-a dialog left open blocks the window and the workflow.
+library, a save prompt). Read it, make sense of it and act on it: it says what is wrong, so fix the cause, and
+if it comes back, do whatever it takes to stop it. Then dismiss it at once with `dismiss_native_window`; a dialog
+left open blocks the window and the workflow. The watchdog appends every dialog's text to
+`sublime-mcp-freeze.log` when it opens, so nothing is lost by dismissing it.
 
 ## When a native dialog blocks Sublime (Windows)
 
