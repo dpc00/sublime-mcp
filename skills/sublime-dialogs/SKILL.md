@@ -32,3 +32,16 @@ real one with the real mouse: open it, `list_native_windows()` (kind `menu`, not
 `ui_screenshot(hwnd=...)` to see it, `ui_click(x, y, hwnd=..., wait_idle_s=60)` with x, y counted from the
 menu's top-left corner, then check the effect with a normal tool. If no click is wanted, close it with
 `dismiss_native_window(action="close")` as the very next call. Never leave a menu open.
+
+## Pickers and overlays: look before you restart, kill or close anything
+
+A picker (quick panel, command palette, Goto Anything, color scheme or package picker) and the Find
+panel are drawn by Sublime itself, not by Windows, so `list_native_windows` does not list them. Before
+restarting or killing a Sublime, closing a window, or starting a new test step:
+
+1. `ui_screenshot` the window and read what is on it. A picker may be waiting for an answer, and what it
+   shows can be the information you need.
+2. A picker opened by a package in the plugin host: `get_quick_panel` lists its items,
+   `pick_quick_panel` answers it (index -1 cancels). Any other picker: answer it with `ui_press_key`
+   (`Escape` to cancel, `Down` and `Return` to choose), then screenshot again.
+3. Only then restart. Never restart "to get a clean state" while something is up.

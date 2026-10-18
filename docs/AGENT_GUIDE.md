@@ -332,6 +332,10 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
 - `ui_press_key` with the default `post` method delivered Down and Return to a quick panel in 4 of 5 tries;
   the first try right after `close_all` was cancelled instead. Check the result of the key press. Method
   `input` activates the window, which cancelled the quick panel.
+- **A picker or the Find panel can be up without any native window:** `list_native_windows` does not show
+  quick panels, the command palette or the Find panel. `ui_screenshot` shows them. Look before you restart
+  or kill a Sublime, and answer the picker first (`get_quick_panel` / `pick_quick_panel` for plugin-host
+  pickers, `ui_press_key` Escape or Down and Return for others).
 - `ui_click`, `ui_hover` and `ui_press_key` refuse while the person at the keyboard has used the mouse or
   keyboard in the last 8 seconds; pass `wait_idle_s` (up to 120) instead of retrying.
 
