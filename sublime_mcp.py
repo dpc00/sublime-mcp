@@ -1481,17 +1481,14 @@ def _lookup_symbol(params):
 
     def fn():
         locs = sublime.active_window().lookup_symbol_in_open_files(sym)
-        return {
-            "locations": [
-                {
-                    "path": l.path,
-                    "name": l.display_name,
-                    "line": l.row + 1,
-                    "col": l.col + 1,
-                }
-                for l in locs
-            ]
-        }
+        out = []
+        for l in locs:
+            if isinstance(l, tuple):
+                # The API returns (path, display_name, (row, col)), row and column already 1-based.
+                out.append({"path": l[0], "name": l[1], "line": l[2][0], "col": l[2][1]})
+            else:
+                out.append({"path": l.path, "name": l.display_name, "line": l.row + 1, "col": l.col + 1})
+        return {"locations": out}
 
     return _on_main(fn)
 
@@ -2433,7 +2430,7 @@ def _find_in_files(body):
         "whole_word": bool(body.get("whole_word", False)),
     }
     if body.get("replace", ""):
-        args["replace"] = body["replace"]
+        args["replace_pattern"] = body["replace"]
         args["preserve_case"] = bool(body.get("preserve_case", False))
     show = bool(body.get("show_panel", True))
     if not show:
@@ -2468,7 +2465,7 @@ def _replace_in_files(body):
     args = {
         "panel": "find_in_files",
         "pattern": pattern,
-        "replace": replace,
+        "replace_pattern": replace,
         "where": body.get("where", ""),
         "case_sensitive": bool(body.get("case_sensitive", False)),
         "regex": bool(body.get("regex", False)),
@@ -2509,7 +2506,8 @@ def _find_and_replace(body):
     args = {
         "panel": "replace",
         "pattern": pattern,
-        "replace": body.get("replace", ""),
+        # The Replace box of the Find panel is filled by "replace_pattern"; a "replace" argument is ignored.
+        "replace_pattern": body.get("replace", ""),
         "case_sensitive": bool(body.get("case_sensitive", False)),
         "regex": bool(body.get("regex", False)),
         "whole_word": bool(body.get("whole_word", False)),
@@ -2527,26 +2525,22 @@ def _find_and_replace(body):
             return {"error": "no active view"}
         w = v.window() or sublime.active_window()
         if replace_all:
-            v.run_command("replace_all", {
-                "pattern": pattern,
-                "replace": body.get("replace", ""),
-                "case_sensitive": args["case_sensitive"],
-                "regex": args["regex"],
-                "whole_word": args["whole_word"],
-                "preserve_case": args["preserve_case"],
-            })
+            # replace_all takes no arguments: it uses the Find panel's current Find and Replace boxes.
+            # Fill them first (the panel is opened, then closed again), or it replaces whatever an
+            # earlier search left there.
+            w.run_command("show_panel", args)
+            v.run_command("replace_all")
+            w.run_command("hide_panel")
             return {"ok": True, "replace_all": True, "pattern": pattern}
         if show:
             w.run_command("show_panel", args)
             return {"ok": True, "panel_open": True, "pattern": pattern}
-        # Silent single-replace
-        v.run_command("replace", {
-            "pattern": pattern,
-            "replace": body.get("replace", ""),
-            "case_sensitive": args["case_sensitive"],
-            "regex": args["regex"],
-            "whole_word": args["whole_word"],
-        })
+        # Silent single replace: fill the panel's boxes, select the next match, replace it, close the panel
+        # (replace_next alone only selects the match the first time).
+        w.run_command("show_panel", args)
+        v.run_command("find_next")
+        v.run_command("replace_next")
+        w.run_command("hide_panel")
         return {"ok": True, "panel_open": False, "pattern": pattern}
     return _on_main(fn)
 
@@ -3118,7 +3112,14 @@ def _eval_python_latest(body):
         f.write(code)
         fname = f.name
     try:
-        _python = shutil.which("python3") or shutil.which("python") or "python"
+        # python.exe in WindowsApps is the Microsoft Store stub (exit code 9009 "Python was not found"):
+        # skip it and take the next real interpreter on PATH, or the py launcher.
+        _python = "python"
+        for _name in ("python3", "python", "py"):
+            _found = shutil.which(_name)
+            if _found and "\\windowsapps\\" not in _found.lower():
+                _python = _found
+                break
         _startupinfo = None
         if sys.platform == "win32":
             _startupinfo = subprocess.STARTUPINFO()
@@ -4503,6 +4504,9 @@ def _project_search(args):
                 "panel": "find_in_files", "pattern": pattern, "where": where,
                 "case_sensitive": case_sensitive, "regex": regex,
                 "whole_word": whole_word,
+                # The tool reads the results from the output panel; with Find's "Use Buffer" on they
+                # would open in a Find Results tab instead and the tool would wait for nothing.
+                "use_buffer": False,
             })
             # This is the Find button command for the native Find in Files panel.
             window.run_command("find_all")

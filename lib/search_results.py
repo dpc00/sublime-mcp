@@ -4,7 +4,7 @@ import re
 
 
 _SUMMARY_RE = re.compile(
-    r"(?:\d+ matches? in \d+ files?|No results found|Search (?:cancelled|aborted))\s*$",
+    r"(?:\d+ match(?:es)?(?: (?:in|across) \d+ files?)?|No results found|Search (?:cancelled|aborted))\s*$",
     re.IGNORECASE,
 )
 _RESULT_RE = re.compile(r"^\s+(\d+):\s?(.*)$")

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+Bugs found by testing the tools with real arguments and checking their effects (build 4215):
+
+- `project_search` always ended in "native project search timed out", even though the results were there. It waited for a summary line of the form "N matches in M files"; this Sublime writes "N matches across M files", "1 match in 1 file" (singular) and a bare "0 matches" when nothing is found, and it opens the results in a Find Results tab instead of the output panel when Find's "Use Buffer" is on. It now accepts all of those summaries and asks for the output panel.
+- `lookup_symbol` failed with "'tuple' object has no attribute 'path'": the API returns `(path, display_name, (row, column))` tuples. It now returns them as locations, with the 1-based line and column the API gives.
+- `find_and_replace` ignored its replacement text. The Find panel's Replace box is filled by `replace_pattern`, not `replace`, so `replace_all` replaced with whatever an earlier search had left there (often nothing), the panel opened with the wrong text, and the silent single replace did nothing. All three now work, including regex back-references.
+- `find_in_files` and `replace_in_files` had the same wrong argument and now fill the Replace box.
+- `eval_python_latest` ran the Microsoft Store `python3` stub (exit code 9009, "Python was not found") on a machine that also has a real Python. It now skips interpreters under WindowsApps.
+
+Not verified: `replace_in_files` fills the panel and runs `replace_in_files`, but no file on disk changed when it was called without a click on the panel's Replace button.
+
 ## 1.14.3
 
 Back to a plain pass-through. The debugging code is out of the plugin: the `diagnostics` and `main_thread_stack` tools (and their `/diagnostics` and `/main_thread_stack` routes), the 200 ms heartbeat that fed them, the slow-dispatch and timeout console prints, and the GhostShell trace hooks. That leaves 411 tools (was 413). Nothing else about the commands changes. Tool lists, the tool tree and the fallback catalogs are regenerated. The debugging aids now live in a separate plugin, HangWatch, outside this project.

@@ -323,6 +323,15 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
   the package to `ignored_packages`, `install_package`, run `satisfy_libraries`, remove it from
   `ignored_packages`.
 - **A tool called with empty arguments** answers `{"error": "<name> required"}`: validation, not a failure.
+- **`str_replace_based_edit_tool` does not write to disk.** `create`, `str_replace` and `insert` change an
+  open, unsaved buffer (shown with undo and diff markers); the file does not exist, or keeps its old
+  content, until `save_file`. Call `save_file` before anything that reads the file outside Sublime.
+- **Closing several tabs in one `eval_python` call:** a loop of `Sheet.close()` hangs Sublime build 4215
+  (checked with two tabs). `View.close()` in a loop, the `close_all` command and closes spaced out by timers
+  are fine.
+- `ui_press_key` with the default `post` method delivered Down and Return to a quick panel in 4 of 5 tries;
+  the first try right after `close_all` was cancelled instead. Check the result of the key press. Method
+  `input` activates the window, which cancelled the quick panel.
 - `ui_click`, `ui_hover` and `ui_press_key` refuse while the person at the keyboard has used the mouse or
   keyboard in the last 8 seconds; pass `wait_idle_s` (up to 120) instead of retrying.
 
