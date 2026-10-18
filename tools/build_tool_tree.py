@@ -84,7 +84,7 @@ def put(path, names):
         EXPLICIT[n] = path
 
 
-put("files/open_and_create", "open_file new_file new_view new_file_at new_folder open_recent_file open_recent_folder "
+put("files/open_and_create", "open_file new_file new_file_at new_folder open_recent_file open_recent_folder "
     "open_recent_project_or_workspace reopen reopen_last_file clone_file switch_file open_dir "
     "open_folder open_containing_folder view_resource open_file_settings send_to_view")
 put("files/save_and_close", "save_all revert_file revert revert_hunk revert_modification save close_file "
@@ -102,10 +102,10 @@ put("editing/basic", "replace_selection replace_lines insert undo redo soft_undo
     "redo_or_repeat overwrite toggle_overwrite echo noop append replace_all")
 put("editing/clipboard", "paste paste_from_history paste_and_indent cut copy yank paste_selection_clipboard copy_as_html")
 put("editing/lines", "duplicate_line sort_lines join_lines swap_line_up swap_line_down "
-    "indent unindent reindent wrap_lines permute_lines transpose transpose_chars "
+    "indent unindent reindent wrap_lines permute_lines transpose "
     "sort_selection permute_selection old_wrap_lines wrap_block toggle_comment")
-put("editing/case_and_whitespace", "upper_case lower_case title_case swap_case toggle_case convert_ident_case "
-    "trim_trailing_white_space trim_whitespace trim_whitespaces ensure_newline_at_eof add_missing_newline "
+put("editing/case_and_whitespace", "upper_case lower_case title_case swap_case convert_ident_case "
+    "trim_trailing_white_space ensure_newline_at_eof "
     "expand_tabs unexpand_tabs detect_indentation rot13 "
     "encode_html_entities transformer arithmetic")
 put("editing/snippets_macros_fields", "insert_snippet expand_snippet next_field prev_field clear_fields close_tag "
@@ -154,7 +154,7 @@ put("settings/build", "set_build_system build cancel_build run_build")
 put("run/python", "eval_python eval_python_latest")
 put("run/commands", "run_command chain")
 put("run/build_and_exec", "exec")
-put("run/macros", "toggle_record_macro run_macro play_macro run_macro_file save_macro")
+put("run/macros", "toggle_record_macro run_macro run_macro_file save_macro")
 put("packages_and_dev/packages", "search_packages install_package install_package_control")
 put("packages_and_dev/create", "new_build_system new_plugin new_snippet new_syntax")
 put("packages_and_dev/diagnostics", "profile_plugins profile_syntax_definition syntax_definition_compatibility "

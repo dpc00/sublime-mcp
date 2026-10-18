@@ -20,9 +20,6 @@ TOOLS = [   {   'name': 'add_directory',
                                                                              'integers or a list '
                                                                              'of list of 2 '
                                                                              'integers.'}}}},
-    {   'name': 'add_missing_newline',
-        'description': 'Alias of ensure_newline_at_eof — add a trailing newline at EOF if absent.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'add_to_kill_ring',
         'description': "Add the selected text to the kill ring, Sublime's Emacs-style clipboard "
                        '(TextCommand). forward is required: for a cursor with nothing selected, '
@@ -1401,9 +1398,6 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'new_syntax',
         'description': 'Create a new syntax definition file in Packages/User (WindowCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'new_view',
-        'description': 'Create a new untitled view/tab in the current window. Alias of new_file.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'new_window',
         'description': 'Opens a new ST window. (ApplicationCommand) Observed on Sublime Text 4215: '
                        'opens a new Sublime Text window.',
@@ -1603,9 +1597,6 @@ TOOLS = [   {   'name': 'add_directory',
                                                                            '(15000 for the Install '
                                                                            'Package list); default '
                                                                            '0.'}}}},
-    {   'name': 'play_macro',
-        'description': 'Alias of run_macro — play back the most recently recorded macro.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'prev_bookmark',
         'description': 'Move the cursor to the previous bookmark in the active view.',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -2355,9 +2346,6 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'toggle_bookmark',
         'description': 'Toggle a bookmark on the current line of the active view.',
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'toggle_case',
-        'description': 'Alias of swap_case — toggle the case of each character in the selection.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'toggle_case_sensitive',
         'description': "Toggles the 'Case sensitive' flag in the Find/Replace/Incremental "
                        'Find/Find in Files panel. (WindowCommand)',
@@ -2470,20 +2458,9 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Transpose characters at the cursor (swap the two characters on either side '
                        'of the cursor). Ctrl+T equivalent.',
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'transpose_chars',
-        'description': 'Alias of transpose — swap the two characters adjacent to the cursor.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'trim_trailing_white_space',
         'description': 'Remove trailing whitespace from every line in the current selection (or '
                        'the whole file if no selection).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'trim_whitespace',
-        'description': 'Alias of trim_trailing_white_space — remove trailing whitespace from the '
-                       'selection/file.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'trim_whitespaces',
-        'description': 'Alias of trim_trailing_white_space — remove trailing whitespace from the '
-                       'selection/file.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'ui_click',
         'description': 'Click in one window of this Sublime Text process (Windows only) with the '

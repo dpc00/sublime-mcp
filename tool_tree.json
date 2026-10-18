@@ -100,7 +100,6 @@
    "case_and_whitespace": {
     "description": "Change case, trim and normalise whitespace",
     "tools": [
-     "add_missing_newline",
      "arithmetic",
      "convert_ident_case",
      "detect_indentation",
@@ -111,11 +110,8 @@
      "rot13",
      "swap_case",
      "title_case",
-     "toggle_case",
      "transformer",
      "trim_trailing_white_space",
-     "trim_whitespace",
-     "trim_whitespaces",
      "unexpand_tabs",
      "upper_case"
     ]
@@ -158,7 +154,6 @@
      "swap_line_up",
      "toggle_comment",
      "transpose",
-     "transpose_chars",
      "unindent",
      "wrap_block",
      "wrap_lines"
@@ -210,7 +205,6 @@
      "new_file",
      "new_file_at",
      "new_folder",
-     "new_view",
      "open_containing_folder",
      "open_dir",
      "open_file",
@@ -387,7 +381,6 @@
    "macros": {
     "description": "Record and play macros",
     "tools": [
-     "play_macro",
      "run_macro",
      "run_macro_file",
      "save_macro",
