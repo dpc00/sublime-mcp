@@ -112,7 +112,6 @@
      "set_indent_spaces",
      "set_indent_tabs",
      "swap_case",
-     "tab",
      "title_case",
      "toggle_case",
      "transformer",

@@ -4320,14 +4320,6 @@
       }
     },
     {
-      "name": "tab",
-      "description": "Indent the current selection by one indentation level (TextCommand). Equivalent to Tab when there is a selection.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
       "name": "title_case",
       "description": "Convert the current selection(s) to Title Case.",
       "inputSchema": {

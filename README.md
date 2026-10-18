@@ -16,7 +16,7 @@ Eight workflow tools are advertised by default (`discover_tools`, `batch`,
 `get_help`, `get_active_file`, `project_search`, `save_file`,
 `str_replace_based_edit_tool`, `ui_screenshot`). `discover_tools` lists a tree of
 categories (`category=`) or searches (`query=`) the
-complete internal catalog of 409 typed Sublime capabilities, and `batch` invokes
+complete internal catalog of 408 typed Sublime capabilities, and `batch` invokes
 discovered capabilities without flooding the model's initial tool context.
 
 Since 1.9.0, 160 of those tools are generated wrappers named after Sublime Text's

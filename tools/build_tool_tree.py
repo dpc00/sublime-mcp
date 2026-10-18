@@ -107,7 +107,7 @@ put("editing/lines", "duplicate_line sort_lines join_lines swap_line_up swap_lin
 put("editing/case_and_whitespace", "upper_case lower_case title_case swap_case toggle_case convert_ident_case "
     "trim_trailing_white_space trim_whitespace trim_whitespaces ensure_newline_at_eof add_missing_newline "
     "expand_tabs unexpand_tabs detect_indentation set_indent_tabs set_indent_spaces rot13 "
-    "encode_html_entities transformer arithmetic tab")
+    "encode_html_entities transformer arithmetic")
 put("editing/snippets_macros_fields", "insert_snippet expand_snippet next_field prev_field clear_fields close_tag "
     "auto_indent_tag add_where_snippet commit_completion auto_complete auto_complete_prev auto_complete_open_link "
     "hide_auto_complete replace_completion_with_auto_complete")
