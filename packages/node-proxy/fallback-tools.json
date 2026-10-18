@@ -3280,7 +3280,7 @@
     },
     {
       "name": "replace_in_files",
-      "description": "Run the Replace half of Find in Files (Ctrl+Shift+H \u2192 Replace All) and show the diff preview panel so the user can review every replacement before it is committed. Same `where` syntax as find_in_files. Replace string may be empty for deletion. Regex capture-group backrefs ($1, $2) supported when regex=True.",
+      "description": "Fill the Find in Files panel and press its Replace button (Find in Files, Replace). Sublime then asks 'Confirm Replace': answer it with dismiss_native_window (action='button', button='Replace' or 'Cancel'). On Replace, the changes are made in the matching files' open buffers (the files open with unsaved changes); write them to disk with save_all. Same `where` syntax as find_in_files. Replace string may be empty for deletion. Regex capture-group backrefs ($1, $2) supported when regex=True.",
       "inputSchema": {
         "type": "object",
         "properties": {

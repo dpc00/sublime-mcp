@@ -353,40 +353,33 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
   dialog and `dismiss_native_window` closes it. Open, Select Folder and Save As have Cancel, not OK: answer
   Cancel (`action="button", button="Cancel"`); OK on a dialog with no OK button fails and leaves the
   main thread blocked. `run_command` with `context_menu` opens a popup menu that blocks the same way.
-- **They install packages:** `install_package` installs only the package, not the libraries it depends on,
-  and a package loads the moment it is installed, so a package that needs libraries (MarkdownGlance needs
-  Markdown and pymdown-extensions) opens a "needs the Package Control libraries" dialog. To avoid it: add
-  the package to `ignored_packages`, `install_package`, run `satisfy_libraries`, remove it from
-  `ignored_packages`.
-- **A tool called with empty arguments** answers `{"error": "<name> required"}`: validation, not a failure.
-- **`str_replace_based_edit_tool` does not write to disk.** `create`, `str_replace` and `insert` change an
-  open, unsaved buffer (shown with undo and diff markers); the file does not exist, or keeps its old
-  content, until `save_file`. Call `save_file` before anything that reads the file outside Sublime.
-- **Closing several tabs in one `eval_python` call:** a loop of `Sheet.close()` hangs Sublime build 4215
-  (checked with two tabs). `View.close()` in a loop, the `close_all` command and closes spaced out by timers
-  are fine.
-- `ui_press_key` with the default `post` method delivered Down and Return to a quick panel in 4 of 5 tries;
-  the first try right after `close_all` was cancelled instead. Check the result of the key press. Method
-  `input` activates the window, which cancelled the quick panel.
-- **A picker or the Find panel can be up without any native window:** `list_native_windows` does not show
-  quick panels, the command palette or the Find panel. `ui_screenshot` shows them. Look before you restart
-  or kill a Sublime, and answer the picker first (`get_quick_panel` / `pick_quick_panel` for plugin-host
-  pickers, `ui_press_key` Escape or Down and Return for others).
-- **Prompts that `drive_input_panel` cannot answer:** `rename_file`, `rename_path`, `new_file_at`, `new_folder`,
-  `view_resource`, `quick_panel` and the picker tools open Sublime overlays, not plugin input panels. Answer them
-  with `ui_type_text` and `ui_press_key` (Return, Escape, Down), and check the result: `rename_file` pre-selects
-  the base name, so typing replaces only that part. `new_file_at` opens an unsaved buffer for the new name.
-  `edit_settings` opens its two views in a **new window**.
-- **`goto_definition`, `goto_reference`, `auto_complete_goto_definition`** use Sublime's symbol index and do
-  nothing when `index_files` is false. `lookup_symbol` searches the open files and works either way.
-- `get_encoding` returns what Sublime reports, which can be "Undefined". `toggle_side_bar` changes nothing when
-  the window has no folder open. Macros record only keys typed by a person, not commands sent by a tool; play a
-  `.sublime-macro` file with `run_macro_file` (file="Packages/User/name.sublime-macro").
-- **"This is an unregistered copy" dialog:** Sublime shows this purchase reminder now and then, for example after a
-  save. It is a modal dialog; read it, then close it with `dismiss_native_window` (OK or Cancel). It is not a
-  tool failure.
-- `ui_click`, `ui_hover` and `ui_press_key` refuse while the person at the keyboard has used the mouse or
-  keyboard in the last 8 seconds; pass `wait_idle_s` (up to 120) instead of retrying.
+- **`replace_in_files` asks "Confirm Replace":** answer it with `dismiss_native_window` (`action="button"`, `button="Replace"` or `"Cancel"`). On Replace, the changes are made in the matching files' open buffers (the files open with unsaved changes); write them with `save_all`.
+- **They install packages:** `install_package` installs the package; Package Control's libraries come from
+  `satisfy_libraries`. A package loads the moment it is installed, so to install one that needs libraries
+  (MarkdownGlance needs Markdown and pymdown-extensions): add the package to `ignored_packages`,
+  `install_package`, run `satisfy_libraries`, then remove it from `ignored_packages`.
+- **They ask a question in an overlay or picker, and wait for the answer:** `rename_file`, `rename_path`,
+  `new_file_at`, `new_folder`, `view_resource`, `quick_panel`, `prompt_goto_line`, `select_color_scheme`,
+  `select_theme`, `set_file_type`, `set_build_system`, `paste_from_history`, `open_recent_*`,
+  `goto_symbol_in_project`, `prompt_select_workspace`. Answer with `ui_type_text` and `ui_press_key`
+  (`Return` to accept, `Escape` to cancel, `Down` to move), then check the result. A picker opened by a plugin
+  can also be read with `get_quick_panel` and answered with `pick_quick_panel`. `rename_file` pre-selects the
+  base name, so typing replaces only that part. `edit_settings` opens its two views in a new window;
+  `new_file_at` opens an unsaved buffer for the new name.
+- **Pickers and the Find panel are drawn by Sublime, not Windows:** `list_native_windows` does not list them;
+  `ui_screenshot` shows them. Look at the screen before you restart, kill or close anything, and answer what
+  is waiting first.
+- **Before closing several tabs from `eval_python`:** use `view.close()` for each view, the `close_all`
+  command, or closes spaced out with `sublime.set_timeout`; do not call `Sheet.close()` repeatedly in one call.
+- **"This is an unregistered copy" dialog:** Sublime shows this purchase reminder now and then, for example
+  after a save. Read it, then close it with `dismiss_native_window`.
+- **`goto_definition`, `goto_reference`, `auto_complete_goto_definition`** use Sublime's symbol index, which
+  needs `index_files` true. `lookup_symbol` searches the open files.
+- **Macros:** play a `.sublime-macro` file with `run_macro_file` (file="Packages/User/name.sublime-macro").
+  `toggle_record_macro` records keys typed by a person.
+- `ui_click`, `ui_hover` and `ui_press_key` with `method="input"` need the target window uncovered and the
+  person at the keyboard idle for `min_idle_s` (default 8); pass `wait_idle_s` (up to 120) to wait, or a
+  smaller `min_idle_s`. `ui_press_key` with the default `post` method needs neither.
 
 ## When a native dialog blocks Sublime (Windows)
 

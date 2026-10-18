@@ -2476,7 +2476,7 @@ def _replace_in_files(body):
     def fn():
         w = sublime.active_window()
         w.run_command("show_panel", args)
-        w.run_command("replace_in_files")
+        w.run_command("replace_all")    # the panel's Replace button; Sublime asks "Confirm Replace"
         return {"ok": True, "panel_open": show, "pattern": pattern,
                 "replace": replace, "where": args["where"]}
     return _on_main(fn)
@@ -5597,10 +5597,11 @@ _MCP_TOOLS = [
      }, "required": ["pattern"]},
      _p("/find_in_files")),
     ("replace_in_files",
-     "Run the Replace half of Find in Files (Ctrl+Shift+H → Replace All) and show the diff "
-     "preview panel so the user can review every replacement before it is committed. Same "
-     "`where` syntax as find_in_files. Replace string may be empty for deletion. Regex "
-     "capture-group backrefs ($1, $2) supported when regex=True.",
+     "Fill the Find in Files panel and press its Replace button (Find in Files, Replace). Sublime then asks "
+     "'Confirm Replace': answer it with dismiss_native_window (action='button', button='Replace' or 'Cancel'). "
+     "On Replace, the changes are made in the matching files' open buffers (the files open with unsaved "
+     "changes); write them to disk with save_all. Same `where` syntax as find_in_files. Replace string may be "
+     "empty for deletion. Regex capture-group backrefs ($1, $2) supported when regex=True.",
      {"type": "object", "properties": {
          "pattern": {"type": "string"},
          "replace": {"type": "string", "description": "Replacement string (use empty string for deletion)"},

@@ -15,7 +15,7 @@ Bugs found by testing the tools with real arguments and checking their effects (
 - Argument names that did not match the Sublime command: `set_max_columns` takes `columns` (the tool said `cols`), `find_in_folder`, `new_file_at` and `new_folder` take `dirs`, `edit_settings` takes `base_file` (the tool's `resource` is now accepted as a shorthand), `add_to_kill_ring` needs `forward`, `arithmetic` needs `expr`, and `quick_panel` now opens Goto Anything (it ran `show_overlay` without saying which overlay). `rename_file` and `view_resource` take no arguments; their descriptions no longer say otherwise. `fold_unfold` now folds, or unfolds when the block is already folded.
 - Descriptions corrected for `sort_selection` (it sorts several selections among themselves, not lines) and `get_view_phantoms` (it sees only phantom sets that a plugin keeps in a module-level `_phantom_sets` dict).
 
-Not verified: `replace_in_files` fills the panel and runs `replace_in_files`, but no file on disk changed when it was called without a click on the panel's Replace button.
+`replace_in_files` now presses the Find in Files panel's Replace button (the window command `replace_all`); Sublime asks "Confirm Replace", and on Replace the changes are made in the open buffers of the matching files. It used to run `replace_in_files`, which is not a Sublime command, and did nothing. Tried with the real mouse and with the tool: Replace gave "bar bar" in the buffer and, after `save_all`, on disk; Cancel left the file unchanged.
 
 ## 1.14.3
 
