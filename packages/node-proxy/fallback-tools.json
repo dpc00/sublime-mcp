@@ -142,6 +142,14 @@
           },
           "default": {
             "type": "string"
+          },
+          "commit_single": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          },
+          "snippets_only": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
           }
         }
       }
@@ -375,7 +383,24 @@
       "description": "Create a clone of the active view (opens the same file in a new tab, sharing the buffer).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "add_to_selection": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          },
+          "group": {
+            "type": "integer",
+            "description": "As in Sublime's own keymap/menu. -1 means the current group."
+          },
+          "index": {
+            "type": "integer",
+            "description": "As in Sublime's own keymap/menu. -1 means the current position."
+          },
+          "retain_viewport_position": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -1071,7 +1096,12 @@
       "description": "Expand the current selection to the surrounding paragraph.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "markup_aware": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -1087,7 +1117,12 @@
       "description": "Convert leading tabs in the current selection (or whole file) to spaces, using the view's tab_size.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "set_translate_tabs": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -1159,7 +1194,12 @@
       "description": "Jumps to the next occurrence of the text or pattern in the find buffer. (TextCommand)",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "select_text": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -1167,7 +1207,16 @@
       "description": "Jumps to the previous occurrence of the text or pattern in the find buffer. (TextCommand)",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "close_panel": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          },
+          "select_text": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -1175,7 +1224,12 @@
       "description": "Finds the next occurrence of the current selection or the current word. (TextCommand)",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "select_text": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -1199,7 +1253,12 @@
       "description": "Finds the previous occurrence of the current selection or the current word. (TextCommand)",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "select_text": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -1870,7 +1929,16 @@
       "description": "Goto definition for the symbol under the cursor (WindowCommand).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "clear_to_right": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          },
+          "side_by_side": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -1897,7 +1965,16 @@
       "description": "Goto reference for the symbol under the cursor (WindowCommand).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "clear_to_right": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          },
+          "side_by_side": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -2228,7 +2305,12 @@
       "description": "Move the active view to the neighboring pane group.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "forward": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu. false moves to the previous group."
+          }
+        }
       }
     },
     {
@@ -2298,7 +2380,12 @@
       "description": "Create a new pane in the active window (WindowCommand).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "move": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -2394,7 +2481,12 @@
       "description": "Switch to the next view/tab in the current group.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "extend": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -2439,7 +2531,15 @@
       "description": "Open the OS file manager at the directory containing the active file (WindowCommand).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "As in Sublime's own keymap/menu. Paths of the files whose folders to open."
+          }
+        }
       }
     },
     {
@@ -2631,7 +2731,12 @@
       "description": "Paste the clipboard contents at the cursor(s), replacing any selection.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "clipboard": {
+            "type": "string",
+            "description": "As in Sublime's own keymap/menu. The menu passes 'selection'."
+          }
+        }
       }
     },
     {
@@ -2663,7 +2768,17 @@
       "description": "Permute (shuffle) the lines in the current selection into a random order.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "shuffle",
+              "reverse",
+              "unique"
+            ],
+            "description": "Default shuffle."
+          }
+        }
       }
     },
     {
@@ -2671,7 +2786,17 @@
       "description": "Permute (shuffle) the selections themselves into a random order.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "shuffle",
+              "reverse",
+              "unique"
+            ],
+            "description": "Default shuffle. Needs several non-empty selections."
+          }
+        }
       }
     },
     {
@@ -2748,7 +2873,12 @@
       "description": "Switch to the previous view/tab in the current group.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "extend": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -2970,7 +3100,12 @@
       "description": "Re-indent the current selection(s) so each line's indentation matches its nesting depth.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "single_line": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -3054,7 +3189,12 @@
       "description": "Reopens the most recently closed file. (WindowCommand)",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "As in Sublime's own keymap/menu. The keymap passes 'window'."
+          }
+        }
       }
     },
     {
@@ -3062,7 +3202,12 @@
       "description": "Replaces all tokens in the view, which matches the pattern in the Find input field. (WindowCommand)",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "close_panel": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -3294,6 +3439,10 @@
           "file": {
             "type": "string",
             "description": "The 'Packages/' relative path to the '.sublime-macro' file."
+          },
+          "hide_from_menu": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
           }
         }
       }
@@ -3424,7 +3573,20 @@
       "description": "Runs the Sublime Text 'select' command. (WindowCommand)",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "clear_to_right": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          },
+          "extend": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          },
+          "replace": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -3590,6 +3752,10 @@
           "file": {
             "type": "string",
             "description": "Accepts a 'Packages/' relative path to a sublime build file to set as the current build system. An empty string will set it to the 'Automatic' option as seen in 'Tools -> Build System'."
+          },
+          "index": {
+            "type": "integer",
+            "description": "As in Sublime's own menu, which passes 0, 1, 2, ... instead of file."
           }
         }
       }
@@ -4014,7 +4180,15 @@
       "description": "Open the repository of the selected file/folder in Sublime Merge. (WindowCommand)",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "As in Sublime's own keymap/menu. Repository folders."
+          }
+        }
       }
     },
     {
@@ -4054,7 +4228,19 @@
       "description": "Switch between files with the same base name and different extensions (WindowCommand).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "extensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "As in Sublime's own keymap/menu. Extensions to switch between, e.g. cpp."
+          },
+          "side_by_side": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {
@@ -4603,7 +4789,12 @@
       "description": "Convert leading spaces in the current selection (or whole file) to tabs, using the view's tab_size.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "set_translate_tabs": {
+            "type": "boolean",
+            "description": "As in Sublime's own keymap/menu."
+          }
+        }
       }
     },
     {

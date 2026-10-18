@@ -100,7 +100,15 @@ TOOLS = [   {   'name': 'add_directory',
                                              'next_completion_if_showing': {'type': 'boolean'},
                                              'auto_complete_commit_on_tab': {'type': 'boolean'},
                                              'mini': {'type': 'boolean'},
-                                             'default': {'type': 'string'}}}},
+                                             'default': {'type': 'string'},
+                                             'commit_single': {   'type': 'boolean',
+                                                                  'description': "As in Sublime's "
+                                                                                 'own '
+                                                                                 'keymap/menu.'},
+                                             'snippets_only': {   'type': 'boolean',
+                                                                  'description': "As in Sublime's "
+                                                                                 'own '
+                                                                                 'keymap/menu.'}}}},
     {   'name': 'auto_complete_goto_definition',
         'description': 'Auto-complete and goto the definition of the symbol under the cursor '
                        '(TextCommand).',
@@ -253,7 +261,24 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'clone_file',
         'description': 'Create a clone of the active view (opens the same file in a new tab, '
                        'sharing the buffer).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'add_to_selection': {   'type': 'boolean',
+                                                                     'description': 'As in '
+                                                                                    "Sublime's own "
+                                                                                    'keymap/menu.'},
+                                             'group': {   'type': 'integer',
+                                                          'description': "As in Sublime's own "
+                                                                         'keymap/menu. -1 means '
+                                                                         'the current group.'},
+                                             'index': {   'type': 'integer',
+                                                          'description': "As in Sublime's own "
+                                                                         'keymap/menu. -1 means '
+                                                                         'the current position.'},
+                                             'retain_viewport_position': {   'type': 'boolean',
+                                                                             'description': 'As in '
+                                                                                            "Sublime's "
+                                                                                            'own '
+                                                                                            'keymap/menu.'}}}},
     {   'name': 'close',
         'description': 'Closes the active view. (WindowCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -683,14 +708,23 @@ TOOLS = [   {   'name': 'add_directory',
                            'required': ['to']}},
     {   'name': 'expand_selection_to_paragraph',
         'description': 'Expand the current selection to the surrounding paragraph.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'markup_aware': {   'type': 'boolean',
+                                                                 'description': "As in Sublime's "
+                                                                                'own '
+                                                                                'keymap/menu.'}}}},
     {   'name': 'expand_snippet',
         'description': 'Expands the snippet under the cursor. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'expand_tabs',
         'description': 'Convert leading tabs in the current selection (or whole file) to spaces, '
                        "using the view's tab_size.",
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'set_translate_tabs': {   'type': 'boolean',
+                                                                       'description': 'As in '
+                                                                                      "Sublime's "
+                                                                                      'own '
+                                                                                      'keymap/menu.'}}}},
     {   'name': 'find_all',
         'description': 'Finds all the tokens which match the find pattern. (WindowCommand)',
         'inputSchema': {   'type': 'object',
@@ -735,15 +769,30 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'find_next',
         'description': 'Jumps to the next occurrence of the text or pattern in the find buffer. '
                        '(TextCommand)',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'select_text': {   'type': 'boolean',
+                                                                'description': "As in Sublime's "
+                                                                               'own '
+                                                                               'keymap/menu.'}}}},
     {   'name': 'find_prev',
         'description': 'Jumps to the previous occurrence of the text or pattern in the find '
                        'buffer. (TextCommand)',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'close_panel': {   'type': 'boolean',
+                                                                'description': "As in Sublime's "
+                                                                               'own keymap/menu.'},
+                                             'select_text': {   'type': 'boolean',
+                                                                'description': "As in Sublime's "
+                                                                               'own '
+                                                                               'keymap/menu.'}}}},
     {   'name': 'find_under',
         'description': 'Finds the next occurrence of the current selection or the current word. '
                        '(TextCommand)',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'select_text': {   'type': 'boolean',
+                                                                'description': "As in Sublime's "
+                                                                               'own '
+                                                                               'keymap/menu.'}}}},
     {   'name': 'find_under_expand',
         'description': 'Adds a new selection based on the current selection or expands the '
                        'selection to the current word. (TextCommand)',
@@ -756,7 +805,11 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'find_under_prev',
         'description': 'Finds the previous occurrence of the current selection or the current '
                        'word. (TextCommand)',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'select_text': {   'type': 'boolean',
+                                                                'description': "As in Sublime's "
+                                                                               'own '
+                                                                               'keymap/menu.'}}}},
     {   'name': 'focus_by_index',
         'description': 'Focus one of multiple selected views in the active group by its index. '
                        '(WindowCommand)',
@@ -1128,7 +1181,15 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'goto_definition',
         'description': 'Goto definition for the symbol under the cursor (WindowCommand).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'clear_to_right': {   'type': 'boolean',
+                                                                   'description': "As in Sublime's "
+                                                                                  'own '
+                                                                                  'keymap/menu.'},
+                                             'side_by_side': {   'type': 'boolean',
+                                                                 'description': "As in Sublime's "
+                                                                                'own '
+                                                                                'keymap/menu.'}}}},
     {   'name': 'goto_line',
         'description': 'Move the cursor to a line (and optional column) in the active file.',
         'inputSchema': {   'type': 'object',
@@ -1137,7 +1198,15 @@ TOOLS = [   {   'name': 'add_directory',
                            'required': ['line']}},
     {   'name': 'goto_reference',
         'description': 'Goto reference for the symbol under the cursor (WindowCommand).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'clear_to_right': {   'type': 'boolean',
+                                                                   'description': "As in Sublime's "
+                                                                                  'own '
+                                                                                  'keymap/menu.'},
+                                             'side_by_side': {   'type': 'boolean',
+                                                                 'description': "As in Sublime's "
+                                                                                'own '
+                                                                                'keymap/menu.'}}}},
     {   'name': 'goto_symbol_in_project',
         'description': 'Open the Goto Symbol In Project quick panel. (WindowCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1308,7 +1377,12 @@ TOOLS = [   {   'name': 'add_directory',
                                                                          'group.'}}}},
     {   'name': 'move_to_neighboring_group',
         'description': 'Move the active view to the neighboring pane group.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'forward': {   'type': 'boolean',
+                                                            'description': "As in Sublime's own "
+                                                                           'keymap/menu. false '
+                                                                           'moves to the previous '
+                                                                           'group.'}}}},
     {   'name': 'new_build_system',
         'description': 'Create a new build system file (WindowCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1340,7 +1414,10 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'new_pane',
         'description': 'Create a new pane in the active window (WindowCommand).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'move': {   'type': 'boolean',
+                                                         'description': "As in Sublime's own "
+                                                                        'keymap/menu.'}}}},
     {   'name': 'new_plugin',
         'description': 'Create a new plugin file in Packages/User (WindowCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1378,7 +1455,10 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'next_view',
         'description': 'Switch to the next view/tab in the current group.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'extend': {   'type': 'boolean',
+                                                           'description': "As in Sublime's own "
+                                                                          'keymap/menu.'}}}},
     {   'name': 'next_view_in_stack',
         'description': 'Switch to the next view in the view history stack (Ctrl+Tab equivalent).',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1402,7 +1482,13 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'open_containing_folder',
         'description': 'Open the OS file manager at the directory containing the active file '
                        '(WindowCommand).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'files': {   'type': 'array',
+                                                          'items': {'type': 'string'},
+                                                          'description': "As in Sublime's own "
+                                                                         'keymap/menu. Paths of '
+                                                                         'the files whose folders '
+                                                                         'to open.'}}}},
     {   'name': 'open_context_url',
         'description': 'Open the URL under the cursor in the default browser (TextCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1513,7 +1599,12 @@ TOOLS = [   {   'name': 'add_directory',
                                                                               'selection(s).'}}}},
     {   'name': 'paste',
         'description': 'Paste the clipboard contents at the cursor(s), replacing any selection.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'clipboard': {   'type': 'string',
+                                                              'description': "As in Sublime's own "
+                                                                             'keymap/menu. The '
+                                                                             'menu passes '
+                                                                             "'selection'."}}}},
     {   'name': 'paste_and_indent',
         'description': 'Paste and re-indent the pasted lines to match surrounding indentation.',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1526,10 +1617,23 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'permute_lines',
         'description': 'Permute (shuffle) the lines in the current selection into a random order.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'operation': {   'type': 'string',
+                                                              'enum': [   'shuffle',
+                                                                          'reverse',
+                                                                          'unique'],
+                                                              'description': 'Default shuffle.'}}}},
     {   'name': 'permute_selection',
         'description': 'Permute (shuffle) the selections themselves into a random order.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'operation': {   'type': 'string',
+                                                              'enum': [   'shuffle',
+                                                                          'reverse',
+                                                                          'unique'],
+                                                              'description': 'Default shuffle. '
+                                                                             'Needs several '
+                                                                             'non-empty '
+                                                                             'selections.'}}}},
     {   'name': 'pick_quick_panel',
         'description': 'Pick an item of the quick panel shown by get_quick_panel: by index, or by '
                        "text (case-insensitive match on the item's first line; must match exactly "
@@ -1570,7 +1674,10 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'prev_view',
         'description': 'Switch to the previous view/tab in the current group.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'extend': {   'type': 'boolean',
+                                                           'description': "As in Sublime's own "
+                                                                          'keymap/menu.'}}}},
     {   'name': 'prev_view_in_stack',
         'description': 'Switch to the previous view in the view history stack (Ctrl+Shift+Tab '
                        'equivalent).',
@@ -1736,7 +1843,11 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'reindent',
         'description': "Re-indent the current selection(s) so each line's indentation matches its "
                        'nesting depth.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'single_line': {   'type': 'boolean',
+                                                                'description': "As in Sublime's "
+                                                                               'own '
+                                                                               'keymap/menu.'}}}},
     {   'name': 'release_resource',
         'description': 'Release a claim taken with claim_resource before its TTL expires. Only the '
                        "current holder (same 'holder' value) can release it.",
@@ -1777,11 +1888,19 @@ TOOLS = [   {   'name': 'add_directory',
                                                                             'reopened.'}}}},
     {   'name': 'reopen_last_file',
         'description': 'Reopens the most recently closed file. (WindowCommand)',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'source': {   'type': 'string',
+                                                           'description': "As in Sublime's own "
+                                                                          'keymap/menu. The keymap '
+                                                                          "passes 'window'."}}}},
     {   'name': 'replace_all',
         'description': 'Replaces all tokens in the view, which matches the pattern in the Find '
                        'input field. (WindowCommand)',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'close_panel': {   'type': 'boolean',
+                                                                'description': "As in Sublime's "
+                                                                               'own '
+                                                                               'keymap/menu.'}}}},
     {   'name': 'replace_completion_with_auto_complete',
         'description': 'Replaces the most recently inserted completion with the next result '
                        'provided by the auto completion engine. (TextCommand) Observed on Sublime '
@@ -1891,8 +2010,11 @@ TOOLS = [   {   'name': 'add_directory',
                            'properties': {   'file': {   'type': 'string',
                                                          'description': "The 'Packages/' relative "
                                                                         'path to the '
-                                                                        "'.sublime-macro' "
-                                                                        'file.'}}}},
+                                                                        "'.sublime-macro' file."},
+                                             'hide_from_menu': {   'type': 'boolean',
+                                                                   'description': "As in Sublime's "
+                                                                                  'own '
+                                                                                  'keymap/menu.'}}}},
     {   'name': 'run_syntax_tests',
         'description': 'Run syntax tests on the active syntax file (WindowCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1963,7 +2085,17 @@ TOOLS = [   {   'name': 'add_directory',
                                                           'description': 'Max results (1-100).'}}}},
     {   'name': 'select',
         'description': "Runs the Sublime Text 'select' command. (WindowCommand)",
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'clear_to_right': {   'type': 'boolean',
+                                                                   'description': "As in Sublime's "
+                                                                                  'own '
+                                                                                  'keymap/menu.'},
+                                             'extend': {   'type': 'boolean',
+                                                           'description': "As in Sublime's own "
+                                                                          'keymap/menu.'},
+                                             'replace': {   'type': 'boolean',
+                                                            'description': "As in Sublime's own "
+                                                                           'keymap/menu.'}}}},
     {   'name': 'select_all',
         'description': 'Select the entire contents of the active view (Ctrl+A equivalent).',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -2042,7 +2174,12 @@ TOOLS = [   {   'name': 'add_directory',
                                                                         'will set it to the '
                                                                         "'Automatic' option as "
                                                                         "seen in 'Tools -> Build "
-                                                                        "System'."}}}},
+                                                                        "System'."},
+                                             'index': {   'type': 'integer',
+                                                          'description': "As in Sublime's own "
+                                                                         'menu, which passes 0, 1, '
+                                                                         '2, ... instead of '
+                                                                         'file.'}}}},
     {   'name': 'set_encoding',
         'description': "Set the character encoding of the active file (e.g. 'UTF-8', 'Western "
                        "(Windows 1252)').",
@@ -2245,7 +2382,12 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'sublime_merge_open_repo',
         'description': 'Open the repository of the selected file/folder in Sublime Merge. '
                        '(WindowCommand)',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'paths': {   'type': 'array',
+                                                          'items': {'type': 'string'},
+                                                          'description': "As in Sublime's own "
+                                                                         'keymap/menu. Repository '
+                                                                         'folders.'}}}},
     {   'name': 'swap_case',
         'description': 'Swap the case of each character in the current selection(s) (upper↔lower).',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -2261,7 +2403,18 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'switch_file',
         'description': 'Switch between files with the same base name and different extensions '
                        '(WindowCommand).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'extensions': {   'type': 'array',
+                                                               'items': {'type': 'string'},
+                                                               'description': "As in Sublime's own "
+                                                                              'keymap/menu. '
+                                                                              'Extensions to '
+                                                                              'switch between, '
+                                                                              'e.g. cpp.'},
+                                             'side_by_side': {   'type': 'boolean',
+                                                                 'description': "As in Sublime's "
+                                                                                'own '
+                                                                                'keymap/menu.'}}}},
     {   'name': 'title_case',
         'description': 'Convert the current selection(s) to Title Case.',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -2740,7 +2893,12 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'unexpand_tabs',
         'description': 'Convert leading spaces in the current selection (or whole file) to tabs, '
                        "using the view's tab_size.",
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'set_translate_tabs': {   'type': 'boolean',
+                                                                       'description': 'As in '
+                                                                                      "Sublime's "
+                                                                                      'own '
+                                                                                      'keymap/menu.'}}}},
     {   'name': 'unfold',
         'description': 'Unfolds all folded region(s) at the given caret location(s). (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
