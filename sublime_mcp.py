@@ -50,7 +50,7 @@ _edit_file implements the same four-command interface as Claude Code's tool:
   create     → create a new file with initial content
 Edits appear live in ST with full undo history and gutter diff markers.
 
-Install: via Package Control, or copy this file to Packages/User/ manually.
+Install: copy this file to Packages/User/.
 """
 
 import contextlib

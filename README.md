@@ -120,11 +120,6 @@ machine: set `auth_token` for that.
 
 ### 1. Install the Sublime Text plugin
 
-**Package Control: not available.** The package was
-[submitted to Package Control](https://github.com/sublimehq/package_control_channel/pull/9554)
-and that pull request is closed without being merged, so **MCP Commander** does not
-appear in `Package Control: Install Package`. Use the manual path below.
-
 **Manual (also the path for developing sublime-mcp itself):**
 
 ```bash
