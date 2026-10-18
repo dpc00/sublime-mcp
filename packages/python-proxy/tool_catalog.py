@@ -24,8 +24,11 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Alias of ensure_newline_at_eof — add a trailing newline at EOF if absent.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'add_to_kill_ring',
-        'description': 'Add the current selection to the kill ring (TextCommand, used by yank).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'description': 'Add the current selection to the kill ring (TextCommand, used by yank). '
+                       'forward=false (default) adds the selection; forward=true is the variant '
+                       'used when killing forward.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {'forward': {'type': 'boolean', 'default': False}}}},
     {   'name': 'add_where_snippet',
         'description': "Adds a snippet to the 'Where' field in the 'Find in Files' panel. "
                        '(WindowCommand)',
@@ -67,9 +70,16 @@ TOOLS = [   {   'name': 'add_directory',
                                                                                            'to '
                                                                                            'spaces.'}}}},
     {   'name': 'arithmetic',
-        'description': 'Evaluate the selected expression as arithmetic and replace it with the '
-                       "result (TextCommand). Select '2+2' to get '4'.",
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'description': 'Replace each selection with the result of an expression (TextCommand). '
+                       'expr is evaluated once per selection with x = the selection read as a '
+                       'number, s = its text, i = its index (0, 1, ...) and math; for example '
+                       "expr='x*10' turns the selections 2 and 3 into 20 and 30, and expr='i + 1' "
+                       'numbers the cursors.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'expr': {   'type': 'string',
+                                                         'description': 'Python expression using '
+                                                                        'x, s, i and math.'}},
+                           'required': ['expr']}},
     {   'name': 'auto_complete',
         'description': 'Shows the auto completion popup. (TextCommand) Observed on Sublime Text '
                        '4215: shows an in-app panel, popup or overlay (dismiss with hide_overlay, '
@@ -307,8 +317,8 @@ TOOLS = [   {   'name': 'add_directory',
                        'active one.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'close_others',
-        'description': 'Close all views in the current group except the active one (Close Other '
-                       'Tabs).',
+        'description': "Close all tabs in the active tab's group except the active one (Close "
+                       'Other Tabs).',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'close_others_by_index',
         'description': 'Closes all views of a group but the one identified by group and index. '
@@ -349,7 +359,8 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Close all transient views (preview tabs) in the current window.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'close_unmodified',
-        'description': 'Close all unmodified (clean) views in the current window.',
+        'description': "Close the tabs without unsaved changes in the active tab's group (Close "
+                       'Unmodified Tabs).',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'close_unmodified_to_right_by_index',
         'description': 'Closes all unmodified views of a group right of the one identified by '
@@ -611,11 +622,17 @@ TOOLS = [   {   'name': 'add_directory',
                            'properties': {'msg': {'type': 'string'}},
                            'required': ['msg']}},
     {   'name': 'edit_settings',
-        'description': 'Open the given settings resource for editing (WindowCommand). Pass '
-                       "'resource' (e.g. 'Preferences').",
+        'description': 'Open a settings file for editing in a split view: the default settings on '
+                       'the left, your own on the right (WindowCommand edit_settings). resource is '
+                       "the settings name without the extension, e.g. 'Preferences' or 'Python'; "
+                       "or pass base_file and user_file as Sublime's own commands do.",
         'inputSchema': {   'type': 'object',
-                           'properties': {'resource': {'type': 'string'}},
-                           'required': ['resource']}},
+                           'properties': {   'resource': {   'type': 'string',
+                                                             'description': "e.g. 'Preferences'."},
+                                             'base_file': {   'type': 'string',
+                                                              'description': 'e.g. '
+                                                                             '${packages}/Default/Preferences.sublime-settings'},
+                                             'user_file': {'type': 'string'}}}},
     {   'name': 'edit_syntax_settings',
         'description': 'Open the syntax-specific settings file (WindowCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -758,12 +775,15 @@ TOOLS = [   {   'name': 'add_directory',
                                              'show_panel': {'type': 'boolean', 'default': True}},
                            'required': ['pattern']}},
     {   'name': 'find_in_folder',
-        'description': "Open Find in Files scoped to a folder (WindowCommand). Pass 'pattern' "
-                       "(regex) and optional 'where'.",
+        'description': 'Open the Find in Files panel with its Where box set to the given folders '
+                       "(WindowCommand find_in_folder, the sidebar's Find in Folder). To search, "
+                       'use project_search or find_in_files.',
         'inputSchema': {   'type': 'object',
-                           'properties': {   'pattern': {'type': 'string'},
-                                             'where': {'type': 'string'}},
-                           'required': ['pattern']}},
+                           'properties': {   'dirs': {   'type': 'array',
+                                                         'items': {'type': 'string'},
+                                                         'description': 'Folder path(s) to '
+                                                                        'search.'}},
+                           'required': ['dirs']}},
     {   'name': 'find_next',
         'description': 'Jumps to the next occurrence of the text or pattern in the find buffer. '
                        '(TextCommand)',
@@ -840,8 +860,7 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Fold(s) the html/xml tag attributes. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'fold_unfold',
-        'description': 'Toggle the fold state of the region at the cursor (TextCommand). Collapses '
-                       'or expands the enclosing code block.',
+        'description': 'Fold the code block at the cursor, or unfold it when it is already folded.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'get_active_file',
         'description': "Return the active file's path, full content, cursor line/col, dirty flag, "
@@ -1105,6 +1124,9 @@ TOOLS = [   {   'name': 'add_directory',
                                              'index': {'type': 'integer', 'default': -1}}}},
     {   'name': 'get_view_phantoms',
         'description': 'Return phantom HTML and extracted text from a view by name.\n'
+                       'Sublime has no API to list phantoms, so this sees only phantom sets that a '
+                       'plugin keeps in a module-level _phantom_sets dict (view id -> PhantomSet), '
+                       'as GhostShell does; phantoms added any other way are not listed.\n'
                        'If key is omitted, returns phantoms for all keys. Output can be huge for a '
                        'view with hundreds of phantoms (a GhostShell omp tab: about 290 KB): '
                        'html=false drops the HTML and the empty spacer phantoms, last=N keeps only '
@@ -1338,11 +1360,13 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Move the active view to the neighboring pane group.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'move_view',
-        'description': 'Move the active view to a different group. Optional args: group (target '
-                       "group index), direction ('left'/'right'/'up'/'down').",
+        'description': "Move the active view to another group (Sublime's move_to_group). group is "
+                       'the target group index (0-based).',
         'inputSchema': {   'type': 'object',
-                           'properties': {   'group': {'type': 'integer', 'default': -1},
-                                             'direction': {'type': 'string', 'default': ''}}}},
+                           'properties': {   'group': {   'type': 'integer',
+                                                          'description': 'Target group index, '
+                                                                         '0-based.'}},
+                           'required': ['group']}},
     {   'name': 'new_build_system',
         'description': 'Create a new build system file (WindowCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1350,13 +1374,25 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Create a new untitled file in the current window (File → New File).',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'new_file_at',
-        'description': "Create a new file at the given path (WindowCommand). Pass 'path' in args.",
+        'description': 'Create a new file inside the given folders (WindowCommand new_file_at, the '
+                       "sidebar's New File). It opens an input panel for the file name: answer it "
+                       "with drive_input_panel (text=<name>, action='submit').",
         'inputSchema': {   'type': 'object',
-                           'properties': {'path': {'type': 'string'}},
-                           'required': ['path']}},
+                           'properties': {   'dirs': {   'type': 'array',
+                                                         'items': {'type': 'string'},
+                                                         'description': 'Folder path(s) to create '
+                                                                        'the file in.'}},
+                           'required': ['dirs']}},
     {   'name': 'new_folder',
-        'description': 'Create a new folder in the current project (WindowCommand).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'description': 'Create a new folder inside the given folders (WindowCommand new_folder, '
+                       "the sidebar's New Folder). It opens an input panel for the folder name: "
+                       "answer it with drive_input_panel (text=<name>, action='submit').",
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'dirs': {   'type': 'array',
+                                                         'items': {'type': 'string'},
+                                                         'description': 'Folder path(s) to create '
+                                                                        'the folder in.'}},
+                           'required': ['dirs']}},
     {   'name': 'new_os_tab',
         'description': 'Creates a new empty window in the os tab. (WindowCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1398,7 +1434,8 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Set the focus to the next window in the os tab. (WindowCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'next_pane',
-        'description': 'Move focus to the next pane/group in the window.',
+        'description': "Move focus to the next pane/group in the window (Sublime's "
+                       'focus_neighboring_group).',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'next_result',
         'description': 'Jump to the next find-in-files or build result. Visible in the view '
@@ -1590,7 +1627,8 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Sets the focus to the previous window in the os tab. (WindowCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'prev_pane',
-        'description': 'Move focus to the previous pane/group in the window.',
+        'description': 'Move focus to the previous pane/group in the window '
+                       '(focus_neighboring_group, backwards).',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'prev_result',
         'description': 'Jump to the previous find-in-files or build result. Visible in the view '
@@ -1790,10 +1828,10 @@ TOOLS = [   {   'name': 'add_directory',
                        'main thread until a person dismisses it.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'rename_file',
-        'description': "Rename the active file (WindowCommand). Pass 'path' for the new name.",
-        'inputSchema': {   'type': 'object',
-                           'properties': {'path': {'type': 'string'}},
-                           'required': ['path']}},
+        'description': 'Open the File > Rename prompt for the active file (WindowCommand '
+                       'rename_file). The prompt is an input panel: enter the new name with '
+                       "drive_input_panel (text=<new name>, action='submit').",
+        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'rename_path',
         'description': 'Renames the given file(s) on disk. (WindowCommand) Observed on Sublime '
                        'Text 4215: when given arguments: shows an in-app panel, popup or overlay '
@@ -2142,11 +2180,12 @@ TOOLS = [   {   'name': 'add_directory',
                        'select_to_mark/swap_with_mark/delete_to_mark.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'set_max_columns',
-        'description': 'Set the maximum number of columns for the current layout (WindowCommand). '
-                       "Pass 'cols' integer.",
+        'description': 'Set the maximum number of columns the groups are laid out in '
+                       "(WindowCommand, Sublime's View > Layout > Max Columns). It only matters "
+                       'when the window has more groups than columns.',
         'inputSchema': {   'type': 'object',
-                           'properties': {'cols': {'type': 'integer'}},
-                           'required': ['cols']}},
+                           'properties': {'columns': {'type': 'integer', 'description': '1 to 4.'}},
+                           'required': ['columns']}},
     {   'name': 'set_setting',
         'description': "Set a Sublime Text setting by key. scope='view' (default) or 'window'.",
         'inputSchema': {   'type': 'object',
@@ -2230,8 +2269,14 @@ TOOLS = [   {   'name': 'add_directory',
                            'properties': {   'case_sensitive': {   'type': 'boolean',
                                                                    'default': False}}}},
     {   'name': 'sort_selection',
-        'description': 'Sort the selected lines alphabetically (locale-aware).',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'description': 'Sort the contents of several selections among themselves (TextCommand): '
+                       'with the selections c, a, b they become a, b, c. It does not sort lines; '
+                       'use sort_lines for that. Optional case_sensitive, reverse, '
+                       'remove_duplicates.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'case_sensitive': {'type': 'boolean'},
+                                             'reverse': {'type': 'boolean'},
+                                             'remove_duplicates': {'type': 'boolean'}}}},
     {   'name': 'split_line',
         'description': 'Split the line at the cursor position (Ctrl+Enter equivalent in some '
                        'keymaps).',
@@ -2847,11 +2892,10 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Convert the current selection(s) to UPPER CASE.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'view_resource',
-        'description': 'Open a read-only view of a bundled or packaged resource (WindowCommand). '
-                       "Pass 'resource'.",
-        'inputSchema': {   'type': 'object',
-                           'properties': {'resource': {'type': 'string'}},
-                           'required': ['resource']}},
+        'description': "Open Sublime's View Package File picker (WindowCommand view_resource): "
+                       'pick a package, then a file in it. It takes no arguments; answer the '
+                       'pickers with ui_type_text and ui_press_key.',
+        'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'wrap_block',
         'description': "Wrap lines in the selection as a block comment using the active syntax's "
                        'block comment markers (TextCommand).',

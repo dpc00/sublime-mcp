@@ -336,6 +336,19 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
   quick panels, the command palette or the Find panel. `ui_screenshot` shows them. Look before you restart
   or kill a Sublime, and answer the picker first (`get_quick_panel` / `pick_quick_panel` for plugin-host
   pickers, `ui_press_key` Escape or Down and Return for others).
+- **Prompts that `drive_input_panel` cannot answer:** `rename_file`, `rename_path`, `new_file_at`, `new_folder`,
+  `view_resource`, `quick_panel` and the picker tools open Sublime overlays, not plugin input panels. Answer them
+  with `ui_type_text` and `ui_press_key` (Return, Escape, Down), and check the result: `rename_file` pre-selects
+  the base name, so typing replaces only that part. `new_file_at` opens an unsaved buffer for the new name.
+  `edit_settings` opens its two views in a **new window**.
+- **`goto_definition`, `goto_reference`, `auto_complete_goto_definition`** use Sublime's symbol index and do
+  nothing when `index_files` is false. `lookup_symbol` searches the open files and works either way.
+- `get_encoding` returns what Sublime reports, which can be "Undefined". `toggle_side_bar` changes nothing when
+  the window has no folder open. Macros record only keys typed by a person, not commands sent by a tool; play a
+  `.sublime-macro` file with `run_macro_file` (file="Packages/User/name.sublime-macro").
+- **"This is an unregistered copy" dialog:** Sublime shows this purchase reminder now and then, for example after a
+  save. It is a modal dialog; read it, then close it with `dismiss_native_window` (OK or Cancel). It is not a
+  tool failure.
 - `ui_click`, `ui_hover` and `ui_press_key` refuse while the person at the keyboard has used the mouse or
   keyboard in the last 8 seconds; pass `wait_idle_s` (up to 120) instead of retrying.
 

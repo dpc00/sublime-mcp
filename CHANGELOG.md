@@ -10,6 +10,11 @@ Bugs found by testing the tools with real arguments and checking their effects (
 - `find_in_files` and `replace_in_files` had the same wrong argument and now fill the Replace box.
 - `eval_python_latest` ran the Microsoft Store `python3` stub (exit code 9009, "Python was not found") on a machine that also has a real Python. It now skips interpreters under WindowsApps.
 
+- Tools that pointed at Sublime commands that do not exist (they answered `ok` and did nothing) now run the real command: `move_line_up` and `move_line_down` (`swap_line_up`, `swap_line_down`), `tab` (`indent`), `auto_indent` (`reindent`), `split_line` (inserts a newline), `expand_selection` and its `_to_indentation`, `_to_scope` and `_to_brackets` variants (`expand_selection` with `to`), `shrink_selection` (`single_selection`), `set_indent_tabs` and `set_indent_spaces` (`set_setting translate_tabs_to_spaces`), `next_pane` and `prev_pane` (`focus_neighboring_group`), `move_view` (`move_to_group`), `reopen_closed_file` (`reopen_last_file`).
+- `close_others`, `close_other_tabs` and `close_unmodified` did nothing: the real commands need the group and index of a tab (their default means "the tab that was right-clicked"). They now use the active tab's.
+- Argument names that did not match the Sublime command: `set_max_columns` takes `columns` (the tool said `cols`), `find_in_folder`, `new_file_at` and `new_folder` take `dirs`, `edit_settings` takes `base_file` (the tool's `resource` is now accepted as a shorthand), `add_to_kill_ring` needs `forward`, `arithmetic` needs `expr`, and `quick_panel` now opens Goto Anything (it ran `show_overlay` without saying which overlay). `rename_file` and `view_resource` take no arguments; their descriptions no longer say otherwise. `fold_unfold` now folds, or unfolds when the block is already folded.
+- Descriptions corrected for `sort_selection` (it sorts several selections among themselves, not lines) and `get_view_phantoms` (it sees only phantom sets that a plugin keeps in a module-level `_phantom_sets` dict).
+
 Not verified: `replace_in_files` fills the panel and runs `replace_in_files`, but no file on disk changed when it was called without a click on the panel's Replace button.
 
 ## 1.14.3

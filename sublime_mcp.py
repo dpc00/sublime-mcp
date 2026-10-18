@@ -3223,9 +3223,10 @@ def _duplicate_line(body):
 # (after stripping a few meta keys). Use these for simple command wrappers so
 # the tool schema in _MCP_TOOLS stays the source of truth for documentation.
 
-def _vc(cmd):
+def _vc(cmd, **defaults):
     def handler(body):
-        args = {k: v for k, v in body.items() if v is not None}
+        args = dict(defaults)
+        args.update({k: v for k, v in body.items() if v is not None})
 
         def fn():
             v = _active_view()
@@ -3239,9 +3240,10 @@ def _vc(cmd):
     return handler
 
 
-def _wc(cmd):
+def _wc(cmd, **defaults):
     def handler(body):
-        args = {k: v for k, v in body.items() if v is not None}
+        args = dict(defaults)
+        args.update({k: v for k, v in body.items() if v is not None})
 
         def fn():
             w = sublime.active_window()
@@ -3253,6 +3255,66 @@ def _wc(cmd):
         return _on_main(fn)
 
     return handler
+
+
+def _close_others(body):
+    """Close every tab in the active tab's group except the active one (Sublime's close_others_by_index)."""
+    def fn():
+        w = sublime.active_window()
+        sheet = w.active_sheet() if w else None
+        if sheet is None:
+            return {"error": "no active tab"}
+        group, index = w.get_sheet_index(sheet)
+        w.run_command("close_others_by_index", {"group": group, "index": index})
+        return {"ok": True}
+
+    return _on_main(fn)
+
+
+def _close_unmodified(body):
+    """Close the tabs without unsaved changes in the active tab's group (Sublime's close_unmodified; its
+    group=-1, index=-1 default means "the tab that was right-clicked" and does nothing without one)."""
+    def fn():
+        w = sublime.active_window()
+        sheet = w.active_sheet() if w else None
+        if sheet is None:
+            return {"error": "no active tab"}
+        group, index = w.get_sheet_index(sheet)
+        w.run_command("close_unmodified", {"group": group, "index": index})
+        return {"ok": True}
+
+    return _on_main(fn)
+
+
+def _edit_settings(body):
+    """edit_settings takes base_file (and user_file); accept the bare settings name as a shorthand for base_file."""
+    args = {k: v for k, v in body.items() if v is not None and k != "resource"}
+    resource = body.get("resource")
+    if resource and "base_file" not in args:
+        args["base_file"] = "${packages}/Default/%s.sublime-settings" % resource
+    args.setdefault("default", "// Settings in here override those in the default file on the left.\n{\n\t$0\n}\n")
+
+    def fn():
+        w = sublime.active_window()
+        if not w:
+            return {"error": "no active window"}
+        w.run_command("edit_settings", args)
+        return {"ok": True}
+
+    return _on_main(fn)
+
+
+def _fold_unfold(body):
+    """Fold the block at the cursor, or unfold it when it is already folded."""
+    def fn():
+        v = _active_view()
+        if not v:
+            return {"error": "no active view"}
+        folded = any(r.contains(s.begin()) or r.end() == s.begin() for s in v.sel() for r in v.folded_regions())
+        v.run_command("unfold" if folded else "fold")
+        return {"ok": True, "folded": not folded}
+
+    return _on_main(fn)
 
 
 def _ac(cmd):
@@ -3675,22 +3737,22 @@ _POST = {
     "/new_file": _wc("new_file"),
     "/new_view": _wc("new_file"),
     "/close_all": _wc("close_all"),
-    "/close_others": _wc("close_others"),
-    "/close_other_tabs": _wc("close_others"),
-    "/close_unmodified": _wc("close_unmodified"),
+    "/close_others": _close_others,
+    "/close_other_tabs": _close_others,
+    "/close_unmodified": _close_unmodified,
     "/close_pane": _wc("close_pane"),
     "/close_transient": _wc("close_transient"),
-    "/reopen_closed_file": _wc("reopen_closed_file"),
+    "/reopen_closed_file": _wc("reopen_last_file"),
     "/clone_file": _wc("clone_file"),
     "/next_view": _wc("next_view"),
     "/prev_view": _wc("prev_view"),
     "/next_view_in_stack": _wc("next_view_in_stack"),
     "/prev_view_in_stack": _wc("prev_view_in_stack"),
-    "/next_pane": _wc("next_pane"),
-    "/prev_pane": _wc("prev_pane"),
+    "/next_pane": _wc("focus_neighboring_group"),
+    "/prev_pane": _wc("focus_neighboring_group", forward=False),
     "/focus_neighboring_group": _wc("focus_neighboring_group"),
     "/move_to_neighboring_group": _wc("move_to_neighboring_group"),
-    "/move_view": _wc("move_view"),
+    "/move_view": _wc("move_to_group"),
     "/set_layout_1": _wc("set_layout"),
     "/toggle_full_screen": _wc("toggle_full_screen"),
     "/toggle_menu": _wc("toggle_menu"),
@@ -3707,25 +3769,25 @@ _POST = {
     "/cut": _vc("cut"),
     "/copy": _vc("copy"),
     "/select_all": _vc("select_all"),
-    "/expand_selection": _vc("expand_selection"),
+    "/expand_selection": _vc("expand_selection", to="smart"),
     "/expand_selection_to_paragraph": _vc("expand_selection_to_paragraph"),
-    "/expand_selection_to_indentation": _vc("expand_selection_to_indentation"),
-    "/expand_selection_to_scope": _vc("expand_selection_to_scope"),
-    "/expand_selection_to_brackets": _vc("expand_selection_to_brackets"),
-    "/shrink_selection": _vc("shrink_selection"),
+    "/expand_selection_to_indentation": _vc("expand_selection", to="indentation"),
+    "/expand_selection_to_scope": _vc("expand_selection", to="scope"),
+    "/expand_selection_to_brackets": _vc("expand_selection", to="brackets"),
+    "/shrink_selection": _vc("single_selection"),
     "/split_selection_into_lines": _vc("split_selection_into_lines"),
     "/single_selection": _vc("single_selection"),
     "/clear_fields": _vc("clear_fields"),
     "/join_lines": _vc("join_lines"),
-    "/split_line": _vc("split_line"),
+    "/split_line": _vc("insert", characters="\n"),
     "/swap_line_up": _vc("swap_line_up"),
     "/swap_line_down": _vc("swap_line_down"),
-    "/move_line_up": _vc("move_line_up"),
-    "/move_line_down": _vc("move_line_down"),
+    "/move_line_up": _vc("swap_line_up"),
+    "/move_line_down": _vc("swap_line_down"),
     "/indent": _vc("indent"),
     "/unindent": _vc("unindent"),
     "/reindent": _vc("reindent"),
-    "/auto_indent": _vc("auto_indent"),
+    "/auto_indent": _vc("reindent"),
     "/wrap_lines": _vc("wrap_lines"),
     "/transpose": _vc("transpose"),
     "/upper_case": _vc("upper_case"),
@@ -3745,8 +3807,8 @@ _POST = {
     "/expand_tabs": _vc("expand_tabs"),
     "/unexpand_tabs": _vc("unexpand_tabs"),
     "/detect_indentation": _vc("detect_indentation"),
-    "/set_indent_tabs": _vc("set_indent_tabs"),
-    "/set_indent_spaces": _vc("set_indent_spaces"),
+    "/set_indent_tabs": _vc("set_setting", setting="translate_tabs_to_spaces", value=False),
+    "/set_indent_spaces": _vc("set_setting", setting="translate_tabs_to_spaces", value=True),
     "/yank": _vc("yank"),
     "/transpose_chars": _vc("transpose"),
     "/scroll_to_bof": _vc("scroll_to_bof"),
@@ -3765,7 +3827,7 @@ _POST = {
     "/copy_path": _wc("copy_path"),
     "/switch_file": _wc("switch_file"),
     "/open_file_settings": _wc("open_file_settings"),
-    "/edit_settings": _wc("edit_settings"),
+    "/edit_settings": _edit_settings,
     "/new_build_system": _wc("new_build_system"),
     "/new_plugin": _wc("new_plugin"),
     "/new_snippet": _wc("new_snippet"),
@@ -3780,7 +3842,7 @@ _POST = {
     "/auto_complete_goto_definition": _vc("auto_complete_goto_definition"),
     "/open_symbol_definition": _wc("open_symbol_definition"),
     "/prompt_goto_line": _wc("prompt_goto_line"),
-    "/quick_panel": _wc("show_overlay"),
+    "/quick_panel": _wc("show_overlay", overlay="goto"),
     "/select_color_scheme": _wc("select_color_scheme"),
     "/select_theme": _wc("select_theme"),
     "/customize_color_scheme": _wc("customize_color_scheme"),
@@ -3799,13 +3861,13 @@ _POST = {
     "/select_to_mark": _vc("select_to_mark"),
     "/swap_with_mark": _vc("swap_with_mark"),
     "/delete_to_mark": _vc("delete_to_mark"),
-    "/add_to_kill_ring": _vc("add_to_kill_ring"),
+    "/add_to_kill_ring": _vc("add_to_kill_ring", forward=False),
     "/jump_back": _vc("jump_back"),
     "/jump_forward": _vc("jump_forward"),
-    "/fold_unfold": _vc("fold_unfold"),
+    "/fold_unfold": _fold_unfold,
     "/rot13": _vc("rot13"),
     "/wrap_block": _vc("wrap_block"),
-    "/tab": _vc("tab"),
+    "/tab": _vc("indent"),
     "/open_context_url": _vc("open_context_url"),
     "/open_in_browser": _vc("open_in_browser"),
     "/show_scope_name": _vc("show_scope_name"),
@@ -5216,6 +5278,9 @@ _MCP_TOOLS = [
      _g("/view_chars")),
     ("get_view_phantoms",
      "Return phantom HTML and extracted text from a view by name.\n"
+     "Sublime has no API to list phantoms, so this sees only phantom sets that a plugin keeps in a "
+     "module-level _phantom_sets dict (view id -> PhantomSet), as GhostShell does; phantoms added any other "
+     "way are not listed.\n"
      "If key is omitted, returns phantoms for all keys. Output can be huge for a view with hundreds "
      "of phantoms (a GhostShell omp tab: about 290 KB): html=false drops the HTML and the empty "
      "spacer phantoms, last=N keeps only the newest N, max_chars cuts each text.",
@@ -5890,7 +5955,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/close_all")),
     ("close_others",
-     "Close all views in the current group except the active one (Close Other Tabs).",
+     "Close all tabs in the active tab's group except the active one (Close Other Tabs).",
      {"type": "object", "properties": {}},
      _p("/close_others")),
     ("close_other_tabs",
@@ -5898,7 +5963,7 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/close_other_tabs")),
     ("close_unmodified",
-     "Close all unmodified (clean) views in the current window.",
+     "Close the tabs without unsaved changes in the active tab's group (Close Unmodified Tabs).",
      {"type": "object", "properties": {}},
      _p("/close_unmodified")),
     ("close_pane",
@@ -5934,11 +5999,11 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/prev_view_in_stack")),
     ("next_pane",
-     "Move focus to the next pane/group in the window.",
+     "Move focus to the next pane/group in the window (Sublime's focus_neighboring_group).",
      {"type": "object", "properties": {}},
      _p("/next_pane")),
     ("prev_pane",
-     "Move focus to the previous pane/group in the window.",
+     "Move focus to the previous pane/group in the window (focus_neighboring_group, backwards).",
      {"type": "object", "properties": {}},
      _p("/prev_pane")),
     ("focus_neighboring_group",
@@ -5950,11 +6015,10 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/move_to_neighboring_group")),
     ("move_view",
-     "Move the active view to a different group. Optional args: group (target group index), direction ('left'/'right'/'up'/'down').",
+     "Move the active view to another group (Sublime's move_to_group). group is the target group index (0-based).",
      {"type": "object", "properties": {
-         "group": {"type": "integer", "default": -1},
-         "direction": {"type": "string", "default": ""},
-     }},
+         "group": {"type": "integer", "description": "Target group index, 0-based."},
+     }, "required": ["group"]},
      _p("/move_view")),
     ("toggle_full_screen",
      "Toggle Sublime Text full-screen mode.",
@@ -6130,8 +6194,11 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/invert_selection")),
     ("sort_selection",
-     "Sort the selected lines alphabetically (locale-aware).",
-     {"type": "object", "properties": {}},
+     "Sort the contents of several selections among themselves (TextCommand): with the selections c, a, b "
+     "they become a, b, c. It does not sort lines; use sort_lines for that. Optional case_sensitive, reverse, "
+     "remove_duplicates.",
+     {"type": "object", "properties": {"case_sensitive": {"type": "boolean"}, "reverse": {"type": "boolean"},
+                                       "remove_duplicates": {"type": "boolean"}}},
      _p("/sort_selection")),
     ("permute_lines",
      "Permute (shuffle) the lines in the current selection into a random order.",
@@ -6212,12 +6279,16 @@ _MCP_TOOLS = [
 
     # ── Phase B batch 2: file/project operations ─────────────────────────
     ("new_file_at",
-     "Create a new file at the given path (WindowCommand). Pass 'path' in args.",
-     {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
+     "Create a new file inside the given folders (WindowCommand new_file_at, the sidebar's New File). It opens "
+     "an input panel for the file name: answer it with drive_input_panel (text=<name>, action='submit').",
+     {"type": "object", "properties": {"dirs": {"type": "array", "items": {"type": "string"}, "description": "Folder path(s) to create the file in."}},
+      "required": ["dirs"]},
      _p("/new_file_at")),
     ("new_folder",
-     "Create a new folder in the current project (WindowCommand).",
-     {"type": "object", "properties": {}},
+     "Create a new folder inside the given folders (WindowCommand new_folder, the sidebar's New Folder). It opens "
+     "an input panel for the folder name: answer it with drive_input_panel (text=<name>, action='submit').",
+     {"type": "object", "properties": {"dirs": {"type": "array", "items": {"type": "string"}, "description": "Folder path(s) to create the folder in."}},
+      "required": ["dirs"]},
      _p("/new_folder")),
     ("open_folder",
      "Open a folder in a NEW window (makes the window and sets the folder as its project data; returns window_id and folders). Pass 'path' (an existing folder).",
@@ -6228,8 +6299,9 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/open_containing_folder")),
     ("rename_file",
-     "Rename the active file (WindowCommand). Pass 'path' for the new name.",
-     {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
+     "Open the File > Rename prompt for the active file (WindowCommand rename_file). The prompt is an input "
+     "panel: enter the new name with drive_input_panel (text=<new name>, action='submit').",
+     {"type": "object", "properties": {}},
      _p("/rename_file")),
     ("copy_path",
      "Copy the active file's path to the clipboard (WindowCommand).",
@@ -6244,8 +6316,12 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/open_file_settings")),
     ("edit_settings",
-     "Open the given settings resource for editing (WindowCommand). Pass 'resource' (e.g. 'Preferences').",
-     {"type": "object", "properties": {"resource": {"type": "string"}}, "required": ["resource"]},
+     "Open a settings file for editing in a split view: the default settings on the left, your own on the right "
+     "(WindowCommand edit_settings). resource is the settings name without the extension, e.g. 'Preferences' or "
+     "'Python'; or pass base_file and user_file as Sublime's own commands do.",
+     {"type": "object", "properties": {"resource": {"type": "string", "description": "e.g. 'Preferences'."},
+                                       "base_file": {"type": "string", "description": "e.g. ${packages}/Default/Preferences.sublime-settings"},
+                                       "user_file": {"type": "string"}}},
      _p("/edit_settings")),
     ("new_build_system",
      "Create a new build system file (WindowCommand).",
@@ -6268,12 +6344,14 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {}},
      _p("/new_pane")),
     ("set_max_columns",
-     "Set the maximum number of columns for the current layout (WindowCommand). Pass 'cols' integer.",
-     {"type": "object", "properties": {"cols": {"type": "integer"}}, "required": ["cols"]},
+     "Set the maximum number of columns the groups are laid out in (WindowCommand, Sublime's View > Layout > Max Columns). "
+     "It only matters when the window has more groups than columns.",
+     {"type": "object", "properties": {"columns": {"type": "integer", "description": "1 to 4."}}, "required": ["columns"]},
      _p("/set_max_columns")),
     ("view_resource",
-     "Open a read-only view of a bundled or packaged resource (WindowCommand). Pass 'resource'.",
-     {"type": "object", "properties": {"resource": {"type": "string"}}, "required": ["resource"]},
+     "Open Sublime's View Package File picker (WindowCommand view_resource): pick a package, then a file in it. "
+     "It takes no arguments; answer the pickers with ui_type_text and ui_press_key.",
+     {"type": "object", "properties": {}},
      _p("/view_resource")),
     ("exec",
      "Run a build system target via the exec command (WindowCommand). Pass 'cmd' (list) and optional 'working_dir', 'shell_cmd', 'env', etc.",
@@ -6285,11 +6363,10 @@ _MCP_TOOLS = [
      }},
      _p("/exec")),
     ("find_in_folder",
-     "Open Find in Files scoped to a folder (WindowCommand). Pass 'pattern' (regex) and optional 'where'.",
-     {"type": "object", "properties": {
-         "pattern": {"type": "string"},
-         "where": {"type": "string"}
-     }, "required": ["pattern"]},
+     "Open the Find in Files panel with its Where box set to the given folders (WindowCommand find_in_folder, "
+     "the sidebar's Find in Folder). To search, use project_search or find_in_files.",
+     {"type": "object", "properties": {"dirs": {"type": "array", "items": {"type": "string"}, "description": "Folder path(s) to search."}},
+      "required": ["dirs"]},
      _p("/find_in_folder")),
     ("goto_definition",
      "Goto definition for the symbol under the cursor (WindowCommand).",
@@ -6384,8 +6461,9 @@ _MCP_TOOLS = [
      "Delete the text between the cursor and the previously set mark (TextCommand).",
      {"type": "object", "properties": {}}, _p("/delete_to_mark")),
     ("add_to_kill_ring",
-     "Add the current selection to the kill ring (TextCommand, used by yank).",
-     {"type": "object", "properties": {}}, _p("/add_to_kill_ring")),
+     "Add the current selection to the kill ring (TextCommand, used by yank). forward=false (default) adds the "
+     "selection; forward=true is the variant used when killing forward.",
+     {"type": "object", "properties": {"forward": {"type": "boolean", "default": False}}}, _p("/add_to_kill_ring")),
     ("jump_back",
      "Jump back in the navigation history (TextCommand). Equivalent to Alt+- (jump back through edit/cursor history).",
      {"type": "object", "properties": {}}, _p("/jump_back")),
@@ -6393,7 +6471,7 @@ _MCP_TOOLS = [
      "Jump forward in the navigation history (TextCommand). Equivalent to Alt+Shift+- (jump forward through edit/cursor history).",
      {"type": "object", "properties": {}}, _p("/jump_forward")),
     ("fold_unfold",
-     "Toggle the fold state of the region at the cursor (TextCommand). Collapses or expands the enclosing code block.",
+     "Fold the code block at the cursor, or unfold it when it is already folded.",
      {"type": "object", "properties": {}}, _p("/fold_unfold")),
     ("rot13",
      "Apply the ROT13 cipher to the current selection (TextCommand). Useful for obscuring spoiler text or round-tripping text.",
@@ -6417,8 +6495,11 @@ _MCP_TOOLS = [
      "Open the current file as HTML for printing (TextCommand). Equivalent to File > Print.",
      {"type": "object", "properties": {}}, _p("/html_print")),
     ("arithmetic",
-     "Evaluate the selected expression as arithmetic and replace it with the result (TextCommand). Select '2+2' to get '4'.",
-     {"type": "object", "properties": {}}, _p("/arithmetic")),
+     "Replace each selection with the result of an expression (TextCommand). expr is evaluated once per "
+     "selection with x = the selection read as a number, s = its text, i = its index (0, 1, ...) and math; "
+     "for example expr='x*10' turns the selections 2 and 3 into 20 and 30, and expr='i + 1' numbers the cursors.",
+     {"type": "object", "properties": {"expr": {"type": "string", "description": "Python expression using x, s, i and math."}},
+      "required": ["expr"]}, _p("/arithmetic")),
     ("auto_indent_tag",
      "Re-indent the enclosing HTML/XML tag structure (TextCommand). Useful for fixing nested tag indentation.",
      {"type": "object", "properties": {}}, _p("/auto_indent_tag")),
