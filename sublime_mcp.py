@@ -196,12 +196,13 @@ def _freeze_watchdog(token, path):
                     seen_dialogs[key] = now
                     _freeze_log_write(path, "\n=== native {} opened {} ===\n{}\n{}\nbuttons: {}\n".format(
                         d["kind"], time.strftime("%Y-%m-%d %H:%M:%S"), d["title"], d["message"], d["buttons"]))
-                elif (d["kind"] == "dialog" and d["buttons"] == ["OK"] and d.get("hwnd")
-                      and now - seen_dialogs[key] >= _AUTO_DISMISS_SECONDS):
-                    native_windows.dismiss(_sublime_process_id(), hwnd=d["hwnd"], action="ok")
+                elif (d.get("hwnd") and ((d["kind"] == "dialog" and d["buttons"] == ["OK"]
+                                          and now - seen_dialogs[key] >= _AUTO_DISMISS_SECONDS)
+                                         or (d["kind"] == "update_nag" and now - seen_dialogs[key] >= 1.0))):
+                    native_windows.dismiss(_sublime_process_id(), hwnd=d["hwnd"],
+                                           action="close" if d["kind"] == "update_nag" else "ok")
                     seen_dialogs[key] = now + 3600      # do not try again for this one
-                    _freeze_log_write(path, "--- dismissed the dialog above (OK) after {:.0f}s ---\n".format(
-                        _AUTO_DISMISS_SECONDS))
+                    _freeze_log_write(path, "--- dismissed the window above ---\n")
             seen_dialogs = {k: v for k, v in seen_dialogs.items() if k in current}
         except Exception:
             pass
@@ -4551,10 +4552,19 @@ def _open_dialogs_notice():
         windows = native_windows.list_windows(_sublime_process_id())
     except Exception:
         return []
-    return [{"kind": w.get("kind"), "title": w.get("title"), "hwnd": w.get("hwnd"),
-             "message": "\n".join(w.get("messages") or []),
-             "buttons": [b.get("text") for b in w.get("buttons") or []]}
-            for w in windows if w.get("kind") in ("dialog", "menu")]
+    found = []
+    for w in windows:
+        if w.get("kind") in ("dialog", "menu"):
+            found.append({"kind": w.get("kind"), "title": w.get("title"), "hwnd": w.get("hwnd"),
+                          "message": "\n".join(w.get("messages") or []),
+                          "buttons": [b.get("text") for b in w.get("buttons") or []]})
+        elif w.get("kind") == "window" and w.get("title") == "Update":
+            # Sublime's own "Update Available" window. It appears even with update_check false (Sublime
+            # ignores the setting to steer unregistered users to the purchase page), so it is closed here.
+            found.append({"kind": "update_nag", "title": "Update", "hwnd": w.get("hwnd"),
+                          "message": "Sublime Text update prompt (appears regardless of update_check)",
+                          "buttons": ["Cancel"]})
+    return found
 
 
 def _with_dialog_notice(result, tool_name):

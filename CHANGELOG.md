@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+Sublime's own "Update Available" window, which Sublime shows even when `update_check` is `false`, is logged and closed by the watchdog within a second of opening (it would otherwise sit over the editor, and in the portable builds updating would defeat their purpose). Tried in the 4200 portable with the Check for Updates command: it was logged and gone before the next poll.
+
 The freeze watchdog and `get_main_thread_stack` now find Sublime's UI thread on the Python 3.8 host (builds before 4205), where it is not Python's main thread; before, the stack was reported as unavailable there.
 
 Every tool result now lists the native dialogs and menus Sublime has open (`native_dialogs_open`: kind, title, the dialog's text, buttons), so an agent sees what Sublime is complaining about without having to remember to look; the note tells the agent to act on it, fix the cause (and stop it recurring), and dismiss it at once. A "main-thread timeout" error now quotes the text of the dialog that caused it, and the freeze watchdog appends every dialog's text to `sublime-mcp-freeze.log` when it opens, so the message survives after the dialog is dismissed. An information-only dialog (a single OK button) that nobody answers for 8 seconds is dismissed by the watchdog once its text is logged, so it cannot lock the window. Tried with a message dialog that blocked the main thread: the error quoted its text and the log kept it.
