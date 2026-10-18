@@ -3304,19 +3304,6 @@ def _edit_settings(body):
     return _on_main(fn)
 
 
-def _fold_unfold(body):
-    """Fold the block at the cursor, or unfold it when it is already folded."""
-    def fn():
-        v = _active_view()
-        if not v:
-            return {"error": "no active view"}
-        folded = any(r.contains(s.begin()) or r.end() == s.begin() for s in v.sel() for r in v.folded_regions())
-        v.run_command("unfold" if folded else "fold")
-        return {"ok": True, "folded": not folded}
-
-    return _on_main(fn)
-
-
 def _ac(cmd):
     def handler(body):
         args = {k: v for k, v in body.items() if v is not None}
@@ -3863,7 +3850,7 @@ _POST = {
     "/add_to_kill_ring": _vc("add_to_kill_ring", forward=False),
     "/jump_back": _vc("jump_back"),
     "/jump_forward": _vc("jump_forward"),
-    "/fold_unfold": _fold_unfold,
+    "/fold_unfold": _vc("fold_unfold"),
     "/rot13": _vc("rot13"),
     "/wrap_block": _vc("wrap_block"),
     "/tab": _vc("indent"),
@@ -6467,7 +6454,9 @@ _MCP_TOOLS = [
      "Jump forward in the navigation history (TextCommand). Equivalent to Alt+Shift+- (jump forward through edit/cursor history).",
      {"type": "object", "properties": {}}, _p("/jump_forward")),
     ("fold_unfold",
-     "Fold the code block at the cursor, or unfold it when it is already folded.",
+     "Sublime's own fold_unfold toggle (TextCommand, no arguments). Where a selection or the cursor touches a "
+     "fold it unfolds it; otherwise it folds the selected text. With only a bare cursor and no fold there it "
+     "does nothing: use fold to fold the block at the cursor.",
      {"type": "object", "properties": {}}, _p("/fold_unfold")),
     ("rot13",
      "Apply the ROT13 cipher to the current selection (TextCommand). Useful for obscuring spoiler text or round-tripping text.",

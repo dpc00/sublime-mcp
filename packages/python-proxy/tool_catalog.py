@@ -860,7 +860,10 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Fold(s) the html/xml tag attributes. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'fold_unfold',
-        'description': 'Fold the code block at the cursor, or unfold it when it is already folded.',
+        'description': "Sublime's own fold_unfold toggle (TextCommand, no arguments). Where a "
+                       'selection or the cursor touches a fold it unfolds it; otherwise it folds '
+                       'the selected text. With only a bare cursor and no fold there it does '
+                       'nothing: use fold to fold the block at the cursor.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'get_active_file',
         'description': "Return the active file's path, full content, cursor line/col, dirty flag, "
