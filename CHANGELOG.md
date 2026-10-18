@@ -4,6 +4,8 @@
 
 Fixes a slowdown in long sessions. The 200 ms heartbeat was never stopped, and a package reload reset its guard, so each reload left the old timer chain running and started another. `plugin_unloaded` now stops the heartbeat, and starting it stops any earlier chain.
 
+A freeze watchdog records what Sublime's main thread was doing whenever it stops answering for 3 seconds. A background thread watches the heartbeat and appends the main-thread stack, the in-flight tool call and the open native windows to `sublime-mcp-freeze.log` in Sublime's Cache folder (`%LOCALAPPDATA%\Sublime Text\Cache`), then notes how long the stall lasted. Nothing has to be called while Sublime is frozen; read the file afterwards. Tried with a 6 s stall.
+
 ## 1.13.8
 
 `ui_hover` with `screenshot=true` returns the picture itself, image first, like `ui_screenshot`, instead of a temp file path (`inline=false` keeps the path). It also takes `region`, `scale` and `max_width`, so a small hover popup can be cropped and zoomed. A language-server (LSP) hover can take a few seconds to appear, so the tool description now says to use a `dwell_ms` of 3000 to 5000 for those; tried with a 4500 ms dwell over a Python symbol, which showed the pyright popup.

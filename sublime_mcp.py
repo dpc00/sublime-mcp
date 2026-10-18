@@ -132,6 +132,55 @@ def _heartbeat_tick(token):
     sublime.set_timeout(lambda: _heartbeat_tick(token), _HEARTBEAT_INTERVAL_MS)
 
 
+_FREEZE_THRESHOLD_SECONDS = 3.0
+_FREEZE_LOG_MAX_BYTES = 256 * 1024
+
+
+def _freeze_log_path():
+    return os.path.join(sublime.cache_path(), "sublime-mcp-freeze.log")
+
+
+def _freeze_log_write(path, text):
+    try:
+        if os.path.getsize(path) > _FREEZE_LOG_MAX_BYTES:
+            os.replace(path, path + ".old")
+    except OSError:
+        pass
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(text)
+
+
+def _freeze_watchdog(token, path):
+    """Background thread: when the heartbeat stops for _FREEZE_THRESHOLD_SECONDS, the main thread is stuck.
+    Write what it is doing to a file, once per stall, and how long the stall lasted when it ends. Nobody
+    has to be able to call a tool while Sublime is frozen; read the file afterwards."""
+    stalled_since = None
+    while token["alive"]:
+        time.sleep(0.5)
+        last = _heartbeat_state["last_ts"]
+        if not last:
+            continue
+        age = time.time() - last
+        try:
+            if age >= _FREEZE_THRESHOLD_SECONDS and stalled_since is None:
+                stalled_since = last
+                in_flight = dict(_in_flight_dispatch)
+                try:
+                    windows = native_windows.list_windows(_sublime_process_id()) if native_windows.SUPPORTED else None
+                except Exception as e:
+                    windows = "listing failed: {}".format(e)
+                _freeze_log_write(path, "\n=== main thread stalled {} (no heartbeat for {:.1f}s) ===\n"
+                                        "in-flight sublime-mcp dispatch: {}\nnative windows: {}\n"
+                                        "main thread stack:\n{}\n".format(
+                                            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(last)), age,
+                                            in_flight, windows, _main_thread_stack()))
+            elif stalled_since is not None and last > stalled_since:
+                _freeze_log_write(path, "--- main thread recovered after {:.1f}s ---\n".format(last - stalled_since))
+                stalled_since = None
+        except Exception:
+            pass
+
+
 def _start_heartbeat():
     # One chain per load. Each chain owns a token that plugin_unloaded kills; without that,
     # every package reload (module globals reset) left the old 5 Hz chain running and added a new one.
@@ -139,6 +188,8 @@ def _start_heartbeat():
     token = {"alive": True}
     _heartbeat_state["token"] = token
     _heartbeat_tick(token)
+    threading.Thread(target=_freeze_watchdog, args=(token, _freeze_log_path()), daemon=True,
+                     name="sublime-mcp-freeze-watchdog").start()
 
 
 def _stop_heartbeat():
