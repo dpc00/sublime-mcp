@@ -179,14 +179,6 @@
       }
     },
     {
-      "name": "auto_indent",
-      "description": "Apply auto-indentation to the current selection(s) using the active syntax's indentation rules.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
       "name": "auto_indent_tag",
       "description": "Re-indent the enclosing HTML/XML tag structure (TextCommand). Useful for fixing nested tag indentation.",
       "inputSchema": {
@@ -477,22 +469,6 @@
     {
       "name": "close_folder_list",
       "description": "Removes all the folder(s) from the sidebar and hides it. (WindowCommand)",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "close_other_tabs",
-      "description": "Alias of close_others \u2014 close all views in the current group except the active one.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "close_others",
-      "description": "Close all tabs in the active tab's group except the active one (Close Other Tabs).",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -1075,39 +1051,31 @@
     },
     {
       "name": "expand_selection",
-      "description": "Expand the current selection to the next semantic boundary (Ctrl+Shift+A). Repeated calls expand further: word \u2192 brackets \u2192 line \u2192 paragraph \u2192 scope.",
+      "description": "Expand each selection (Sublime's Selection > Expand menu). to is required: smart (Ctrl+Shift+A), line, line_prev (line upward), scope, brackets, tag or indentation. Repeated calls keep expanding.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "expand_selection_to_brackets",
-      "description": "Expand the current selection to the enclosing brackets/parens/braces.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "expand_selection_to_indentation",
-      "description": "Expand the current selection to the surrounding indentation block.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
+        "properties": {
+          "to": {
+            "type": "string",
+            "enum": [
+              "smart",
+              "line",
+              "line_prev",
+              "scope",
+              "brackets",
+              "tag",
+              "indentation"
+            ]
+          }
+        },
+        "required": [
+          "to"
+        ]
       }
     },
     {
       "name": "expand_selection_to_paragraph",
       "description": "Expand the current selection to the surrounding paragraph.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "expand_selection_to_scope",
-      "description": "Expand the current selection to the enclosing syntax scope.",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -1366,10 +1334,15 @@
     },
     {
       "name": "focus_neighboring_group",
-      "description": "Move focus to the neighboring pane group (cycle through panes).",
+      "description": "Move focus to the next pane group (View > Groups > Next), or to the previous one with forward=false (Previous). Without forward it goes to the next group.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "forward": {
+            "type": "boolean",
+            "description": "false = previous group."
+          }
+        }
       }
     },
     {
@@ -2283,22 +2256,6 @@
       }
     },
     {
-      "name": "move_line_down",
-      "description": "Move the current line(s) down by one line.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "move_line_up",
-      "description": "Move the current line(s) up by one line.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
       "name": "move_sheets_to_group",
       "description": "Move one or more sheets together to a group and optional insertion position, preserving native multi-selection when requested.",
       "inputSchema": {
@@ -2374,22 +2331,6 @@
       "inputSchema": {
         "type": "object",
         "properties": {}
-      }
-    },
-    {
-      "name": "move_view",
-      "description": "Move the active view to another group (Sublime's move_to_group). group is the target group index (0-based).",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "group": {
-            "type": "integer",
-            "description": "Target group index, 0-based."
-          }
-        },
-        "required": [
-          "group"
-        ]
       }
     },
     {
@@ -2545,14 +2486,6 @@
     {
       "name": "next_os_tab",
       "description": "Set the focus to the next window in the os tab. (WindowCommand)",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "next_pane",
-      "description": "Move focus to the next pane/group in the window (Sublime's focus_neighboring_group).",
       "inputSchema": {
         "type": "object",
         "properties": {}
@@ -2921,14 +2854,6 @@
       }
     },
     {
-      "name": "prev_pane",
-      "description": "Move focus to the previous pane/group in the window (focus_neighboring_group, backwards).",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
       "name": "prev_result",
       "description": "Jump to the previous find-in-files or build result. Visible in the view (cursor moves).",
       "inputSchema": {
@@ -3255,14 +3180,6 @@
             "description": "The encoding to be used when the file is reopened."
           }
         }
-      }
-    },
-    {
-      "name": "reopen_closed_file",
-      "description": "Reopen the most recently closed file (File \u2192 Reopen Closed File).",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
       }
     },
     {
@@ -3879,22 +3796,6 @@
             "description": "The syntax to be set for the active view. Can either be a package relative path like 'Packages/Foo/Bar.sublime-syntax' or 'scope:' prefixed syntax name."
           }
         }
-      }
-    },
-    {
-      "name": "set_indent_spaces",
-      "description": "Set the active view to use spaces for indentation.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
-      }
-    },
-    {
-      "name": "set_indent_tabs",
-      "description": "Set the active view to use tabs for indentation.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {}
       }
     },
     {

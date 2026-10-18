@@ -3,7 +3,7 @@
 How to use sublime-mcp tools. Call `get_help` if you are unsure how to
 save, close tabs, or run ST Python.
 
-Eight workflow tools are shown by default; the complete typed catalog (408
+Eight workflow tools are shown by default; the complete typed catalog (394
 tools) remains available through `discover_tools` and `batch`. Prefer a named capability over
 `run_command`, which often opens UI that steals focus from the agent chat.
 

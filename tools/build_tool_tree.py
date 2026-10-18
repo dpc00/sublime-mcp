@@ -85,35 +85,34 @@ def put(path, names):
 
 
 put("files/open_and_create", "open_file new_file new_view new_file_at new_folder open_recent_file open_recent_folder "
-    "open_recent_project_or_workspace reopen reopen_last_file reopen_closed_file clone_file switch_file open_dir "
+    "open_recent_project_or_workspace reopen reopen_last_file clone_file switch_file open_dir "
     "open_folder open_containing_folder view_resource open_file_settings send_to_view")
 put("files/save_and_close", "save_all revert_file revert revert_hunk revert_modification save close_file "
-    "close_all close_others close_other_tabs close_unmodified close_pane close_transient close_deleted_files "
+    "close_all close_unmodified close_pane close_transient close_deleted_files "
     "close_by_index close_others_by_index close_selected close_unselected close_to_right_by_index "
     "close_unmodified_to_right_by_index close")
 put("files/manage", "rename_file rename_path delete_file delete_folder copy_path reveal_in_side_bar reveal_link_source "
     "clear_recent_files clear_missing_recent_projects_and_workspaces clear_recent_projects_and_workspaces")
 put("tabs/sheets", "get_sheets get_selected_sheets get_sheet_index select_sheets focus_sheet set_sheet_index "
-    "move_sheets_to_group next_view prev_view next_view_in_stack prev_view_in_stack move_view focus_by_index "
+    "move_sheets_to_group next_view prev_view next_view_in_stack prev_view_in_stack focus_by_index "
     "select_by_index select next_os_tab prev_os_tab new_os_tab")
-put("tabs/panes", "get_layout set_layout focus_group focus_to_left focus_to_right new_pane next_pane prev_pane "
+put("tabs/panes", "get_layout set_layout focus_group focus_to_left focus_to_right new_pane "
     "focus_neighboring_group move_to_neighboring_group move_to_group set_max_columns move move_to")
 put("editing/basic", "replace_selection replace_lines insert undo redo soft_undo soft_redo "
     "redo_or_repeat overwrite toggle_overwrite echo noop append replace_all")
 put("editing/clipboard", "paste paste_from_history paste_and_indent cut copy yank paste_selection_clipboard copy_as_html")
-put("editing/lines", "duplicate_line sort_lines join_lines swap_line_up swap_line_down move_line_up "
-    "move_line_down indent unindent reindent auto_indent wrap_lines permute_lines transpose transpose_chars "
+put("editing/lines", "duplicate_line sort_lines join_lines swap_line_up swap_line_down "
+    "indent unindent reindent wrap_lines permute_lines transpose transpose_chars "
     "sort_selection permute_selection old_wrap_lines wrap_block toggle_comment")
 put("editing/case_and_whitespace", "upper_case lower_case title_case swap_case toggle_case convert_ident_case "
     "trim_trailing_white_space trim_whitespace trim_whitespaces ensure_newline_at_eof add_missing_newline "
-    "expand_tabs unexpand_tabs detect_indentation set_indent_tabs set_indent_spaces rot13 "
+    "expand_tabs unexpand_tabs detect_indentation rot13 "
     "encode_html_entities transformer arithmetic")
 put("editing/snippets_macros_fields", "insert_snippet expand_snippet next_field prev_field clear_fields close_tag "
     "auto_indent_tag add_where_snippet commit_completion auto_complete auto_complete_prev auto_complete_open_link "
     "hide_auto_complete replace_completion_with_auto_complete")
 put("editing/delete", "left_delete right_delete delete_word delete_to_mark")
 put("selection/select", "get_selection select_all expand_selection expand_selection_to_paragraph "
-    "expand_selection_to_indentation expand_selection_to_scope expand_selection_to_brackets "
     "split_selection_into_lines single_selection invert_selection select_lines unselect_others unselect_to_left "
     "unselect_to_right select_to_left select_to_right old_expand_selection_to_paragraph drag_select "
     "find_all_under select_all_bookmarks select_bookmark")
