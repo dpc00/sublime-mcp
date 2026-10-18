@@ -2,9 +2,11 @@
 
 ## Unreleased
 
+The freeze watchdog and `get_main_thread_stack` now find Sublime's UI thread on the Python 3.8 host (builds before 4205), where it is not Python's main thread; before, the stack was reported as unavailable there.
+
 Every tool result now lists the native dialogs and menus Sublime has open (`native_dialogs_open`: kind, title, the dialog's text, buttons), so an agent sees what Sublime is complaining about without having to remember to look; the note tells the agent to act on it, fix the cause (and stop it recurring), and dismiss it at once. A "main-thread timeout" error now quotes the text of the dialog that caused it, and the freeze watchdog appends every dialog's text to `sublime-mcp-freeze.log` when it opens, so the message survives after the dialog is dismissed. An information-only dialog (a single OK button) that nobody answers for 8 seconds is dismissed by the watchdog once its text is logged, so it cannot lock the window. Tried with a message dialog that blocked the main thread: the error quoted its text and the log kept it.
 
-`install_package` now installs the libraries the package needs. Before, it installed only the package, so a package such as MarkdownGlance (which needs Markdown and pymdown-extensions) loaded, found them missing and opened a native dialog, twice. After installing, the tool finds the missing libraries, installs them (as Package Control's Satisfy Libraries does) and reloads the package's plugin modules, so it works without a restart. Tried by installing MarkdownGlance 0.6.0 from scratch: both libraries installed, no dialog, and the side-by-side preview of a changelog rendered.
+`install_package` now installs the libraries the package needs. Before, it installed only the package, so a package such as MarkdownGlance (which needs Markdown and pymdown-extensions) loaded, found them missing and opened a native dialog, twice. After installing, the tool finds the missing libraries, installs them (as Package Control's Satisfy Libraries does) and keeps the package ignored until they are in, so it loads once with everything it needs and opens no dialog. Tried by installing MarkdownGlance 0.6.0 from scratch: both libraries installed, no dialog, and the side-by-side preview of a changelog rendered.
 
 ## 1.14.1
 

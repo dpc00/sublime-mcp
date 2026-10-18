@@ -129,6 +129,8 @@ def _heartbeat_tick(token):
         return
     _heartbeat_state["count"] += 1
     _heartbeat_state["last_ts"] = time.time()
+    # The thread that runs Sublime's callbacks. On the Python 3.8 host it is not threading.main_thread().
+    _heartbeat_state["ui_thread"] = threading.get_ident()
     sublime.set_timeout(lambda: _heartbeat_tick(token), _HEARTBEAT_INTERVAL_MS)
 
 
@@ -232,7 +234,7 @@ def _main_thread_stack(limit=None):
     therefore does not need the main thread's cooperation) to answer "what
     is it doing right now".
     """
-    frame = sys._current_frames().get(threading.main_thread().ident)
+    frame = sys._current_frames().get(_heartbeat_state.get("ui_thread") or threading.main_thread().ident)
     if frame is None:
         return "main thread frame unavailable (main_thread ident={})".format(
             threading.main_thread().ident
@@ -4979,13 +4981,19 @@ def _search_packages(body):
     return {"packages": results[:limit], "total_matches": len(results)}
 
 
-def _reload_package_plugins(package):
-    """Reload a package's top-level plugin modules (main thread), as Sublime does when a file changes."""
-    for name in sorted(n for n in list(sys.modules) if n.split(".")[0] == package and n.count(".") == 1):
-        try:
-            sublime_plugin.reload_plugin(name)
-        except Exception as e:
-            print("sublime-mcp: reloading {} failed: {}".format(name, e))
+def _set_package_ignored(package, ignored):
+    """Add or remove a package in the ignored_packages setting (main thread). True when it changed."""
+    prefs = sublime.load_settings("Preferences.sublime-settings")
+    current = list(prefs.get("ignored_packages") or [])
+    if ignored == (package in current):
+        return False
+    if ignored:
+        current.append(package)
+    else:
+        current.remove(package)
+    prefs.set("ignored_packages", current)
+    sublime.save_settings("Preferences.sublime-settings")
+    return True
 
 
 def _install_package(body):
@@ -5012,11 +5020,16 @@ def _install_package(body):
     pm = result["pm"]
 
     def do_install():
+        # A package loads the moment it is installed, before its libraries exist, and a package such as
+        # MarkdownGlance then opens a dialog about the missing Markdown library. Keep it ignored until the
+        # libraries are in (Package Control leaves a package ignored that was ignored before it started).
+        held = False
         try:
             avail = pm.list_available_packages()
             if package not in avail:
                 print("sublime-mcp: install_package: '{}' not found in Package Control".format(package))
                 return
+            held = _on_main(lambda: _set_package_ignored(package, True))
             installed = pm.install_package(package, unattended=False)
             if installed is not False:
                 # PackageManager.install_package records the name in
@@ -5027,19 +5040,17 @@ def _install_package(body):
                     lambda: sublime.save_settings("Package Control.sublime-settings"), 0
                 )
                 # install_package does not fetch the libraries the package depends on (Package
-                # Control's own Install Package command and "Satisfy Libraries" do), so a package
-                # such as MarkdownGlance loaded, found Markdown missing and opened a dialog.
+                # Control's own Install Package command and "Satisfy Libraries" do).
                 required = pm.find_required_libraries()
-                missing = pm.find_missing_libraries(required_libraries=required)
-                if missing:
+                if pm.find_missing_libraries(required_libraries=required):
                     if not pm.install_libraries(libraries=required, fail_early=False):
                         print("sublime-mcp: install_package '{}': a required library did not install; "
                               "see the console".format(package))
-                    else:
-                        # The package already ran once without them; run it again now they exist.
-                        sublime.set_timeout(lambda: _reload_package_plugins(package), 0)
         except Exception as e:
             print("sublime-mcp: install_package '{}' error: {}".format(package, e))
+        finally:
+            if held:
+                _on_main(lambda: _set_package_ignored(package, False))
 
     sublime.set_timeout_async(do_install, 0)
     return {"ok": True, "message": "Installing '{}' — check ST console for progress".format(package)}
