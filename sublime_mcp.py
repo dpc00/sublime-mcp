@@ -3223,10 +3223,9 @@ def _duplicate_line(body):
 # (after stripping a few meta keys). Use these for simple command wrappers so
 # the tool schema in _MCP_TOOLS stays the source of truth for documentation.
 
-def _vc(cmd, **defaults):
+def _vc(cmd):
     def handler(body):
-        args = dict(defaults)
-        args.update({k: v for k, v in body.items() if v is not None})
+        args = {k: v for k, v in body.items() if v is not None}
 
         def fn():
             v = _active_view()
@@ -3240,10 +3239,9 @@ def _vc(cmd, **defaults):
     return handler
 
 
-def _wc(cmd, **defaults):
+def _wc(cmd):
     def handler(body):
-        args = dict(defaults)
-        args.update({k: v for k, v in body.items() if v is not None})
+        args = {k: v for k, v in body.items() if v is not None}
 
         def fn():
             w = sublime.active_window()
@@ -3781,7 +3779,7 @@ _POST = {
     "/auto_complete_goto_definition": _vc("auto_complete_goto_definition"),
     "/open_symbol_definition": _wc("open_symbol_definition"),
     "/prompt_goto_line": _wc("prompt_goto_line"),
-    "/quick_panel": _wc("show_overlay", overlay="goto"),
+    "/show_overlay": _wc("show_overlay"),
     "/select_color_scheme": _wc("select_color_scheme"),
     "/select_theme": _wc("select_theme"),
     "/customize_color_scheme": _wc("customize_color_scheme"),
@@ -6267,13 +6265,17 @@ _MCP_TOOLS = [
      "Open the Goto Line prompt (WindowCommand).",
      {"type": "object", "properties": {}},
      _p("/prompt_goto_line")),
-    ("quick_panel",
-     "Open the Goto Anything overlay (WindowCommand show_overlay). Optional 'show_files' (bool) and 'text'.",
+    ("show_overlay",
+     "Open one of Sublime's overlays (WindowCommand show_overlay), as its menu and keymap do. overlay is required: "
+     "goto (Goto Anything; show_files=true is Ctrl+P, text=':' is Ctrl+G, text='@' is Ctrl+R, text='#' is Ctrl+;) "
+     "or command_palette (Ctrl+Shift+P). The overlay stays open waiting for input: answer it with ui_type_text "
+     "and ui_press_key, or close it with hide_overlay.",
      {"type": "object", "properties": {
+         "overlay": {"type": "string", "enum": ["goto", "command_palette"]},
          "show_files": {"type": "boolean"},
-         "text": {"type": "string"}
-     }},
-     _p("/quick_panel")),
+         "text": {"type": "string", "description": "Text the overlay starts with."}
+     }, "required": ["overlay"]},
+     _p("/show_overlay")),
     ("select_color_scheme",
      "Open the color scheme picker (WindowCommand).",
      {"type": "object", "properties": {}},

@@ -95,7 +95,7 @@ The 44 other tools (reads, meta tools, MCP-only tools) were run through the MCP 
 
 - Run shell/builds via ST `exec` / `run_build` — the user cannot reliably cancel.
 - Live-invoke UI tools while verifying new routes: `prompt_goto_line`,
-  `quick_panel`, `select_color_scheme`, `select_theme`, `open_in_browser`,
+  `show_overlay`, `select_color_scheme`, `select_theme`, `open_in_browser`,
   `html_print`, `customize_*`, `convert_*`, `edit_syntax_settings`. Confirm
   they exist in `_MCP_TOOLS`; do not POST them at the user.
 

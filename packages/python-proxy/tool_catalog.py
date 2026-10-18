@@ -1779,12 +1779,6 @@ TOOLS = [   {   'name': 'add_directory',
                        'browser to allow a user to purchase a license.. (ApplicationCommand) '
                        'Observed on Sublime Text 4215: starts another program (msedge.exe).',
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'quick_panel',
-        'description': 'Open the Goto Anything overlay (WindowCommand show_overlay). Optional '
-                       "'show_files' (bool) and 'text'.",
-        'inputSchema': {   'type': 'object',
-                           'properties': {   'show_files': {'type': 'boolean'},
-                                             'text': {'type': 'string'}}}},
     {   'name': 'redo',
         'description': 'Redo the last undone edit in the active file.',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -2215,6 +2209,21 @@ TOOLS = [   {   'name': 'add_directory',
                        'unregistered copy of Sublime Text. (ApplicationCommand) Observed on '
                        'Sublime Text 4215: opens a separate window ("Enter License").',
         'inputSchema': {'type': 'object', 'properties': {}}},
+    {   'name': 'show_overlay',
+        'description': "Open one of Sublime's overlays (WindowCommand show_overlay), as its menu "
+                       'and keymap do. overlay is required: goto (Goto Anything; show_files=true '
+                       "is Ctrl+P, text=':' is Ctrl+G, text='@' is Ctrl+R, text='#' is Ctrl+;) or "
+                       'command_palette (Ctrl+Shift+P). The overlay stays open waiting for input: '
+                       'answer it with ui_type_text and ui_press_key, or close it with '
+                       'hide_overlay.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'overlay': {   'type': 'string',
+                                                            'enum': ['goto', 'command_palette']},
+                                             'show_files': {'type': 'boolean'},
+                                             'text': {   'type': 'string',
+                                                         'description': 'Text the overlay starts '
+                                                                        'with.'}},
+                           'required': ['overlay']}},
     {   'name': 'show_panel',
         'description': "Bring an output panel to the front. Use name='exec' for the build panel.",
         'inputSchema': {   'type': 'object',

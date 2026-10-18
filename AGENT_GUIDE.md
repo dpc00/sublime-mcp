@@ -201,8 +201,8 @@ drive_input_panel(text="<name>", action="submit")   # fill and submit/cancel an 
   `path="Tools > Command Palette..."`; the end of the path is enough when it is unique. Most
   built-in items have no caption in the menu file, so use the command name: `Selection > select_all`.
   (Or find the item with `get_menu_items` and `run_command` its command and args.)
-- `quick_panel` only opens Goto Anything. To open the command palette use
-  `run_command` with `show_overlay` as above.
+- `show_overlay` opens Goto Anything (`overlay="goto"`) or the command palette
+  (`overlay="command_palette"`), with the same arguments as Sublime's own keymap.
 - `drive_input_panel` works on input panels (prompts such as "Packages to install
   (comma-separated)"). If several agents share the Sublime, call `claim_resource`
   with `resource="input_panel"` first.
@@ -370,7 +370,7 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
   (its libraries are named in its install message): add the package to `ignored_packages`,
   `install_package`, run `satisfy_libraries`, then remove it from `ignored_packages`.
 - **They ask a question in an overlay or picker, and wait for the answer:** `rename_file`, `rename_path`,
-  `new_file_at`, `new_folder`, `view_resource`, `quick_panel`, `prompt_goto_line`, `select_color_scheme`,
+  `new_file_at`, `new_folder`, `view_resource`, `show_overlay`, `prompt_goto_line`, `select_color_scheme`,
   `select_theme`, `set_file_type`, `set_build_system`, `paste_from_history`, `build` (when the build system has
   variants, such as Python), `open_recent_*` (they take `index`, 0 being the most recent),
   `goto_symbol_in_project`, `prompt_select_workspace`. Answer with `ui_type_text` and `ui_press_key`
