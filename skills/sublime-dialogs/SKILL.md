@@ -33,7 +33,8 @@ works while the main thread is blocked. Call it, do not guess. A window titled `
      `satisfy_libraries`, then remove it from `ignored_packages`, so it loads once with its libraries.
    - A save/close prompt for a file you opened: you own that file, answer it and move on.
    - A package error: read that package's console output and settings, correct it.
-3. **Close it** with `dismiss_native_window` (OK for information dialogs; for a choice, the button
+3. **Close it** with `dismiss_native_window` (Cancel when there is a Cancel button, which Save As, Open
+   and Select Folder dialogs have instead of OK; OK for information dialogs; for a choice, the button
    that is right, never a blind default). Do it at once, not later.
 4. **If it comes back, stop it from coming back.** Find what opens it and change that: a setting, a
    missing dependency, the order you do things in, a package that should stay disabled. Do whatever
