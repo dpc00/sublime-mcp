@@ -165,6 +165,10 @@ batch(calls=[
 get_sheet_content(index=<target index>)          # quote the echoed line and its output
 ```
 
+- **Guard the focus.** Sheet ids change when Sublime restarts (tested 2026-10-19: the cmd tab went from id 284 to 12), so
+  call `get_sheets` in the same turn. Run `focus_sheet` first and check it did not return an error and that
+  `window.active_view().name()` is the target (an `eval_python` call) before typing anything. A `focus_sheet` on a stale id
+  returned "sheet id 284 not found", and nothing was typed.
 - **`ok` is not proof.** `ui_type_text` types into whichever tab is active in the window; if the `focus_sheet` before it
   did not select the target, the text goes to the wrong tab (possibly your own session) and still returns ok. Read the
   target tab back with `get_sheet_content` and quote the line before saying it was sent.
