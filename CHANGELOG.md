@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **`get_console(mode="visible")` is about 12 times faster.** A read took about 2 s because the capture slept a fixed 150 to 400 ms after each of its steps; it now takes about 150 ms. The raise waits until Windows reports the window in front (`GetForegroundWindow`), then 20 ms for Sublime to handle its own activation; the copy waits until the clipboard counter stops changing, then reads once (looking at the clipboard while Sublime copies makes the copy fail). Measured on Windows 11 with the portable builds: 99 of 100 reads on 4215 and 92 of 100 on 4200 succeeded, the rest were focus refusals that sent no input, none returned wrong text. The gaps are in `_CAPTURE_WAITS_MS`; a `/console` request accepts `waits=click=0,...` to try other values.
+- **The "can crash a portable Sublime Text" warning is gone from the tool descriptions, the error messages and the guides.** It came from one test on 2026-10-04 (portable 4200 relaunched for each capture, 2 crashes in 12 for the raise used here) whose script and logs were not kept. About 1,000 raises on portables 4200 and 4215 on 2026-10-19 produced no crash and no new dump file. The guides now say what was measured, and that Windows refuses the raise on a freshly started Sublime and while the user is typing (no input is sent then).
+
 ## 1.15.0
 
 Every tool now passes Sublime's own command and arguments through unchanged: no second names for a real command, no arguments chosen inside the plugin, no tool that does nothing. That leaves 381 tools (was 411). This is a breaking change for anyone who called a removed name; before 1.14.4 most of them did nothing.

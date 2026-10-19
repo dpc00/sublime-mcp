@@ -905,9 +905,11 @@ TOOLS = [   {   'name': 'add_directory',
                        'Results include source and complete metadata. The visible capture clicks '
                        'in the console and copies it, so it only runs when this Sublime window is '
                        'in front (otherwise it fails at once and changes nothing); '
-                       'force_focus=true raises it first, which can crash a portable Sublime Text. '
-                       'tail=N keeps the last N entries (captured) or the last N lines (visible; '
-                       'the result then has lines_total and truncated); tail=0 returns everything.',
+                       'force_focus=true raises it first (it takes the keyboard focus, and can '
+                       'fail while the user is typing; the capture then sends no input and says '
+                       'so). A read takes about 150 ms. tail=N keeps the last N entries (captured) '
+                       'or the last N lines (visible; the result then has lines_total and '
+                       'truncated); tail=0 returns everything.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'mode': {   'type': 'string',
                                                          'enum': ['auto', 'visible', 'captured'],
@@ -979,8 +981,8 @@ TOOLS = [   {   'name': 'add_directory',
                        'build output.\n'
                        "Use name='Console' to read Sublime's built-in console through the best "
                        'available backend; for the console, force_focus=true raises the window '
-                       'first (needed for a complete read when the window is not in front; can '
-                       'crash a portable Sublime Text).',
+                       'first (needed for a complete read when the window is not in front; the '
+                       'raise can fail while the user is typing, and then nothing is sent).',
         'inputSchema': {   'type': 'object',
                            'properties': {   'name': {'type': 'string', 'default': ''},
                                              'force_focus': {   'type': 'boolean',

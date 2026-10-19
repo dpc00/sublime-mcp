@@ -248,22 +248,34 @@ Observed on build 4200 (2026-10-07).
 ## Reading the console
 
 - **Read the console:** `get_console` with the default mode, and `mode="captured"`, can miss
-  Sublime's own output (load errors such as a plugin's SyntaxError). `mode="visible"`
-  returns the console (the last 200 lines by default; `tail=N` for N lines, `tail=0` for all, and
-  the result says `lines_total` and `truncated`) but needs the window in front. If the window
-  is not in front it fails at once with a clear message and changes nothing. Pass
-  `force_focus=true` on every visible call (tested on 4200 and 4215: complete read, no crash;
-  the window does not stay in front between calls). Do not fall back to opening the panel with
-  `show_panel` and reading the screen.
+  Sublime's own output (load errors such as a plugin's SyntaxError, and anything printed by
+  Python 3.3-host plugins). `mode="visible"` returns the whole console (the last 200 lines by
+  default; `tail=N` for N lines, `tail=0` for all; the result says `lines_total` and
+  `truncated`). It clicks into the console and copies it, so the window must be in front; if it
+  is not, it fails at once with a clear message and changes nothing. Pass `force_focus=true` on
+  every visible call to raise the window first. A read then takes about 150 ms (measured on
+  Windows 11, 2026-10-19: 99 of 100 reads on portable 4215 and 92 of 100 on 4200 succeeded; the
+  rest were focus refusals that sent no input; no wrong text). Do not fall back to opening the
+  panel with `show_panel` and reading the screen.
+- **When the raise is refused.** Windows lets a process take the foreground only if it received
+  the last input event, started the foreground process, or the foreground lock timeout has
+  expired. So the first raise on a freshly started Sublime usually fails, and a raise also fails
+  while the user is typing or clicking in another window. The error says "could not give the
+  Sublime Text window the keyboard focus; no input was sent": nothing was sent, so call again a
+  moment later. Later raises on the same instance succeed because the click and keys of the
+  previous capture count as input.
+- **Crash history (do not repeat it as fact).** On 2026-10-04 a loop that killed and relaunched
+  portable 4200 for each capture (12 per variant) crashed it 2 times in 12 with the raise used
+  here (CoreMessaging.dll), and 5 to 8 times in 12 with variants that attach thread input; those
+  logs were not kept. On 2026-10-19 about 1,000 raises on portables 4200 and 4215, long-running
+  and freshly relaunched, gave no crash and no new dump file. The cause of the earlier crashes
+  is unknown, and no crash of the user's main Sublime from `force_focus` has been recorded.
 - **The console is only partly readable.** `get_console` in the default and `captured` modes
-  misses Sublime's own error output (tracebacks printed after an install, `ImportError`);
-  `mode="visible"` needs the window in front and often cannot get it, even after a click on the
-  title bar (a click from the agent does not make it the system's front window; `force_focus=true`
-  raises it but can crash a portable). `get_output_panel` for the console is the same as
-  `get_console` in the default mode, so it also misses those errors when the window is not in
-  front. A visible capture that succeeds prints one "[sublime-mcp] console capture marker" line
-  into the console; one that fails for lack of focus now leaves nothing behind. The last N lines are available
-  from `get_console(mode="visible", tail=N)` whenever the window is in front.
+  misses Sublime's own error output (tracebacks printed after an install, `ImportError`).
+  `get_output_panel` for the console is the same as `get_console` in the default mode, so it
+  also misses those errors when the window is not in front. A visible capture that succeeds
+  prints one "[sublime-mcp] console capture marker" line into the console; one that fails for
+  lack of focus leaves nothing behind.
 
 ## Silent failures and timeouts
 

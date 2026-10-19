@@ -1070,6 +1070,26 @@ def _get_console_full(params):
         }
     return _get_console_win(params)
 
+# Milliseconds the visible console capture waits between steps. "focus_timeout" and
+# "copy_timeout" are upper limits: the capture goes on as soon as Windows reports that the
+# window is in front (GetForegroundWindow) and that the copy reached the clipboard
+# (GetClipboardSequenceNumber changed). The other values are small fixed gaps.
+# Measured on portable 4215 (20 reads per setting): all gaps 0 failed, 5-20 ms succeeded
+# every time (about 100 ms per read), the old 150-400 ms gaps took about 2 s per read.
+# The /console request accepts waits=click=0,... to override them for one call (tuning).
+_CAPTURE_WAITS_MS = {"show": 0, "after_focus": 20, "click": 5, "ctrl_a": 5, "restore": 20,
+                     "focus_timeout": 400, "copy_timeout": 400}
+
+
+def _capture_waits(params):
+    waits = dict(_CAPTURE_WAITS_MS)
+    for part in str((params.get("waits") or [""])[0]).split(","):
+        name, _, value = part.partition("=")
+        if name.strip() in waits and value.strip().isdigit():
+            waits[name.strip()] = int(value)
+    return waits
+
+
 def _get_console_win(params):
     # This capture temporarily changes the visible panel, editor focus, and
     # clipboard. Serialize requests so concurrent captures cannot snapshot
@@ -1101,6 +1121,7 @@ def _capture_console_win(params):
     # parent, sublime_text.exe.
     own_pids = {os.getpid(), os.getppid()}
     force_focus_requested = str((params.get("force_focus") or ["0"])[0]).lower() in ("1", "true", "yes")
+    waits = _capture_waits(params)
     _hwnd = [None]
     def _enum(h, _):
         # Only windows of this Sublime process: another Sublime instance (or any
@@ -1164,6 +1185,17 @@ def _capture_console_win(params):
             except Exception:
                 pass
 
+    def poll_until(condition, then, timeout_ms, step_ms=5):
+        """Call then() on the main thread as soon as condition() is true, or after timeout_ms."""
+        deadline = time.time() + timeout_ms / 1000.0
+
+        def check():
+            if condition() or time.time() >= deadline:
+                then()
+            else:
+                sublime.set_timeout(check, step_ms)
+        sublime.set_timeout(check, 0)
+
     def _INP():
         class MI(ctypes.Structure):
             _fields_ = [("dx", ctypes.c_long), ("dy", ctypes.c_long), ("mouseData", ctypes.c_ulong),
@@ -1188,7 +1220,7 @@ def _capture_console_win(params):
         sublime.set_clipboard(sentinel)
         tr("do_show: show console panel")
         snapshot["window"].run_command("show_panel", {"panel": "console"})
-        sublime.set_timeout(do_click, 300)
+        sublime.set_timeout(do_click, waits["show"])
 
     def own_window_has_focus():
         """True only if this Sublime's window has the keyboard focus.
@@ -1222,13 +1254,25 @@ def _capture_console_win(params):
         # ShowWindow/SetForegroundWindow on our own window send a message to
         # Sublime's UI thread, which can be waiting on that main thread.
         #
-        # Only used with force_focus=true. Measured on Windows 11 with portable
-        # Sublime Text builds 4200 and 4215 (12 captures per variant): every way
-        # of raising a background Sublime window sometimes crashes it in
-        # CoreMessaging.dll. Minimize + restore (no AttachThreadInput) gets the
-        # focus most reliably and crashes least (about 1 run in 6); the
-        # AttachThreadInput + BringWindowToTop route crashed 25-67% of runs; the
-        # variants without a real raise never crash but never get the focus.
+        # Only used with force_focus=true, because a raise takes the keyboard focus from
+        # whatever the user is doing.
+        #
+        # Crash evidence. 2026-10-04: a loop on portable 4200 that killed and relaunched it
+        # for each capture (12 per variant) saw the method used here (minimize, restore,
+        # SetForegroundWindow) crash it 2 times in 12 (CoreMessaging.dll); the AttachThreadInput
+        # variants crashed 5 to 8 times in 12; variants without a real raise never crashed
+        # and never got the focus. The script and logs were not kept. 2026-10-19: about
+        # 1,000 raises of this method on portables 4200 and 4215 (long-running and freshly
+        # relaunched) gave no crash and no new dump file, so that rate does not hold on
+        # those setups (the portables now hold few packages); the cause of the 10-04 crashes
+        # is unknown.
+        #
+        # Windows lets a process take the foreground only if it received the last input
+        # event, started the foreground process, or the foreground lock timeout has expired
+        # (SetForegroundWindow documentation). A freshly started Sublime has had no input,
+        # so its first raise usually fails; later raises work because the click and keys of
+        # the previous capture count as input. A raise also fails while the user types. The
+        # capture then sends no input and reports it.
         tr("force_focus: minimize + restore")
         user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE
         user32.ShowWindow(hwnd, 9)  # SW_RESTORE
@@ -1249,16 +1293,19 @@ def _capture_console_win(params):
             sublime.set_timeout(do_click_focused, 0)
             return
         if not force_focus_requested:
-            # Not in front. Raising another instance's window can crash it, so
-            # that only happens when the caller explicitly asks for it.
+            # Not in front. Raising a window takes the focus from the user, so that only
+            # happens when the caller explicitly asks for it.
             tr("do_click: window not in front and force_focus not requested")
             abort_no_focus("; this Sublime window is not in front. Bring it to the front "
-                           "yourself, or pass force_focus=true to raise it (a portable "
-                           "Sublime Text may crash when raised)")
+                           "yourself, or pass force_focus=true to raise it")
             return
         tr("do_click: start focus thread")
         threading.Thread(target=force_focus, daemon=True).start()
-        sublime.set_timeout(do_click_focused, 400)
+        # GetForegroundWindow is true the moment Windows switches; Sublime handles its own
+        # activation a little later, so give it after_focus ms before the click.
+        poll_until(lambda: user32.GetForegroundWindow() == hwnd,
+                   lambda: sublime.set_timeout(do_click_focused, waits["after_focus"]),
+                   waits["focus_timeout"])
 
     def do_click_focused():
         if cleanup["cancelled"]:
@@ -1283,7 +1330,7 @@ def _capture_console_win(params):
         user32.SendInput(1, ctypes.byref(dn), ctypes.sizeof(INP))
         user32.SendInput(1, ctypes.byref(up), ctypes.sizeof(INP))
         tr("do_click_focused: click sent")
-        sublime.set_timeout(do_ctrl_a, 400)
+        sublime.set_timeout(do_ctrl_a, waits["click"])
 
     def do_ctrl_a():
         if cleanup["cancelled"]:
@@ -1298,7 +1345,7 @@ def _capture_console_win(params):
         tr("do_ctrl_a: keys")
         kd(0x11); kd(0x41); ku(0x41); ku(0x11)
         tr("do_ctrl_a: keys sent")
-        sublime.set_timeout(do_ctrl_c, 250)
+        sublime.set_timeout(do_ctrl_c, waits["ctrl_a"])
 
     def do_ctrl_c():
         if cleanup["cancelled"]:
@@ -1311,9 +1358,26 @@ def _capture_console_win(params):
         def kd(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 0; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
         def ku(vk): k = INP(type=1); k._u.ki.wVk = vk; k._u.ki.dwFlags = 2; user32.SendInput(1, ctypes.byref(k), ctypes.sizeof(INP))
         tr("do_ctrl_c: keys")
+        clip_seq = user32.GetClipboardSequenceNumber()
         kd(0x11); kd(0x43); ku(0x43); ku(0x11)
         tr("do_ctrl_c: keys sent")
-        sublime.set_timeout(read_clip, 400)
+        # Read as soon as the copy has finished. Watch the clipboard sequence number, which
+        # needs no clipboard access: a copy bumps it twice (clear, then data), so wait for
+        # a change and then for 10 ms without another one. Opening the clipboard to look at
+        # it while Sublime copies makes Sublime's own copy fail. read_clip checks the
+        # content, so a timeout here only leads to its own error.
+        seen = {"seq": None, "since": 0.0}
+
+        def copy_settled():
+            seq = user32.GetClipboardSequenceNumber()
+            if seq == clip_seq:
+                return False
+            now = time.time()
+            if seq != seen["seq"]:
+                seen["seq"], seen["since"] = seq, now
+                return False
+            return now - seen["since"] >= 0.010
+        poll_until(copy_settled, read_clip, waits["copy_timeout"])
 
     def read_clip():
         if cleanup["cancelled"]:
@@ -1362,7 +1426,7 @@ def _capture_console_win(params):
         sublime.set_clipboard(snapshot["clipboard"])
         user32.SetCursorPos(cursor.x, cursor.y)
         tr("restore_ui: clipboard + cursor restored")
-        sublime.set_timeout(restore_focus, 150)
+        sublime.set_timeout(restore_focus, waits["restore"])
 
     def restore_focus():
         tr("restore_focus: start")
@@ -1388,8 +1452,7 @@ def _capture_console_win(params):
         # add a "console capture marker" line to the console).
         return {"error": "could not give the Sublime Text window the keyboard focus; no input was "
                          "sent; this Sublime window is not in front. Bring it to the front yourself, "
-                         "or pass force_focus=true to raise it (a portable Sublime Text may crash "
-                         "when raised)" + _dialog_hint()}
+                         "or pass force_focus=true to raise it" + _dialog_hint()}
     sublime.set_timeout(do_show, 0)
     if not done.wait(timeout=6.0):
         # Best-effort cleanup even when an earlier UI callback did not run.
@@ -5058,7 +5121,8 @@ _MCP_TOOLS = [
      "If name is omitted, read the active output panel. Use name='exec' for build output.\n"
      "Use name='Console' to read Sublime's built-in console through the best available backend; "
      "for the console, force_focus=true raises the window first (needed for a complete read "
-     "when the window is not in front; can crash a portable Sublime Text).",
+     "when the window is not in front; the raise can fail while the user is typing, and then "
+     "nothing is sent).",
      {"type": "object", "properties": {
          "name": {"type": "string", "default": ""},
          "force_focus": {"type": "boolean", "default": False},
@@ -5114,7 +5178,9 @@ _MCP_TOOLS = [
      "since capture began. Results include source and complete metadata. The visible capture "
      "clicks in the console and copies it, so it only runs when this Sublime window is in front "
      "(otherwise it fails at once and changes nothing); "
-     "force_focus=true raises it first, which can crash a portable Sublime Text. "
+     "force_focus=true raises it first (it takes the keyboard focus, and can fail while the "
+     "user is typing; the capture then sends no input and says so). A read takes about "
+     "150 ms. "
      "tail=N keeps the last N entries (captured) or the last N lines (visible; the result then "
      "has lines_total and truncated); tail=0 returns everything.",
      {"type": "object", "properties": {

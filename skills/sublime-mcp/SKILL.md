@@ -80,7 +80,9 @@ Details: `get_help(section="console")`. The short rules (tested 2026-10-11 on po
 
 - Complete read: `get_console(mode="visible", force_focus=true)`, with `tail=N` to keep the reply
   small. The window does not stay in front between calls, so pass `force_focus=true` on every call;
-  clicking the title bar does not bring it forward.
+  clicking the title bar does not bring it forward. A read takes about 150 ms. Windows refuses the
+  raise on a freshly started Sublime and while the user is typing: the error says no input was
+  sent, so call again a moment later.
 - Without `force_focus` and with the window behind, `visible`, `get_console_full` and
   `get_console_win` fail at once and change nothing; `auto` and `get_output_panel(name="console")`
   fall back to the captured text with `complete: false` and a `warning`. Check `complete` and
