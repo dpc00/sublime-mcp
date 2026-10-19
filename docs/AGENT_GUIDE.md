@@ -153,6 +153,40 @@ get_commands()                     # command ids, scopes, packages, palette capt
 `project_search` `where` accepts folder paths, `*.py`, `-*.md`, `${project}`,
 `${open_files}`, `${folder:Name}`.
 
+## Typing into a GhostShell terminal tab (a shell, Claude Code and other agent CLIs)
+
+GhostShell has no command for sending text into a terminal tab (removed 2026-10-19: `ai_terminal_send_string`,
+`ai_terminal_send_string_window`, `ai_terminal_queue_input`, `ai_terminal_queue_input_to`). Do it the way a person does:
+select the tab, type, read it back, go back to your own tab. Tested 2026-10-19 on build 4200 with a `cmd.exe` tab:
+
+```
+get_sheets(settings=false)                       # find the target sheet id and your own (the focused one)
+batch(calls=[
+  {"tool": "focus_sheet", "args": {"id": <target id>}},
+  {"tool": "ui_type_text", "args": {"text": "echo hello\n"}},   # a newline is sent as Return
+  {"tool": "focus_sheet", "args": {"id": <your own id>}}])
+get_sheet_content(index=<target index>)          # quote the echoed line and its output
+```
+
+- **Guard the focus.** Sheet ids change when Sublime restarts (tested 2026-10-19: the cmd tab went from id 284 to 12), so
+  call `get_sheets` in the same turn. Run `focus_sheet` first and check it did not return an error and that
+  `window.active_view().name()` is the target (an `eval_python` call) before typing anything. A `focus_sheet` on a stale id
+  returned "sheet id 284 not found", and nothing was typed.
+- **`ok` is not proof.** `ui_type_text` types into whichever tab is active in the window; if the `focus_sheet` before it
+  did not select the target, the text goes to the wrong tab (possibly your own session) and still returns ok. Read the
+  target tab back with `get_sheet_content` and quote the line before saying it was sent.
+- **Leave the line for the person to press Enter** (for example `npm publish`, which asks for browser authentication):
+  type the text with no trailing newline, read it back, then tell them to press Enter in that tab.
+- **A cmd.exe tab takes `ui_type_text` as typed.** UNVERIFIED for Claude Code tabs: Claude Code reads a burst of text as a
+  paste and takes an Enter in the same read, or within about 100 ms after it, as part of the paste (text of 60 characters
+  or fewer still submitted; 120 or more stayed in the box, measured 2026-10-17). For such a tab type the text with no
+  newline, then send the Return as its own `ui_press_key` (`key="Return"`, `method="post"`) at least 300 ms later.
+- **Escape: do not type a raw `\x1b`.** Use `ui_press_key` with `method="post"` (`Escape`, `Return`, arrows).
+- `cls` in a cmd.exe tab clears the tab text that `get_sheet_content` returns (tested: 183 characters left), so read
+  what you need first.
+- A string typed before the shell has printed its prompt is dropped. After `ai_terminal_open_here` wait a few seconds, and
+  confirm the prompt with a screenshot before typing.
+
 ## Packages, menus, palette and input panels (no eval_python needed)
 
 Call these through `batch`; find more with `discover_tools`.
@@ -304,6 +338,11 @@ Observed on build 4200 (2026-10-07).
   with `view.add_regions(key, ...)` (begin, end, first 80 characters); name several keys with
   commas. Sublime cannot list the keys, so read the plugin's source for them. Built-in example:
   after `toggle_bookmark`, key `bookmarks`.
+- **A tab drawn with phantoms** (GhostShell's omp tab: the buffer is only blank lines, the content is
+  in hundreds of phantoms): `get_view_phantoms(name="omp", html=false, last=20, max_chars=500)`
+  returns the newest panels as plain text. Without `html=false` and `last` the answer is about
+  290 KB. It works for any package that lists its `PhantomSet` in a module-level `_phantom_sets`
+  dict (view id to set); GhostShell does since 2026-10-14.
 - **Syntax names:** `get_active_file` and `get_sheets` give `syntax` (the name, or the file name
   when the syntax file has no `name:` line, as with Bicep) and `get_active_file` also gives
   `syntax_path`.
