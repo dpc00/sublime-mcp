@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.15.2
+
+- **The guide for typing into a terminal tab is corrected.** GhostShell no longer has a command that sends text into an ai_terminal tab (it removed `ai_terminal_send_string`, `ai_terminal_send_string_window`, `ai_terminal_queue_input` and `ai_terminal_queue_input_to` in 0.2.15). `get_help` and `AGENT_GUIDE.md` now describe doing it as a person does, with sublime-mcp tools only: `get_sheets` to find the tab, `focus_sheet` to select it, a check that it is the active tab, `ui_type_text` to type (a newline is sent as Return), `focus_sheet` back to your own tab, and `get_sheet_content` to read the target and quote it before saying the text was sent. Sheet ids change when Sublime restarts (the cmd tab went from 284 to 12), and a `focus_sheet` on a stale id returned an error and nothing was typed. Tested on a cmd.exe tab on build 4200; for a Claude Code tab it is untested. No code changed.
+
 ## 1.15.1
 
 - **`get_console(mode="visible")` is about 12 times faster.** A read took about 2 s because the capture slept a fixed 150 to 400 ms after each of its steps; it now takes about 150 ms. The raise waits until Windows reports the window in front (`GetForegroundWindow`), then 20 ms for Sublime to handle its own activation; the copy waits until the clipboard counter stops changing, then reads once (looking at the clipboard while Sublime copies makes the copy fail). Measured on Windows 11 with the portable builds: 99 of 100 reads on 4215 and 92 of 100 on 4200 succeeded, the rest were focus refusals that sent no input, none returned wrong text. The gaps are in `_CAPTURE_WAITS_MS`; a `/console` request accepts `waits=click=0,...` to try other values.
