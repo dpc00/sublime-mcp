@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.15.3
+
+- **The sublime-mcp skill now says how to type into a terminal tab.** `skills/sublime-mcp/SKILL.md` gained a short section, the same method as the guide: `get_sheets` for the target and your own sheet id, `focus_sheet` on the target, a check that it is the active tab before anything is typed, `ui_type_text`, `focus_sheet` back to your own tab, and `get_sheet_content` to read the target and quote it, because `ok` from a tool never proves the text arrived. No code changed.
+
 ## 1.15.2
 
 - **The guide for typing into a terminal tab is corrected.** GhostShell no longer has a command that sends text into an ai_terminal tab (it removed `ai_terminal_send_string`, `ai_terminal_send_string_window`, `ai_terminal_queue_input` and `ai_terminal_queue_input_to` in 0.2.15). `get_help` and `AGENT_GUIDE.md` now describe doing it as a person does, with sublime-mcp tools only: `get_sheets` to find the tab, `focus_sheet` to select it, a check that it is the active tab, `ui_type_text` to type (a newline is sent as Return), `focus_sheet` back to your own tab, and `get_sheet_content` to read the target and quote it before saying the text was sent. Sheet ids change when Sublime restarts (the cmd tab went from 284 to 12), and a `focus_sheet` on a stale id returned an error and nothing was typed. Tested on a cmd.exe tab on build 4200; for a Claude Code tab it is untested. No code changed.

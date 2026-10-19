@@ -94,6 +94,20 @@ Details: `get_help(section="console")`. The short rules (tested 2026-10-11 on po
 - Each successful visible read adds one `[sublime-mcp] console capture marker` line.
 - Do not open the console panel with `show_panel` and read the screen.
 
+## Typing into a terminal tab (GhostShell ai_terminal)
+
+GhostShell has no command that sends text into a tab. Do it as a person does, and prove it arrived (full steps and traps:
+"Typing into a GhostShell terminal tab" in `get_help`):
+
+1. `get_sheets` with `settings=false` for the target's `id` and `index`, and your own id (the focused sheet). Ids change when
+   Sublime restarts, so list them in the same turn.
+2. `focus_sheet` on the target, then confirm it is the active tab (`eval_python`:
+   `sublime.active_window().active_view().name()`). If `focus_sheet` errors or the name is wrong, type nothing: `ui_type_text` types
+   into whichever tab is active, and a failed focus would put the text into your own tab while still returning ok.
+3. `ui_type_text` (a newline is sent as Return; leave it off to let the person press Enter, for example for `npm publish`), then
+   `focus_sheet` back to your own tab.
+4. `get_sheet_content` on the target, and quote the echoed line. `ok` from a tool never proves it.
+
 ## When sublime-mcp is not enough
 
 Fall back to ordinary filesystem or shell tools when sublime-mcp is unavailable, returns an
