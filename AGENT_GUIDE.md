@@ -270,6 +270,11 @@ Observed on build 4200 (2026-10-07).
   logs were not kept. On 2026-10-19 about 1,000 raises on portables 4200 and 4215, long-running
   and freshly relaunched, gave no crash and no new dump file. The cause of the earlier crashes
   is unknown, and no crash of the user's main Sublime from `force_focus` has been recorded.
+  The two dumps on hand (4200 on 2026-10-16, 4215 on 2026-10-18; read with `cdbX64.exe`, no
+  symbols) are both access violations on a Sublime worker thread, every frame in
+  `sublime_text.exe`: a read of address 0x8 (null object) on 4200 and a jump to a data address
+  on 4215. No frame is in user32, the clipboard, Python or a plugin, and the dumps carry no
+  mark of `get_console`, so nothing ties them to `force_focus`.
 - **The console is only partly readable.** `get_console` in the default and `captured` modes
   misses Sublime's own error output (tracebacks printed after an install, `ImportError`).
   `get_output_panel` for the console is the same as `get_console` in the default mode, so it
