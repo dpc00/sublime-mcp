@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Quick panels opened by Python 3.3 packages can now be read and picked.** `get_quick_panel` and `pick_quick_panel` only saw panels from sublime-mcp's own plugin host (3.8), so packages such as Bower (3.3) gave "no recorded quick panel" while the panel was on screen. sublime-mcp now copies `py33/mcp_commander_py33.py` into a small package `MCP Commander Py33` in Packages, which Sublime loads in the 3.3 host. It records the panel and answers a command, `mcp_py33_quick_panel`, through a JSON file in the cache folder. Tested on build 4200 with Bower's 71,028-item list: text filter, pick by text, cancel (index -1), and the package's callback ran. Not covered: panels opened by Sublime itself (command palette, Goto Anything). If the package is installed as a zip the companion is not copied and a line is printed in the console.
+
 ## 1.15.3
 
 - **The sublime-mcp skill now says how to type into a terminal tab.** `skills/sublime-mcp/SKILL.md` gained a short section, the same method as the guide: `get_sheets` for the target and your own sheet id, `focus_sheet` on the target, a check that it is the active tab before anything is typed, `ui_type_text`, `focus_sheet` back to your own tab, and `get_sheet_content` to read the target and quote it, because `ok` from a tool never proves the text arrived. No code changed.

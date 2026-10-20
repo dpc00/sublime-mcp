@@ -2617,8 +2617,8 @@ def _quick_panel_item(item):
 
 def _install_quick_panel_recorder():
     """Wrap Window.show_quick_panel so get_quick_panel / pick_quick_panel can see
-    panels opened by plugins in this plugin host. Panels opened from another host
-    (e.g. the Python 3.3 one) or by Sublime itself are not recorded."""
+    panels opened by plugins in this plugin host. Panels opened from the Python 3.3
+    host are recorded by py33/mcp_commander_py33.py; those opened by Sublime itself are not."""
     cur = sublime.Window.show_quick_panel
     orig = getattr(cur, "_sublime_mcp_orig", cur)
 
@@ -2674,26 +2674,83 @@ def _quick_panel_first_line(item):
 
 
 _NO_QUICK_PANEL = ("no recorded quick panel: none is open, or it was opened by Sublime "
-                   "itself or by a package in the other plugin host")
+                   "itself (a package's panel in either plugin host is recorded)")
 
 
-def _wait_for_quick_panel(body):
-    """Optional `wait_ms` (0..60000, default 0): poll until a quick panel is recorded for the
-    active window. Package Control builds its Install Package list for up to ~15 s after Enter,
-    so a call made at once finds nothing. Returns the time waited in ms."""
+def _ensure_py33_companion():
+    """Copy py33/mcp_commander_py33.py into the package "MCP Commander Py33". It has no
+    .python-version, so Sublime loads it in the 3.3 host and it records the quick panels that
+    packages in that host open (this host cannot see them)."""
+    try:
+        src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "py33", "mcp_commander_py33.py")
+        with open(src, encoding="utf-8") as f:
+            code = f.read()
+        dest_dir = os.path.join(sublime.packages_path(), "MCP Commander Py33")
+        dest = os.path.join(dest_dir, "mcp_commander_py33.py")
+        try:
+            with open(dest, encoding="utf-8") as f:
+                current = f.read()
+        except OSError:
+            current = None
+        if current != code:
+            os.makedirs(dest_dir, exist_ok=True)
+            with open(dest, "w", encoding="utf-8", newline="\n") as f:
+                f.write(code)
+    except Exception as e:  # e.g. this package is a zip: the 3.3 host's panels stay invisible
+        print("[sublime-mcp] could not install the Python 3.3 quick panel recorder: %s" % e)
+
+
+_py33_off_until = 0.0  # after a timeout, skip the 3.3 host for a while (its recorder is not loaded)
+
+
+def _py33_call(args, timeout=2.0):
+    """Ask the 3.3 host's recorder about the active window's quick panel. Returns its answer
+    ({"open": False} or {"open": True, "result": ...}) or None when it did not answer."""
+    global _py33_off_until
+    if time.time() < _py33_off_until:
+        return None
+    req = _uuid.uuid4().hex
+    path = os.path.join(sublime.cache_path(), "MCP Commander", "py33_qp_%s.json" % req)
+    call = dict(args, req=req)
+    _on_main(lambda: sublime.active_window().run_command("mcp_py33_quick_panel", call))
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if os.path.exists(path):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    data = json.load(f)
+            finally:
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+            return data
+        time.sleep(0.03)
+    _py33_off_until = time.time() + 10
+    return None
+
+
+def _quick_panel_request(body, args):
+    """Find the active window's quick panel, waiting up to `wait_ms` (0..60000, default 0):
+    Package Control builds its Install Package list for up to ~15 s after Enter, so a call
+    made at once finds nothing. Returns ("38", record, waited) for a panel opened in this
+    host, ("33", answer, waited) for one opened in the 3.3 host, or (None, None, waited)."""
     try:
         wait = max(0, min(int(body.get("wait_ms") or 0), 60000))
     except (TypeError, ValueError):
-        return 0
-    if not wait:
-        return 0
+        wait = 0
     start = time.time()
     deadline = start + wait / 1000.0
-    while time.time() < deadline:
-        if _on_main(lambda: _QUICK_PANELS.get(sublime.active_window().id())) is not None:
-            break
+    while True:
+        rec = _on_main(lambda: _QUICK_PANELS.get(sublime.active_window().id()))
+        if rec is not None:
+            return "38", rec, int((time.time() - start) * 1000)
+        answer = _py33_call(args)
+        if answer and answer.get("open"):
+            return "33", answer["result"], int((time.time() - start) * 1000)
+        if time.time() >= deadline:
+            return None, None, int((time.time() - start) * 1000) if wait else 0
         time.sleep(0.2)
-    return int((time.time() - start) * 1000)
 
 
 def _no_quick_panel_error(waited):
@@ -2710,13 +2767,18 @@ def _no_quick_panel_error(waited):
 def _get_quick_panel(body):
     """Items of the quick panel last opened by a plugin in this plugin host: at most `limit`
     (default 100) of those whose first line contains `text`, starting at `offset`."""
-    waited = _wait_for_quick_panel(body)
     text = str(body.get("text") or "").strip().lower()
     try:
         limit = max(1, min(int(body.get("limit", 100)), 1000))
         offset = max(0, int(body.get("offset", 0)))
     except (TypeError, ValueError):
         return {"error": "limit and offset must be integers"}
+    kind, found, waited = _quick_panel_request(
+        body, {"action": "list", "text": text, "limit": limit, "offset": offset})
+    if kind is None:
+        return _no_quick_panel_error(waited)
+    if kind == "33":
+        return found
 
     def fn():
         rec = _QUICK_PANELS.get(sublime.active_window().id())
@@ -2734,7 +2796,11 @@ def _get_quick_panel(body):
 def _pick_quick_panel(body):
     """Pick an item of the recorded quick panel by index or by text, or cancel (index -1)."""
     index, text = body.get("index"), body.get("text")
-    waited = _wait_for_quick_panel(body)
+    kind, found, waited = _quick_panel_request(body, {"action": "pick", "index": index, "text": text})
+    if kind is None:
+        return _no_quick_panel_error(waited)
+    if kind == "33":
+        return found  # picked by the recorder in the 3.3 host
 
     def fn():
         w = sublime.active_window()
@@ -7182,6 +7248,7 @@ def _stop_servers():
 
 def plugin_loaded():
     _install_quick_panel_recorder()
+    _ensure_py33_companion()
     _start_servers()
 
 
