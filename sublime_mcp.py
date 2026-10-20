@@ -1442,6 +1442,18 @@ def _capture_console_win(params):
         if previous_foreground and previous_foreground != hwnd:
             tr("restore_focus: SetForegroundWindow(previous)")
             user32.SetForegroundWindow(previous_foreground)
+            # Observed on build 4200 (2026-10-19): after the window is sent to the back, the
+            # first overlay opened by a command (show_overlay, or a package's quick panel) is
+            # closed again at once and the second one stays. Open and close one here, once
+            # the window is no longer in front, so the caller's first overlay is not the one lost.
+            def burn_first_overlay():
+                snapshot["window"].run_command("show_overlay", {"overlay": "goto"})
+                snapshot["window"].run_command("hide_overlay")
+                tr("restore_focus: done")
+                done.set()
+            poll_until(lambda: user32.GetForegroundWindow() != hwnd,
+                       lambda: sublime.set_timeout(burn_first_overlay, 50), 400)
+            return
         tr("restore_focus: done")
         done.set()
 
