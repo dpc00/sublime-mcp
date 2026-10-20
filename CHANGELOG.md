@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.16.1
 
 - **`get_active_file` and `get_sheets` now report the syntax of a view whose syntax was set through a legacy path.** Old Python 3.3 packages set `Packages/CSS/CSS.tmLanguage`; Sublime shows the syntax in the status bar, but `view.syntax()` returns None, so both tools said `syntax: null`. They now fall back to the view's `syntax` setting (`syntax: "CSS"`, `syntax_path: "Packages/CSS/CSS.tmLanguage"`). Found with eCSStractor; tested on build 4200 with a view set to `Packages/CSS/CSS.tmLanguage`.
 

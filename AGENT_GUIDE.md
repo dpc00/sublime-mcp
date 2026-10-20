@@ -349,7 +349,12 @@ Observed on build 4200 (2026-10-07).
   dict (view id to set); GhostShell does since 2026-10-14.
 - **Syntax names:** `get_active_file` and `get_sheets` give `syntax` (the name, or the file name
   when the syntax file has no `name:` line, as with Bicep) and `get_active_file` also gives
-  `syntax_path`.
+  `syntax_path`. A view whose syntax was set through a legacy path (`Packages/CSS/CSS.tmLanguage`,
+  which old Python 3.3 packages use) has no `view.syntax()` in the API although Sublime shows it;
+  both tools then report it from the view's `syntax` setting (`syntax: "CSS"`, `syntax_path` the
+  legacy path) instead of `null`.
+- **`focus_sheet` echo:** it returns the sheet without its view settings (they were about 7 KB on
+  every call); pass `settings: true` to get them, as `get_sheets` does.
 - **Scope names differ between Sublime builds.** In build 4200 the C syntax scopes `#ifdef` as
   `keyword.control.import`; in 4215 it is `keyword.control.directive.conditional`. A package that
   selects by scope can work on one build and do nothing on the other: check the scopes with

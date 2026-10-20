@@ -44,6 +44,9 @@ batch(calls=[{"tool": "get_bookmarks", "args": {}}])
 
 - Remove a package with `run_command remove_package` (not the palette text), and pick by exact
   name. Package installs can run for minutes with an unchanging status text.
+- `pick_quick_panel` on a panel of a Python 3.3 package that raises a dialog in its callback
+  (Jekyll's "Confirm Delete") answers `pending: true`: the pick went through and the dialog blocks
+  Sublime; answer it with `list_native_windows` and `dismiss_native_window`.
 - `delete_file` / `delete_folder` raise a Windows confirmation dialog for every item.
 - With a completion popup open, a posted Tab does not expand a snippet trigger: press Escape
   first, then Tab.

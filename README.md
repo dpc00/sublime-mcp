@@ -47,6 +47,9 @@ native dialog or menu while it blocks Sublime's main thread. See
   (with `wait_ms` for a list that is still loading) and `click_menu_item`;
   `install_package` now persists the install, `get_view_regions` and
   `get_view_phantoms` (with `last`, `html`, `max_chars`) inspect what a plugin drew.
+  Panels of older Python 3.3 packages are visible with `"install_py33_helper": true`
+  (1.16, off by default); a pick whose callback opens a dialog answers `pending`
+  (1.16.1) and the dialog is answered with `dismiss_native_window`.
 - **Share one Sublime between agents (1.12.0).** `claim_resource`,
   `release_resource` and `list_claims` let agents take turns on the input and
   control panels.
