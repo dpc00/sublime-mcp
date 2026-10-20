@@ -328,7 +328,11 @@ Observed on build 4200 (2026-10-07).
   sublime-mcp write a small package, "MCP Commander Py33", into Packages, which records them;
   the error says so when it is off); the command palette and
   Goto Anything give an error, and then the keyboard is the only way. Picking runs the package's own callback, so pick only items you mean to run (some
-  pickers open files, folders or browser tabs). `drive_input_panel` only fills input panels.
+  pickers open files, folders or browser tabs). **Known gap (to be fixed):** if the callback of a
+  3.3-host package raises a modal dialog (Jekyll's remove commands: "Confirm Delete"),
+  `pick_quick_panel` returns a "main-thread timeout after 5s" error although the pick went through;
+  the dialog is open and blocks Sublime. Answer it with `list_native_windows` and
+  `dismiss_native_window` (or Return on its hwnd), then check the result. `drive_input_panel` only fills input panels.
   **The package manager's Install Package / Remove Package lists take up to ~15 s to appear after
   Enter** (the status bar says "Loading packages..."): pass `wait_ms` (at most 60000) to
   `pick_quick_panel` or `get_quick_panel`, for example `pick_quick_panel(text="Bicep",
