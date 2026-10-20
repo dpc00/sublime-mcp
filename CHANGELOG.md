@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.16.0
 
 - **The first overlay after a visible console read is no longer lost.** After `get_console(mode="visible", force_focus=true)` the window is sent back behind the user's window, and on build 4200 the first overlay a command opened (`show_overlay`, or a package's quick panel such as Bower's `install`) closed again at once; the second one stayed. The read now opens and closes one overlay (Goto Anything) in that window once it is no longer in front, so the caller's first overlay stays. Found with Bower; tested with Goto Anything, the command palette and Bower's picker.
 
