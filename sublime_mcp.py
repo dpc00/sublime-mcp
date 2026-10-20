@@ -2289,13 +2289,12 @@ def _help_for(text, section):
         matched = [(h, t) for h, t in parts if section in t.lower()]
         by = "text"
         if sum(len(t) for _, t in matched) > 6000:
-            # a name like "run_command" is in most of the guide: never give an agent less than
-            # it got before, so return the whole guide and say which sections mention the word
-            return {"ok": True, "content": text, "matched_by": "text",
-                    "matched": [h for h, _ in matched],
-                    "note": "{!r} appears in {} sections, so this is the whole guide; "
-                            "section=<one of the matched headings> returns just one".format(
-                                section, len(matched)),
+            # a name like "run_command" is in most of the guide: list where, do not return more
+            # than the guide itself
+            return {"ok": True, "matched_by": "text", "matched": [h for h, _ in matched],
+                    "note": "{!r} appears in {} sections ({} chars); ask again with section=<one of "
+                            "these headings>".format(section, len(matched),
+                                                     sum(len(t) for _, t in matched)),
                     "sections": headings}
     if not matched:
         return {"error": "no section of the guide has {!r} in its heading or text".format(section),
