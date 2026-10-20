@@ -1314,6 +1314,11 @@
           },
           "id": {
             "type": "integer"
+          },
+          "settings": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include the sheet's view settings (about 7 KB) in the echo."
           }
         }
       }

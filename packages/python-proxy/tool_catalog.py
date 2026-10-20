@@ -835,7 +835,13 @@ TOOLS = [   {   'name': 'add_directory',
                        'changing the selected sheet set.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'index': {'type': 'integer', 'minimum': 0},
-                                             'id': {'type': 'integer'}}}},
+                                             'id': {'type': 'integer'},
+                                             'settings': {   'type': 'boolean',
+                                                             'default': False,
+                                                             'description': "Include the sheet's "
+                                                                            'view settings (about '
+                                                                            '7 KB) in the '
+                                                                            'echo.'}}}},
     {   'name': 'focus_side_bar',
         'description': 'Focus the sidebar to enable navigation by keyboard. (WindowCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
