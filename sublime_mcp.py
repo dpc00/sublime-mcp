@@ -2763,20 +2763,41 @@ def _py33_call(args, timeout=2.0):
     req = _uuid.uuid4().hex
     path = os.path.join(sublime.cache_path(), "MCP Commander", "py33_qp_%s.json" % req)
     call = dict(args, req=req)
-    _on_main(lambda: sublime.active_window().run_command("mcp_py33_quick_panel", call))
+    picking = args.get("action") == "pick"
+    if picking:
+        # A pick runs the package's own callback inside the command, and the callback may raise a
+        # modal dialog (Jekyll's "Confirm Delete") that blocks the main thread until a person
+        # answers it. Waiting for that in _on_main timed out after 5 s with an error although the
+        # pick had gone through, so send it without waiting for the command to finish.
+        sublime.set_timeout(lambda: sublime.active_window().run_command("mcp_py33_quick_panel", call), 0)
+    else:
+        _on_main(lambda: sublime.active_window().run_command("mcp_py33_quick_panel", call))
     deadline = time.time() + timeout
     while time.time() < deadline:
         if os.path.exists(path):
             try:
                 with open(path, encoding="utf-8") as f:
                     data = json.load(f)
-            finally:
-                try:
-                    os.remove(path)
-                except OSError:
-                    pass
+            except (OSError, ValueError):
+                # Windows can refuse the open for a moment right after the helper's os.replace
+                # (seen as "[Errno 13] Permission denied" after a pick that had already run).
+                # Keep the file and read it again instead of losing the answer.
+                time.sleep(0.03)
+                continue
+            try:
+                os.remove(path)
+            except OSError:
+                pass
             return data
         time.sleep(0.03)
+    if picking:
+        # The helper answered the list call a moment ago, so this is a slow or blocked callback,
+        # not a missing helper: do not switch the helper off, and say what is going on.
+        return {"open": True, "result": {
+            "ok": True, "pending": True,
+            "note": "the pick was sent, but the package's callback has not finished after %.0f s; "
+                    "a native dialog may be open and blocking Sublime: check list_native_windows and "
+                    "answer it with dismiss_native_window" % timeout}}
     _py33_off_until = time.time() + 10
     return None
 

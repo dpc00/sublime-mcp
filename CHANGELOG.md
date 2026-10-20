@@ -4,6 +4,8 @@
 
 - **`get_active_file` and `get_sheets` now report the syntax of a view whose syntax was set through a legacy path.** Old Python 3.3 packages set `Packages/CSS/CSS.tmLanguage`; Sublime shows the syntax in the status bar, but `view.syntax()` returns None, so both tools said `syntax: null`. They now fall back to the view's `syntax` setting (`syntax: "CSS"`, `syntax_path: "Packages/CSS/CSS.tmLanguage"`). Found with eCSStractor; tested on build 4200 with a view set to `Packages/CSS/CSS.tmLanguage`.
 
+- **A pick whose Python 3.3 package callback raises a modal dialog no longer fails with a timeout.** `pick_quick_panel` waited for the callback inside a 5-second main-thread call, so Jekyll's remove commands ("Confirm Delete") gave `main-thread timeout after 5s` although the pick had gone through. The pick is now sent without waiting; if the callback has not finished after 2 s the answer is `{ok: true, pending: true, note: ...}` telling the caller to check `list_native_windows` and answer the dialog. The helper is no longer switched off for 10 s after such a pick. Also: a transient `[Errno 13] Permission denied` when reading the helper's answer file lost the answer of a pick that had already run; the read is now retried. Tested on build 4200 with a 3.3 test package whose callback opens a dialog.
+
 - **`focus_sheet` no longer echoes the 100+ view settings (about 7 KB) on every call.** Pass `settings: true` to get them, as `get_sheets` does. The proxies' copy of the schema is regenerated at the next release.
 
 ## 1.16.0
