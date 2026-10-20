@@ -513,6 +513,26 @@ def _syntax_label(syn):
     return os.path.splitext(os.path.basename(path))[0] or None
 
 
+def _view_syntax(v):
+    """(label, path) of a view's syntax. view.syntax() is None for a view whose syntax was set
+    through a legacy path that no longer resolves ('Packages/CSS/CSS.tmLanguage', which old
+    Python 3.3 packages still use) although the status bar shows the syntax; in that case fall
+    back to the view's `syntax` setting, the same text Sublime shows."""
+    try:
+        syn = v.syntax()
+    except Exception:
+        syn = None
+    if syn:
+        return _syntax_label(syn), syn.path
+    try:
+        setting = v.settings().get("syntax")
+    except Exception:
+        setting = None
+    if setting:
+        return os.path.splitext(os.path.basename(setting))[0] or None, setting
+    return None, None
+
+
 def _get_active_file(params):
     def fn():
         v = _active_view()
@@ -521,7 +541,7 @@ def _get_active_file(params):
         sel = v.sel()
         pt = sel[0].begin() if sel else 0
         row, col = v.rowcol(pt)
-        syn = v.syntax()
+        syntax_label, syntax_path = _view_syntax(v)
         return {
             "path": v.file_name(),
             "name": v.name(),
@@ -529,8 +549,8 @@ def _get_active_file(params):
             "line": row + 1,
             "col": col + 1,
             "is_dirty": v.is_dirty(),
-            "syntax": _syntax_label(syn),
-            "syntax_path": syn.path if syn else None,
+            "syntax": syntax_label,
+            "syntax_path": syntax_path,
         }
 
     return _on_main(fn)
@@ -656,11 +676,7 @@ def _get_sheets(params):
                     item["size"] = v.size()
                 except Exception:
                     item["size"] = None
-                try:
-                    syntax = v.syntax()
-                    item["syntax"] = _syntax_label(syntax)
-                except Exception:
-                    item["syntax"] = None
+                item["syntax"] = _view_syntax(v)[0]
             out.append(item)
         return {
             "sheets": out,
@@ -672,7 +688,7 @@ def _get_sheets(params):
     return _on_main(fn)
 
 
-def _sheet_summary(w, s):
+def _sheet_summary(w, s, settings=True):
     v = s.view()
     path = None
     try:
@@ -694,21 +710,18 @@ def _sheet_summary(w, s):
     # hand-picked subset, so a caller can always tell what a tab actually
     # is without sublime-mcp needing to know about that package by name.
     if v is not None:
-        try:
-            summary["settings"] = v.settings().to_dict()
-        except Exception:
-            summary["settings"] = {}
+        if settings:
+            try:
+                summary["settings"] = v.settings().to_dict()
+            except Exception:
+                summary["settings"] = {}
         summary["is_scratch"] = v.is_scratch()
         summary["is_read_only"] = v.is_read_only()
         try:
             summary["size"] = v.size()
         except Exception:
             summary["size"] = None
-        try:
-            syntax = v.syntax()
-            summary["syntax"] = _syntax_label(syntax)
-        except Exception:
-            summary["syntax"] = None
+        summary["syntax"] = _view_syntax(v)[0]
     return summary
 
 
@@ -809,7 +822,9 @@ def _focus_sheet(body):
         if error:
             return {"error": error}
         w.focus_sheet(sheets[0])
-        return {"ok": True, "sheet": _sheet_summary(w, sheets[0])}
+        # The echo used to carry all 100+ view settings (about 7 KB) on every focus; they are
+        # only returned when asked for (settings: true), as get_sheets does.
+        return {"ok": True, "sheet": _sheet_summary(w, sheets[0], bool(body.get("settings", False)))}
 
     return _on_main(fn)
 
@@ -5346,6 +5361,8 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {
          "index": {"type": "integer", "minimum": 0},
          "id": {"type": "integer"},
+         "settings": {"type": "boolean", "default": False,
+                      "description": "Include the sheet's view settings (about 7 KB) in the echo."},
      }},
      _p("/focus_sheet")),
     ("set_sheet_index",

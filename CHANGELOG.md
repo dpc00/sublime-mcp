@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **`get_active_file` and `get_sheets` now report the syntax of a view whose syntax was set through a legacy path.** Old Python 3.3 packages set `Packages/CSS/CSS.tmLanguage`; Sublime shows the syntax in the status bar, but `view.syntax()` returns None, so both tools said `syntax: null`. They now fall back to the view's `syntax` setting (`syntax: "CSS"`, `syntax_path: "Packages/CSS/CSS.tmLanguage"`). Found with eCSStractor; tested on build 4200 with a view set to `Packages/CSS/CSS.tmLanguage`.
+
+- **`focus_sheet` no longer echoes the 100+ view settings (about 7 KB) on every call.** Pass `settings: true` to get them, as `get_sheets` does. The proxies' copy of the schema is regenerated at the next release.
+
 ## 1.16.0
 
 - **The first overlay after a visible console read is no longer lost.** After `get_console(mode="visible", force_focus=true)` the window is sent back behind the user's window, and on build 4200 the first overlay a command opened (`show_overlay`, or a package's quick panel such as Bower's `install`) closed again at once; the second one stayed. The read now opens and closes one overlay (Goto Anything) in that window once it is no longer in front, so the caller's first overlay stays. Found with Bower; tested with Goto Anything, the command palette and Bower's picker.
