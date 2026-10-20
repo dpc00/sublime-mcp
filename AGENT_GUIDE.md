@@ -322,8 +322,11 @@ Observed on build 4200 (2026-10-07).
 - **Quick panels:** several packages ask for a decision in a quick panel (FileManager's delete asks
   "Confirm - Send item to trash"; the package manager's pickers). `get_quick_panel` lists the items of
   the panel and `pick_quick_panel` picks one (by index or text) or cancels it with index -1.
-  They see panels opened by packages in either plugin host (a small companion package,
-  "MCP Commander Py33", records the ones from the Python 3.3 host); the command palette and
+  They see panels opened by packages in Sublime's Python 3.8 host. Older packages (no
+  `.python-version`) run in the 3.3 host: those panels are visible only when the user has set
+  `"install_py33_helper": true` in `MCP Commander.sublime-settings` (off by default; it makes
+  sublime-mcp write a small package, "MCP Commander Py33", into Packages, which records them;
+  the error says so when it is off); the command palette and
   Goto Anything give an error, and then the keyboard is the only way. Picking runs the package's own callback, so pick only items you mean to run (some
   pickers open files, folders or browser tabs). `drive_input_panel` only fills input panels.
   **The package manager's Install Package / Remove Package lists take up to ~15 s to appear after

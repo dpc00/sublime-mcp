@@ -2699,13 +2699,20 @@ def _quick_panel_first_line(item):
 
 
 _NO_QUICK_PANEL = ("no recorded quick panel: none is open, or it was opened by Sublime "
-                   "itself (a package's panel in either plugin host is recorded)")
+                   "itself (a package's panel is recorded in Sublime's Python 3.8 host, and in the "
+                   "3.3 host when install_py33_helper is on)")
 
 
 def _ensure_py33_companion():
     """Copy py33/mcp_commander_py33.py into the package "MCP Commander Py33". It has no
     .python-version, so Sublime loads it in the 3.3 host and it records the quick panels that
-    packages in that host open (this host cannot see them)."""
+    packages in that host open (this host cannot see them). It writes into the user's Packages
+    folder, so it only happens when "install_py33_helper" is true in the settings (default false)."""
+    global _PY33_HELPER_ENABLED
+    _PY33_HELPER_ENABLED = bool(
+        sublime.load_settings("MCP Commander.sublime-settings").get("install_py33_helper", False))
+    if not _PY33_HELPER_ENABLED:
+        return
     try:
         src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "py33", "mcp_commander_py33.py")
         with open(src, encoding="utf-8") as f:
@@ -2723,8 +2730,12 @@ def _ensure_py33_companion():
                 f.write(code)
     except Exception as e:  # e.g. this package is a zip: the 3.3 host's panels stay invisible
         print("[sublime-mcp] could not install the Python 3.3 quick panel recorder: %s" % e)
+        return
+    print("[sublime-mcp] install_py33_helper is on: the package \"MCP Commander Py33\" is in Packages "
+          "(delete that folder to remove it)")
 
 
+_PY33_HELPER_ENABLED = False
 _py33_off_until = 0.0  # after a timeout, skip the 3.3 host for a while (its recorder is not loaded)
 
 
@@ -2732,7 +2743,7 @@ def _py33_call(args, timeout=2.0):
     """Ask the 3.3 host's recorder about the active window's quick panel. Returns its answer
     ({"open": False} or {"open": True, "result": ...}) or None when it did not answer."""
     global _py33_off_until
-    if time.time() < _py33_off_until:
+    if not _PY33_HELPER_ENABLED or time.time() < _py33_off_until:
         return None
     req = _uuid.uuid4().hex
     path = os.path.join(sublime.cache_path(), "MCP Commander", "py33_qp_%s.json" % req)
@@ -2780,6 +2791,11 @@ def _quick_panel_request(body, args):
 
 def _no_quick_panel_error(waited):
     err = {"error": _NO_QUICK_PANEL}
+    if not _PY33_HELPER_ENABLED:
+        err["note"] = ("panels opened by packages in Sublime's Python 3.3 host (older packages, "
+                       "without a .python-version) cannot be seen: set \"install_py33_helper\": true "
+                       "in MCP Commander.sublime-settings to let sublime-mcp add a small helper "
+                       "package, \"MCP Commander Py33\", to Packages")
     if waited:
         err["waited_ms"] = waited
         err["error"] += " (waited %d ms)" % waited

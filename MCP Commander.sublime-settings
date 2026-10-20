@@ -38,4 +38,13 @@
     // two with the broadest reach) while keeping the rest of the server
     // usable, e.g. for a shared or less-trusted deployment.
     // "disabled_tools": ["eval_python", "run_command"]
+
+    // get_quick_panel and pick_quick_panel can only see quick panels opened by
+    // packages that run in Sublime's current Python (3.8). Older packages (no
+    // .python-version file) run in the Python 3.3 host. Setting this to true
+    // makes sublime-mcp write a small package, "MCP Commander Py33", into your
+    // Packages folder; it runs in the 3.3 host and records those panels so they
+    // can be read and picked. Default false: nothing is written. To undo it,
+    // set this back to false and delete Packages/MCP Commander Py33.
+    // "install_py33_helper": false
 }
