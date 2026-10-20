@@ -1345,7 +1345,13 @@ def _capture_console_win(params):
         user32.SendInput(1, ctypes.byref(dn), ctypes.sizeof(INP))
         user32.SendInput(1, ctypes.byref(up), ctypes.sizeof(INP))
         tr("do_click_focused: click sent")
-        sublime.set_timeout(do_ctrl_a, waits["click"])
+        sublime.set_timeout(do_ctrl_a, slower("click"))
+
+    def slower(name):
+        """A gap that grows on each retry: the 5 ms gaps suit a quick redraw, but a heavier
+        theme (seen with Numix on 4200, 2026-10-20) failed two reads in a row, because the
+        click had not been handled when Ctrl+A arrived."""
+        return max(waits[name], 1) * (1, 6, 20)[min(cleanup["tries"], 2)]
 
     def do_ctrl_a():
         if cleanup["cancelled"]:
@@ -1360,7 +1366,7 @@ def _capture_console_win(params):
         tr("do_ctrl_a: keys")
         kd(0x11); kd(0x41); ku(0x41); ku(0x11)
         tr("do_ctrl_a: keys sent")
-        sublime.set_timeout(do_ctrl_c, waits["ctrl_a"])
+        sublime.set_timeout(do_ctrl_c, slower("ctrl_a"))
 
     def do_ctrl_c():
         if cleanup["cancelled"]:
@@ -1422,8 +1428,11 @@ def _capture_console_win(params):
                     elif marker not in text:
                         result["error"] = ("the copied text is not the console (it lacks the "
                                            "capture marker); the console did not have the focus"
-                                           " [copied {} chars: {!r}; panel {!r}]".format(
-                                               len(text), text[:60], snapshot["window"].active_panel())
+                                           " [copied {} chars: {!r}; panel {!r}; clicked ({}, {}) in "
+                                           "window {}x{}; {} reads]".format(
+                                               len(text), text[:60], snapshot["window"].active_panel(),
+                                               cx, cy, rect.right - rect.left, rect.bottom - rect.top,
+                                               cleanup["tries"] + 1)
                                            + _dialog_hint())
                     else:
                         result["text"] = text
