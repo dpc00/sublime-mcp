@@ -1172,7 +1172,7 @@ def _capture_console_win(params):
     marker = "[sublime-mcp] console capture marker {}".format(int(time.time() * 1000))
 
     result = {"text": None, "error": None}
-    cleanup = {"cancelled": False, "restore_started": False}
+    cleanup = {"cancelled": False, "restore_started": False, "tries": 0}
     done = threading.Event()
     trace_path = os.environ.get("SUBLIME_MCP_CAPTURE_TRACE")
 
@@ -1393,9 +1393,22 @@ def _capture_console_win(params):
                     text = ctypes.wstring_at(ptr)
                     if text == sentinel:
                         result["error"] = "console copy did not update the clipboard"
+                    elif marker not in text and cleanup["tries"] < 2:
+                        # Observed on build 4200 (2026-10-20): every second read copied only an
+                        # empty line, the console output had not taken the click. Click and copy
+                        # once more before giving up.
+                        cleanup["tries"] += 1
+                        kernel32.GlobalUnlock(h)
+                        user32.CloseClipboard()
+                        tr("read_clip: marker missing, retry")
+                        sublime.set_clipboard(sentinel)
+                        sublime.set_timeout(do_click_focused, waits["click"])
+                        return
                     elif marker not in text:
                         result["error"] = ("the copied text is not the console (it lacks the "
                                            "capture marker); the console did not have the focus"
+                                           " [copied {} chars: {!r}; panel {!r}]".format(
+                                               len(text), text[:60], snapshot["window"].active_panel())
                                            + _dialog_hint())
                     else:
                         result["text"] = text
