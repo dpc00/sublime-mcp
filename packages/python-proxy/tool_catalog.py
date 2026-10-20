@@ -962,18 +962,7 @@ TOOLS = [   {   'name': 'add_directory',
                                                             'description': 'Return only the '
                                                                            'sections whose heading '
                                                                            'contains this text, '
-                                                                           "e.g. 'console'; if no "
-                                                                           'heading does, the '
-                                                                           'sections whose text '
-                                                                           'mentions it (e.g. '
-                                                                           "'run_command'). "
-                                                                           "'topic' and 'query' "
-                                                                           'are accepted as the '
-                                                                           'same thing.'},
-                                             'topic': {   'type': 'string',
-                                                          'description': 'Same as section.'},
-                                             'query': {   'type': 'string',
-                                                          'description': 'Same as section.'}}}},
+                                                                           "e.g. 'console'."}}}},
     {   'name': 'get_layout',
         'description': 'Return the current window layout (groups, cells) and which files are in '
                        'each group.',
