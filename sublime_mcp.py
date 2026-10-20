@@ -2282,11 +2282,25 @@ def _help_for(text, section):
     if not section:
         return {"ok": True, "content": text, "sections": headings}
     matched = [(h, t) for h, t in parts if section in h.lower()]
+    by = "heading"
     if not matched:
-        return {"error": "no section of the guide has {!r} in its heading".format(section),
+        # An agent asks for a tool name ("run_command") more often than for a heading word:
+        # fall back to the sections whose text mentions it.
+        matched = [(h, t) for h, t in parts if section in t.lower()]
+        by = "text"
+        if sum(len(t) for _, t in matched) > 6000:
+            # a name like "run_command" is in most of the guide: list where, do not return more
+            # than the guide itself
+            return {"ok": True, "matched_by": "text", "matched": [h for h, _ in matched],
+                    "note": "{!r} appears in {} sections ({} chars); ask again with section=<one of "
+                            "these headings>".format(section, len(matched),
+                                                     sum(len(t) for _, t in matched)),
+                    "sections": headings}
+    if not matched:
+        return {"error": "no section of the guide has {!r} in its heading or text".format(section),
                 "sections": headings}
     return {"ok": True, "content": "".join(t for _, t in matched),
-            "matched": [h for h, _ in matched], "sections": headings}
+            "matched": [h for h, _ in matched], "matched_by": by, "sections": headings}
 
 
 def _get_help(body):
@@ -2298,7 +2312,9 @@ def _get_help(body):
             text = f.read()
     except FileNotFoundError:
         return {"error": "AGENT_GUIDE.md not found at {}".format(guide_path)}
-    return _help_for(text, body.get("section"))
+    # "topic" and "query" are what agents tend to pass (a call with topic="run_command" returned
+    # the whole 16 KB guide on 2026-10-20); accept them as the same thing as "section".
+    return _help_for(text, body.get("section") or body.get("topic") or body.get("query"))
 
 
 def _open_dialogs():
@@ -5733,7 +5749,11 @@ _MCP_TOOLS = [
      "section(s), and every result lists the section headings.",
      {"type": "object", "properties": {"section": {
          "type": "string",
-         "description": "Return only the sections whose heading contains this text, e.g. 'console'."}}},
+         "description": "Return only the sections whose heading contains this text, e.g. 'console'; "
+                        "if no heading does, the sections whose text mentions it (e.g. 'run_command'). "
+                        "'topic' and 'query' are accepted as the same thing."},
+      "topic": {"type": "string", "description": "Same as section."},
+      "query": {"type": "string", "description": "Same as section."}}},
      _p("/get_help")),
     ("list_native_windows",
      "List the native OS windows, dialogs and menus of this Sublime Text process (Windows only): "
