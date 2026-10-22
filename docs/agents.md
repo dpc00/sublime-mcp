@@ -42,18 +42,19 @@ Defaults to `http://127.0.0.1:9500` on Windows, `:9501` on macOS/Linux. If
 the proxy runs in WSL against Windows ST, set
 `SUBLIME_MCP_BASE=http://127.0.0.1:9500` (or the Windows host IP).
 
-### Option B — MCP SSE directly
+### Option B — MCP streamable HTTP directly
 
 ```json
 {
   "mcpServers": {
-    "sublime-mcp":  { "type": "sse", "url": "http://127.0.0.1:9502/sse" }
+    "sublime-mcp":  { "type": "http", "url": "http://127.0.0.1:9502/mcp" }
   }
 }
 ```
 
-Use `:9503` for sublime-mcp SSE on macOS/Linux. HTTP bridge also serves
-`GET /mcp_tools`.
+Use `:9503` on macOS/Linux. A client without streamable HTTP can use the
+deprecated SSE form, `{ "type": "sse", "url": "http://127.0.0.1:9502/sse" }`.
+HTTP bridge also serves `GET /mcp_tools`.
 
 ## Workflow
 

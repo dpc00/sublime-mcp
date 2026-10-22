@@ -182,15 +182,19 @@ main server-side state. (Controlling a debugger or language server doesn't
 need its own MCP server or `doctor` check — see "Toolset" above and
 `skills/package-skill-generator`.)
 
-Other MCP clients may use the legacy SSE URL (Windows example):
+Other MCP clients that take a JSON config (oh-my-pi, Claude Code, Cursor) use the
+same streamable-HTTP URL (Windows example):
 
 ```json
 {
   "mcpServers": {
-    "sublime-mcp": { "type": "sse", "url": "http://127.0.0.1:9502/sse" }
+    "sublime-mcp": { "type": "http", "url": "http://127.0.0.1:9502/mcp" }
   }
 }
 ```
+
+Only a client that cannot do streamable HTTP needs the deprecated SSE URL,
+`"type": "sse"` with `http://127.0.0.1:9502/sse`.
 
 The MCP server starts automatically when ST loads the plugin. To stop or
 restart it, run "MCP Commander: Server Status" from the Command
