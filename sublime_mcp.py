@@ -7221,6 +7221,17 @@ class _MCPHandler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
 
+# Newest first. The reply to `initialize` echoes the client's version when it is listed here,
+# otherwise the newest one (MCP lifecycle: the server answers with a version it supports).
+_MCP_PROTOCOL_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
+
+
+def _mcp_error(msg_id, code, message):
+    if msg_id is None:
+        return None
+    return {"jsonrpc": "2.0", "id": msg_id, "error": {"code": code, "message": message}}
+
+
 def _mcp_send(session_id, msg):
     q = _mcp_sessions.get(session_id)
     if q:
@@ -7236,8 +7247,10 @@ def _mcp_dispatch(msg):
 
     try:
         if method == "initialize":
+            requested = params.get("protocolVersion")
             result = {
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": requested if requested in _MCP_PROTOCOL_VERSIONS
+                                   else _MCP_PROTOCOL_VERSIONS[0],
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "sublime-mcp", "version": __version__},
                 "instructions": "Use get_help first. Prefer project_search for project text search, "
@@ -7269,14 +7282,14 @@ def _mcp_dispatch(msg):
             with _mcp_tools_lock:
                 entry = next((t for t in _MCP_TOOLS if t[0] == tool_name), None)
             if entry is None:
-                raise ValueError("Unknown tool: " + str(tool_name))
+                return _mcp_error(msg_id, -32602, "Unknown tool: " + str(tool_name))
             data = _with_arg_warning(entry[3](tool_args), entry[2], tool_args)
             if isinstance(data, list):
                 result = {"content": data}
             else:
                 result = {"content": [{"type": "text", "text": json.dumps(data)}]}
         else:
-            raise ValueError("Unknown method: " + method)
+            return _mcp_error(msg_id, -32601, "Method not found: " + method)
 
         if msg_id is not None:
             return {"jsonrpc": "2.0", "id": msg_id, "result": result}
