@@ -7182,7 +7182,7 @@ class _MCPHandler(BaseHTTPRequestHandler):
         self.wfile.write(b"{}")
 
         def _dispatch_and_push():
-            resp = _mcp_dispatch(body)
+            resp = _mcp_dispatch(body)[1]
             if resp is not None:
                 _mcp_send(session_id, resp)
 
@@ -7204,32 +7204,55 @@ class _MCPHandler(BaseHTTPRequestHandler):
             self.wfile.write(payload)
             return
 
-        resp = _mcp_dispatch(body)
+        status, resp = _mcp_dispatch(body, self.headers)
 
         if resp is None:
             # Notification (no "id"): no JSON-RPC response body per spec.
-            self.send_response(202)
+            self.send_response(status)
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
 
         payload = json.dumps(resp).encode()
-        self.send_response(200)
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
 
+    def do_DELETE(self):
+        # Sessions ended with DELETE in 2025-03-26..2025-11-25; 2026-07-28 has none and this
+        # server never minted one. 405 is the answer the spec gives for it.
+        self.send_error(405)
 
-# Newest first. The reply to `initialize` echoes the client's version when it is listed here,
-# otherwise the newest one (MCP lifecycle: the server answers with a version it supports).
-_MCP_PROTOCOL_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
+
+# Modern (2026-07-28 and later): stateless, no `initialize`; version, client identity and
+# capabilities ride in every request's `_meta`. Legacy: `initialize` handshake. This server is
+# dual-era on the same endpoint: a request with the version in `_meta` is served as modern,
+# anything else as legacy. Newest first. `initialize` echoes the client's legacy version when it is
+# listed here, otherwise the newest legacy one.
+_MCP_MODERN_VERSIONS = ("2026-07-28",)
+_MCP_LEGACY_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
+_MCP_PROTOCOL_VERSIONS = _MCP_MODERN_VERSIONS + _MCP_LEGACY_VERSIONS
+_MCP_META_VERSION = "io.modelcontextprotocol/protocolVersion"
+_MCP_META_SERVER_INFO = "io.modelcontextprotocol/serverInfo"
+_MCP_ERR_HEADER_MISMATCH = -32020
+_MCP_ERR_UNSUPPORTED_VERSION = -32022
+_MCP_INSTRUCTIONS = ("Use get_help first. Prefer project_search for project text search, "
+                     "batch for independent calls, and discover_tools for advanced capabilities.")
 
 
-def _mcp_error(msg_id, code, message):
+class _UnknownTool(Exception):
+    pass
+
+
+def _mcp_error(msg_id, code, message, data=None):
     if msg_id is None:
         return None
-    return {"jsonrpc": "2.0", "id": msg_id, "error": {"code": code, "message": message}}
+    error = {"code": code, "message": message}
+    if data is not None:
+        error["data"] = data
+    return {"jsonrpc": "2.0", "id": msg_id, "error": error}
 
 
 def _mcp_send(session_id, msg):
@@ -7238,9 +7261,119 @@ def _mcp_send(session_id, msg):
         q.put(msg)
 
 
-def _mcp_dispatch(msg):
-    """Run one JSON-RPC request, return the response dict (or None for
-    notifications that have no "id" and thus no response)."""
+def _mcp_list_tools():
+    with _mcp_tools_lock:
+        snapshot = [tool for tool in _MCP_TOOLS
+                    if tool[0] in _MCP_DEFAULT_TOOL_NAMES
+                    and tool[0] not in _DISABLED_TOOLS]
+    tools = []
+    for name, desc, schema, _ in snapshot:
+        input_schema = dict(schema) if schema else {}
+        if "type" not in input_schema:
+            input_schema["type"] = "object"
+        if "properties" not in input_schema:
+            input_schema["properties"] = {}
+        tools.append({"name": name, "description": desc, "inputSchema": input_schema})
+    return tools
+
+
+def _mcp_call_tool(params):
+    """The result of a tools/call. A tool that fails is reported in the result with isError
+    (all protocol versions); only a tool that does not exist raises _UnknownTool (-32602)."""
+    tool_name = params.get("name")
+    tool_args = params.get("arguments") or {}
+    try:
+        if tool_name in _DISABLED_TOOLS:
+            raise ValueError(_tool_disabled_error(tool_name)["error"])
+        with _mcp_tools_lock:
+            entry = next((t for t in _MCP_TOOLS if t[0] == tool_name), None)
+        if entry is None:
+            raise _UnknownTool(tool_name)
+        data = _with_arg_warning(entry[3](tool_args), entry[2], tool_args)
+    except _UnknownTool:
+        raise
+    except Exception as e:
+        return {"content": [{"type": "text", "text": str(e)}], "isError": True}
+    if isinstance(data, list):
+        return {"content": data}
+    return {"content": [{"type": "text", "text": json.dumps(data)}]}
+
+
+def _decode_mcp_header(value):
+    """A header value that may use the `=?base64?...?=` sentinel (Mcp-Name, Mcp-Param-*)."""
+    if value.startswith("=?base64?") and value.endswith("?=") and len(value) >= 11:
+        import base64
+        try:
+            return base64.b64decode(value[9:-2]).decode("utf-8")
+        except Exception:
+            return None
+    return value
+
+
+def _mcp_header_problem(headers, method, params, version):
+    """Why the mirrored HTTP headers do not match the request body, or None."""
+    if headers.get("MCP-Protocol-Version") != version:
+        return "MCP-Protocol-Version header is missing or differs from _meta"
+    if headers.get("Mcp-Method") != method:
+        return "Mcp-Method header is missing or differs from the method"
+    if method == "tools/call" and _decode_mcp_header(headers.get("Mcp-Name") or "") != params.get("name"):
+        return "Mcp-Name header is missing or differs from params.name"
+    return None
+
+
+def _mcp_dispatch(msg, headers=None):
+    """Run one JSON-RPC message; return (http_status, response dict or None).
+
+    `headers` are the HTTP request headers on Streamable HTTP (checked against the body for
+    modern requests); None on the legacy SSE transport. A notification has no response."""
+    method = msg.get("method", "")
+    msg_id = msg.get("id")
+    params = msg.get("params") or {}
+    meta = params.get("_meta") if isinstance(params, dict) else None
+    version = meta.get(_MCP_META_VERSION) if isinstance(meta, dict) else None
+    if version is None and headers is not None and headers.get("MCP-Protocol-Version") in _MCP_MODERN_VERSIONS:
+        return 400, _mcp_error(msg_id, _MCP_ERR_HEADER_MISMATCH,
+                               "Header mismatch: params._meta lacks " + _MCP_META_VERSION)
+    if version is not None:
+        return _mcp_dispatch_modern(msg_id, method, params, version, headers)
+    resp = _mcp_dispatch_legacy(msg)
+    return (202 if resp is None else 200), resp
+
+
+def _mcp_dispatch_modern(msg_id, method, params, version, headers):
+    if msg_id is None:
+        return 202, None
+    if version not in _MCP_MODERN_VERSIONS:
+        return 400, _mcp_error(msg_id, _MCP_ERR_UNSUPPORTED_VERSION, "Unsupported protocol version",
+                               {"supported": list(_MCP_PROTOCOL_VERSIONS), "requested": version})
+    if headers is not None:
+        problem = _mcp_header_problem(headers, method, params, version)
+        if problem:
+            return 400, _mcp_error(msg_id, _MCP_ERR_HEADER_MISMATCH, "Header mismatch: " + problem)
+    try:
+        if method == "server/discover":
+            result = {"supportedVersions": list(_MCP_PROTOCOL_VERSIONS),
+                      "capabilities": {"tools": {}},
+                      "instructions": _MCP_INSTRUCTIONS,
+                      "ttlMs": 60000, "cacheScope": "private"}
+        elif method == "tools/list":
+            # ttlMs 0: tools can be registered or disabled while the plugin runs.
+            result = {"tools": _mcp_list_tools(), "ttlMs": 0, "cacheScope": "private"}
+        elif method == "tools/call":
+            result = _mcp_call_tool(params)
+        else:
+            return 404, _mcp_error(msg_id, -32601, "Method not found: " + method)
+    except _UnknownTool as e:
+        return 200, _mcp_error(msg_id, -32602, "Unknown tool: " + str(e))
+    except Exception as e:
+        return 200, _mcp_error(msg_id, -32603, str(e))
+    result["resultType"] = "complete"
+    result["_meta"] = {_MCP_META_SERVER_INFO: {"name": "sublime-mcp", "version": __version__}}
+    return 200, {"jsonrpc": "2.0", "id": msg_id, "result": result}
+
+
+def _mcp_dispatch_legacy(msg):
+    """The `initialize`-handshake era (2025-11-25 and earlier); the response dict, or None."""
     method = msg.get("method", "")
     msg_id = msg.get("id")
     params = msg.get("params") or {}
@@ -7249,56 +7382,30 @@ def _mcp_dispatch(msg):
         if method == "initialize":
             requested = params.get("protocolVersion")
             result = {
-                "protocolVersion": requested if requested in _MCP_PROTOCOL_VERSIONS
-                                   else _MCP_PROTOCOL_VERSIONS[0],
+                "protocolVersion": requested if requested in _MCP_LEGACY_VERSIONS
+                                   else _MCP_LEGACY_VERSIONS[0],
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "sublime-mcp", "version": __version__},
-                "instructions": "Use get_help first. Prefer project_search for project text search, "
-                                "batch for independent calls, and discover_tools for advanced capabilities.",
+                "instructions": _MCP_INSTRUCTIONS,
             }
         elif method in ("notifications/initialized", "notifications/cancelled"):
             return
         elif method == "ping":
             result = {}
         elif method == "tools/list":
-            with _mcp_tools_lock:
-                snapshot = [tool for tool in _MCP_TOOLS
-                            if tool[0] in _MCP_DEFAULT_TOOL_NAMES
-                            and tool[0] not in _DISABLED_TOOLS]
-            tools = []
-            for name, desc, schema, _ in snapshot:
-                input_schema = dict(schema) if schema else {}
-                if "type" not in input_schema:
-                    input_schema["type"] = "object"
-                if "properties" not in input_schema:
-                    input_schema["properties"] = {}
-                tools.append({"name": name, "description": desc, "inputSchema": input_schema})
-            result = {"tools": tools}
+            result = {"tools": _mcp_list_tools()}
         elif method == "tools/call":
-            tool_name = params.get("name")
-            tool_args = params.get("arguments") or {}
-            if tool_name in _DISABLED_TOOLS:
-                raise ValueError(_tool_disabled_error(tool_name)["error"])
-            with _mcp_tools_lock:
-                entry = next((t for t in _MCP_TOOLS if t[0] == tool_name), None)
-            if entry is None:
-                return _mcp_error(msg_id, -32602, "Unknown tool: " + str(tool_name))
-            data = _with_arg_warning(entry[3](tool_args), entry[2], tool_args)
-            if isinstance(data, list):
-                result = {"content": data}
-            else:
-                result = {"content": [{"type": "text", "text": json.dumps(data)}]}
+            result = _mcp_call_tool(params)
         else:
             return _mcp_error(msg_id, -32601, "Method not found: " + method)
 
         if msg_id is not None:
             return {"jsonrpc": "2.0", "id": msg_id, "result": result}
         return None
+    except _UnknownTool as e:
+        return _mcp_error(msg_id, -32602, "Unknown tool: " + str(e))
     except Exception as e:
-        if msg_id is not None:
-            return {"jsonrpc": "2.0", "id": msg_id,
-                    "error": {"code": -32603, "message": str(e)}}
-        return None
+        return _mcp_error(msg_id, -32603, str(e))
 
 
 # ── plugin lifecycle ──────────────────────────────────────────────────────────
