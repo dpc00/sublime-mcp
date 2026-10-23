@@ -8,12 +8,12 @@
     "source": "github",
     "subfolder": "packages/python-proxy"
   },
-  "version": "1.16.1",
+  "version": "1.16.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "sublime-mcp",
-      "version": "1.16.1",
+      "version": "1.16.2",
       "transport": {
         "type": "stdio"
       }
