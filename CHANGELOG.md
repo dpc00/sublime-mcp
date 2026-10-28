@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.17.5
 
 `get_view_phantoms` can read one long phantom in slices. New `offset` argument: characters to skip at the start of each phantom's text, applied before `max_chars`, so `offset` plus `max_chars` pages through a phantom. A phantom whose text is cut, or read with an offset, now carries `text_length`, its full length. The tool had only a cut at the start (`max_chars`), so the end of a long phantom could not be read: omp's `/changelog` in a GhostShell tab is one phantom of 59,788 characters. Found reading that changelog on the main Sublime, then tested there: the whole phantom reads in slices, offset 58,500 with `max_chars` 1,000 leaves 288 characters, exactly the 59,788 total. Behaviour without `offset` is unchanged apart from `text_length`. The proxy fallback catalogs are regenerated.
 
