@@ -975,16 +975,29 @@ def _get_file_content(params):
     return _on_main(fn)
 
 
-def _resolve_view(w, name, index):
+def _resolve_view(w, name, index, unique=False):
+    """The tab for a partial name or a 0-based index, or (None, error).
+
+    With unique=True (tools that close or revert a tab) a name that fits several tabs is refused
+    instead of taking the first, unless exactly one tab has exactly that name; the error lists
+    the candidates with their indexes."""
     views = w.views()
     if name:
-        match = next(
-            (v for v in views if name.lower() in _view_display_name(v).lower()), None
-        )
-        if not match:
+        low = name.lower()
+        matches = [v for v in views if low in _view_display_name(v).lower()]
+        if not matches:
             names = [_view_display_name(v) for v in views]
             return None, {"error": "no view matching {!r}".format(name), "open_views": names}
-        return match, None
+        if unique and len(matches) > 1:
+            exact = [v for v in matches if _view_display_name(v).lower() == low]
+            if len(exact) == 1:
+                return exact[0], None
+            return None, {
+                "error": "{!r} fits {} tabs; nothing was done. Use index or a longer name.".format(
+                    name, len(matches)),
+                "matches": [{"index": views.index(v), "name": _view_display_name(v)} for v in matches],
+            }
+        return matches[0], None
     if index >= 0:
         if index >= len(views):
             return None, {
@@ -1977,23 +1990,14 @@ def _get_layout(params):
 
 
 def _get_view_size(params):
-    name = params.get("name", [None])[0]
+    name = params.get("name", [None])[0] or ""
+    index = int(params.get("index", [-1])[0])
 
     def fn():
         w = sublime.active_window()
-        views = w.views()
-        if name:
-            match = next(
-                (v for v in views if name.lower() in _view_display_name(v).lower()), None
-            )
-            if not match:
-                return {
-                    "error": "no view matching {!r}".format(name),
-                    "open_views": [_view_display_name(v) for v in views],
-                }
-            v = match
-        else:
-            v = w.active_view()
+        v, err = _resolve_view(w, name, index)
+        if err:
+            return err
         if not v:
             return {"error": "no view found"}
         return {"name": v.name(), "path": v.file_name(), "size": v.size()}
@@ -2002,25 +2006,16 @@ def _get_view_size(params):
 
 
 def _get_view_chars(params):
-    name = params.get("name", [None])[0]
+    name = params.get("name", [None])[0] or ""
+    index = int(params.get("index", [-1])[0])
     begin = int(params.get("begin", [0])[0])
     end_p = params.get("end", [None])[0]
 
     def fn():
         w = sublime.active_window()
-        views = w.views()
-        if name:
-            match = next(
-                (v for v in views if name.lower() in _view_display_name(v).lower()), None
-            )
-            if not match:
-                return {
-                    "error": "no view matching {!r}".format(name),
-                    "open_views": [_view_display_name(v) for v in views],
-                }
-            v = match
-        else:
-            v = w.active_view()
+        v, err = _resolve_view(w, name, index)
+        if err:
+            return err
         if not v:
             return {"error": "no view found"}
         size = v.size()
@@ -2443,7 +2438,7 @@ def _close_file(body):
             # way run_command does: by partial name or by position. Without this the only
             # way to close such a tab was the active-tab fallback below, which closes
             # whatever tab happens to be in front.
-            v, err = _resolve_view(w, name, index)
+            v, err = _resolve_view(w, name, index, unique=True)
             if err:
                 return err
         else:
@@ -3231,8 +3226,16 @@ def _set_encoding(body):
 
 
 def _revert_file(body):
+    name = body.get("name", "") or ""
+    index = int(body.get("index", -1))
+
     def fn():
-        v = _active_view()
+        if name or index >= 0:
+            v, err = _resolve_view(sublime.active_window(), name, index, unique=True)
+            if err:
+                return err
+        else:
+            v = _active_view()
         if not v:
             return {"error": "no active view"}
         v.run_command("revert")
@@ -5197,7 +5200,15 @@ _MCP_TOOLS = [
     ("get_layout", "Return the current window layout (groups, cells) and which files are in each group.", {}, _g("/layout")),
     # ── no-parameter POST tools ───────────────────────────────────────────────
     ("save_all", "Save all open files.", {}, _p("/save_all")),
-    ("revert_file", "Revert the active file to its last saved state, discarding unsaved changes.", {}, _p("/revert_file")),
+    ("revert_file",
+     "Revert a file to its last saved state, discarding unsaved changes. Pass name (partial, "
+     "case-insensitive; refused if it fits several tabs) or index (0-based, from get_open_files); "
+     "with neither it reverts the active tab, so name the tab you mean. Asks the person first.",
+     {"type": "object", "properties": {
+         "name": {"type": "string", "default": ""},
+         "index": {"type": "integer", "default": -1},
+     }},
+     _p("/revert_file")),
     ("undo", "Undo the last edit in the active file.", {}, _p("/undo")),
     ("redo", "Redo the last undone edit in the active file.", {}, _p("/redo")),
     ("duplicate_line", "Duplicate the current line(s) in the active file.", {}, _p("/duplicate_line")),
@@ -5236,16 +5247,22 @@ _MCP_TOOLS = [
      _g("/view_content")),
     ("get_view_size",
      "Return the total character count of any open tab by name (partial match, case-insensitive).\n"
-     "Use before get_view_chars to compute offsets. Omit name for the active view.",
-     {"type": "object", "properties": {"name": {"type": "string", "default": ""}}},
+     "Use before get_view_chars to compute offsets. Pass name, or index (0-based, from get_open_files); "
+     "omit both for the active view.",
+     {"type": "object", "properties": {
+         "name": {"type": "string", "default": ""},
+         "index": {"type": "integer", "default": -1},
+     }},
      _g("/view_size")),
     ("get_view_chars",
      "Return text at character offsets begin..end (0-based, end exclusive) from any open tab.\n"
-     "Clamps to buffer bounds automatically. Omit name for the active view.",
+     "Clamps to buffer bounds automatically. Pass name, or index (0-based, from get_open_files); "
+     "omit both for the active view.",
      {"type": "object", "properties": {
          "begin": {"type": "integer"},
          "end": {"type": "integer"},
          "name": {"type": "string", "default": ""},
+         "index": {"type": "integer", "default": -1},
      }, "required": ["begin", "end"]},
      _g("/view_chars")),
     ("get_view_phantoms",
@@ -5506,7 +5523,8 @@ _MCP_TOOLS = [
      "view) pass name (partial, case-insensitive match on the tab's title) or "
      "index (0-based, from get_open_files); with none of the three it closes "
      "whichever tab is active, so name the tab you mean. A name or index that "
-     "matches nothing is an error and closes nothing. "
+     "matches nothing is an error and closes nothing; a name that fits several tabs is also refused "
+     "(the error lists them with their indexes) unless exactly one has that exact name. "
      "A tab with unsaved edits normally raises Sublime's native \"Save Changes?\" dialog, which "
      "blocks the main thread until someone answers it; pass discard=true to throw the unsaved "
      "edits away and close at once (the result then says discarded). "

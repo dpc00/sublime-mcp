@@ -365,6 +365,23 @@ Observed on build 4200 (2026-10-07).
 - **`exit`** replies first and closes Sublime 300 ms later, so the call returns `ok` and the
   connection then drops (restart, then reconnect the server).
 
+## Destructive tools ask the person first
+
+These calls do not run until the person says yes: `delete_file`, `delete_folder`, `revert`,
+`revert_file`, `close_window`, `close_workspace`, `remove_folder`, `exit`, `eval_python`, `close_file`
+with `discard`, and `run_command` of any of those commands. Inside a `batch`, one such call makes the
+whole batch ask once, before any call of it runs.
+
+- Your client shows an Accept / Decline question (Claude Code: in the terminal) and repeats the call
+  for you. You see only the final result. Nothing is changed before the person accepts.
+- A result starting **"Denied, nothing was changed"** means the person declined, or your client cannot be
+  asked. Do not retry, rename an argument, or reach the same effect through another tool or `eval_python`.
+  Tell the person what you wanted to do and why.
+- Pick the right target before asking: the question names the target, and a vague name (`close_file name="test"`
+  matches the first tab containing "test") can ask about the wrong tab.
+- The setting `require_consent_for_destructive` turns this off; it is on by default. The direct HTTP bridge
+  routes are not covered.
+
 ## Tools with side effects
 
 Every tool is a Sublime command passed straight through, so each does exactly what the command does in
