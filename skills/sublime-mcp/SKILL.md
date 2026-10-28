@@ -47,7 +47,9 @@ batch(calls=[{"tool": "get_bookmarks", "args": {}}])
 - `pick_quick_panel` on a panel of a Python 3.3 package that raises a dialog in its callback
   (Jekyll's "Confirm Delete") answers `pending: true`: the pick went through and the dialog blocks
   Sublime; answer it with `list_native_windows` and `dismiss_native_window`.
-- `delete_file` / `delete_folder` raise a Windows confirmation dialog for every item.
+- `delete_file` / `delete_folder` (and `revert_file`, `close_window`, `exit`, `eval_python`, `close_file` with
+  `discard`) ask the person first; "Denied, nothing was changed" means no: do not retry or go around it.
+  Once allowed, delete also raises a Windows confirmation dialog for every item.
 - With a completion popup open, a posted Tab does not expand a snippet trigger: press Escape
   first, then Tab.
 
@@ -104,8 +106,8 @@ GhostShell has no command that sends text into a tab. Do it as a person does, an
 
 1. `get_sheets` with `settings=false` for the target's `id` and `index`, and your own id (the focused sheet). Ids change when
    Sublime restarts, so list them in the same turn.
-2. `focus_sheet` on the target, then confirm it is the active tab (`eval_python`:
-   `sublime.active_window().active_view().name()`). If `focus_sheet` errors or the name is wrong, type nothing: `ui_type_text` types
+2. `focus_sheet` on the target, then confirm it is the active tab (`get_sheets` with `settings=false`: the target
+   shows `is_focused: true`). If `focus_sheet` errors or the focus is wrong, type nothing: `ui_type_text` types
    into whichever tab is active, and a failed focus would put the text into your own tab while still returning ok.
 3. `ui_type_text` (a newline is sent as Return; leave it off to let the person press Enter, for example for `npm publish`), then
    `focus_sheet` back to your own tab.

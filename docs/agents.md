@@ -82,7 +82,7 @@ Why the live buffer, not a disk write:
 - Dirty/save/close are real steps the user can see.
 - No two-sources-of-truth with a stale ST buffer vs disk.
 
-If you did write disk behind ST's back, `revert_file` (or reopen) so the
+If you did write disk behind ST's back, `revert_file(name=...)` (it asks the person) or reopen so the
 buffer resyncs.
 
 ### Never `run_command` as generic dispatch
@@ -104,8 +104,8 @@ get_selection()                # user's "look here"
 1. `str_replace_based_edit_tool` for targeted edits (exact unique `old_str`).
 2. `save_file(path=...)` — the edit tool does **not** persist.
 3. Multi-line inserts: `replace_lines`, never `insert` (auto-indent piles up).
-4. Dirty `close_file` hangs on ST's save prompt — save first or
-   `view.set_scratch(True)` via `eval_python`.
+4. Dirty `close_file` hangs on ST's save prompt — save first or pass `discard=true`
+   (asks the person). Always name the tab (`name` or `index`).
 
 ### Reading code
 

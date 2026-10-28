@@ -41,17 +41,20 @@ batch(calls=[
 ])
 ```
 
-Close that tab without saving (only the active, modified, untitled tab is touched):
+Close that tab without saving. Name the tab (an untitled tab's name is its first line); a name that fits
+several tabs is refused and lists them. Throwing away unsaved text asks the person first:
 
 ```
-batch(calls=[{"tool": "eval_python", "args": {"code": "v = window.active_view()\nif v.is_dirty() and not v.file_name() and not v.settings().get('ai_terminal_view'):\n    v.set_scratch(True)\n    v.close()\n    print('closed')"}}])
+batch(calls=[{"tool": "close_file", "args": {"name": "pear", "discard": true}}])
 ```
 
 - `insert` types at the cursor, so calling it twice puts the text in twice.
 - Case commands (`upper_case`, `lower_case`, `title_case`, `swap_case`) act on the
   selection: `select_all` first. `sort_lines` sorts the whole buffer when nothing is selected.
-- `get_active_file` returns untitled tabs too (`path` is null).
-- `close_file` on a modified untitled tab opens a native "Save Changes?" dialog that blocks
+- `get_active_file` returns untitled tabs too (`path` is null). It cuts `content` at 20000 characters
+  (`truncated: true`, `size` gives the full length); pass `max_chars` for more, or read a part with
+  `get_view_chars`.
+- `close_file` on a modified tab without `discard` opens a native "Save Changes?" dialog that blocks
   every tool; see "When a native dialog blocks Sublime" below. Once, `set_scratch` followed
   by `close_file` in one `batch` was followed by Sublime exiting (cause not established).
 
@@ -69,7 +72,8 @@ batch(calls=[{"tool": "close_file", "args": {"path": "..."}}])      # hidden too
 `create` opens the new tab itself (no `open_file` needed) and fails if the file already exists;
 the file reaches the disk when `save_file` runs. `str_replace` and `insert` edit the open tab, so
 they also need `save_file`. `create` does not make missing folders. To open an existing file use
-the hidden tool `open_file(path=...)`.
+the hidden tool `open_file(path=...)`; it returns once the file is loaded and is the active tab
+(`active: true`), or says `pending: true` after 3 s when it is not yet.
 
 Hidden tools (everything except the eight) are only reachable through `batch`; calling one
 directly gives "No such tool". `get_sheets` returns every tab's full settings (over 100 lines per
@@ -108,7 +112,8 @@ Run any result with `batch(calls=[{"tool": "<name>", "args": {...}}])`.
 
 Skip save and ST looks edited while `git diff` is empty.
 
-- Disk `edit`/`write` on a file ST has open → `revert_file` so the buffer reloads.
+- Disk `edit`/`write` on a file ST has open → `revert_file(name=...)` (or `index`) so the buffer reloads;
+  it asks the person first, and a name that fits several tabs is refused.
 - Short plain text into an empty tab: `insert` is fine. Indented or large multi-line
   content: use `replace_lines(begin, end, text)`, because `insert` (and
   `view.run_command("insert", ...)`) auto-indents every line and piles indentation.
@@ -118,12 +123,14 @@ Skip save and ST looks edited while `git diff` is empty.
 
 ## Closing tabs
 
-A dirty view makes `close_file` open ST's save prompt. Save first, or use the
-scratch snippet in the Quick start. Find a path with `window.find_open_file(path)`
-(there is no `find_open_by_name`).
+A dirty view makes `close_file` open ST's save prompt. Save first, or pass `discard: true`
+(it asks the person). Always give `name` (or `index`, or `path`): with none of them `close_file`
+closes the ACTIVE tab, which the person may be typing in. A `name` that fits several tabs is
+refused with the list of matches.
 
 ## eval_python
 
+Asks the person first (see "Destructive tools ask the person first"); prefer a dedicated tool.
 Runs in ST's plugin host. Use `print(expr)` — top-level `return` is a syntax
 error; bare expressions produce no output. In scope: `sublime`, `window`,
 `view`. Timeout is 5s (main-thread).
@@ -134,14 +141,14 @@ error; bare expressions produce no output. In scope: `sublime`, `window`,
 ## Common tools
 
 ```
-get_active_file()                  # path, full content, 1-based line/col, is_dirty, syntax
+get_active_file()                  # path, content (first 20000 chars), 1-based line/col, is_dirty, syntax
 get_cursor_context(lines=10)       # ±N lines, numbered
 get_selection()                    # highlighted text
 get_sheets()                       # every tab: stable id, group/index, selection/focus, path/name
 get_sheet_content(index=2)         # untitled / scratch / terminal tabs too
 open_file(path=..., line=42, col=1)
 save_all()
-revert_file()                      # active view only
+revert_file(name="notes.txt")      # asks the person; name or index, else the active view
 project_search(pattern=..., where=...)  # ST Find-in-Files, structured matches
 discover_tools()                        # categories; see "Finding tools"
 get_commands()                     # command ids, scopes, packages, palette captions
@@ -167,7 +174,8 @@ get_sheet_content(index=<target index>)          # quote the echoed line and its
 
 - **Guard the focus.** Sheet ids change when Sublime restarts (tested 2026-10-19: the cmd tab went from id 284 to 12), so
   call `get_sheets` in the same turn. Run `focus_sheet` first and check it did not return an error and that
-  `window.active_view().name()` is the target (an `eval_python` call) before typing anything. A `focus_sheet` on a stale id
+  `get_sheets(settings=false)` shows the target with `is_focused: true` before typing anything (not `eval_python`: it
+  asks the person on every call). A `focus_sheet` on a stale id
   returned "sheet id 284 not found", and nothing was typed.
 - **`ok` is not proof.** `ui_type_text` types into whichever tab is active in the window; if the `focus_sheet` before it
   did not select the target, the text goes to the wrong tab (possibly your own session) and still returns ok. Read the
@@ -234,7 +242,8 @@ Observed on build 4200 (2026-10-07).
 
 ## Deleting files and folders
 
-- **Delete files and folders:** pass `files` to `delete_file` and `dirs` (a list) to
+- **Delete files and folders:** both ask the person first (see "Destructive tools ask the person
+  first"). Pass `files` to `delete_file` and `dirs` (a list) to
   `delete_folder`; any other argument name, such as `path`, is dropped and the call still
   returns ok without deleting. Check the disk afterwards. As with the Side Bar menu, the
   confirmation is always shown, even with `prompt: false`. They open a Windows
@@ -365,6 +374,24 @@ Observed on build 4200 (2026-10-07).
 - **`exit`** replies first and closes Sublime 300 ms later, so the call returns `ok` and the
   connection then drops (restart, then reconnect the server).
 
+## Destructive tools ask the person first
+
+These calls do not run until the person says yes: `delete_file`, `delete_folder`, `revert`,
+`revert_file`, `close_window`, `close_workspace`, `remove_folder`, `exit`, `eval_python`, `close_file`
+with `discard`, and `run_command` of any of those commands. Inside a `batch`, one such call makes the
+whole batch ask once, before any call of it runs.
+
+- Your client shows an Accept / Decline question (Claude Code: in the terminal) and repeats the call
+  for you. You see only the final result. Nothing is changed before the person accepts.
+- A result starting **"Denied, nothing was changed"** means the person declined, or your client cannot be
+  asked. Do not retry, rename an argument, or reach the same effect through another tool or `eval_python`.
+  Tell the person what you wanted to do and why.
+- Pick the right target before asking: the question names the target, and a vague name (`close_file name="test"`
+  matches the first tab containing "test") can ask about the wrong tab.
+- The setting `require_consent_for_destructive` turns this off (read at plugin start); it is on by default.
+  The direct HTTP bridge cannot ask, so it refuses these calls outright (403, "Denied, nothing was
+  changed"); `eval_python` stays open there.
+
 ## Tools with side effects
 
 Every tool is a Sublime command passed straight through, so each does exactly what the command does in
@@ -412,8 +439,8 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
 - **Pickers and the Find panel are drawn by Sublime, not Windows:** `list_native_windows` does not list them;
   `ui_screenshot` shows them. Look at the screen before you restart, kill or close anything, and answer what
   is waiting first.
-- **Before closing several tabs from `eval_python`:** use `view.close()` for each view, the `close_all`
-  command, or closes spaced out with `sublime.set_timeout`; do not call `Sheet.close()` repeatedly in one call.
+- **Before closing several tabs:** call `close_file` once per tab with its `name`, or use the `close_all`
+  command; do not call `Sheet.close()` repeatedly in one `eval_python` call.
 - **"This is an unregistered copy" dialog:** Sublime shows this purchase reminder now and then, for example
   after a save. Read it, then close it with `dismiss_native_window`.
 - **`goto_definition`, `goto_reference`, `auto_complete_goto_definition`** use Sublime's symbol index, which
@@ -500,8 +527,8 @@ from a `capture_mode="image"` snapshot worked, and a message box can take a seco
 to close after the click, so list the windows again before assuming it did not.
 
 **Closing a tab that has no path.** `close_file(name="...")` (partial, case-insensitive) or
-`close_file(index=N)` closes that tab; with none of `path`, `name`, `index` it closes the
-active tab. `run_command` with `command="close"` and `scope="view"` returns ok and closes
+`close_file(index=N)` closes that tab (a name that fits several tabs is refused, with the list);
+with none of `path`, `name`, `index` it closes the active tab, so always name the tab. `run_command` with `command="close"` and `scope="view"` returns ok and closes
 nothing.
 
 ## More
