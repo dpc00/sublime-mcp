@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+`get_view_phantoms` can read one long phantom in slices. New `offset` argument: characters to skip at the start of each phantom's text, applied before `max_chars`, so `offset` plus `max_chars` pages through a phantom. A phantom whose text is cut, or read with an offset, now carries `text_length`, its full length. The tool had only a cut at the start (`max_chars`), so the end of a long phantom could not be read: omp's `/changelog` in a GhostShell tab is one phantom of 59,788 characters. Found reading that changelog on the main Sublime, then tested there: the whole phantom reads in slices, offset 58,500 with `max_chars` 1,000 leaves 288 characters, exactly the 59,788 total. Behaviour without `offset` is unchanged apart from `text_length`. The proxy fallback catalogs are regenerated.
+
 ## 1.17.4
 
 Corrects 1.17.3: the approval prompt for `eval_python` still hid most of the code in Claude Code, which folds a prompt to about three short lines (`import sublime … (+3 more lines)`, and a long single line is cut at the screen width), so the person approved a program they could not read. When the gate asks, it now also opens a panel at the bottom of Sublime's window with the whole code (every `eval_python` in a `batch`, Python highlighting), and the prompt says to read all of it there and shows the first line and the line count. The panel closes when the question is answered; if the question is cancelled with Esc it stays until the next question or until closed by hand. If no window is open to show the panel, the prompt falls back to the whole code on one line (`\n` marks a line break); code over 6000 characters is still refused. Found by looking at the real prompt on the main Sublime (screenshots of the old and new prompt), then tested live there: the panel shows all five lines, the prompt names it, the panel is gone after Accept.

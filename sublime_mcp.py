@@ -2122,6 +2122,7 @@ def _get_view_phantoms(params):
 
     last = _int("last", 0)
     max_chars = _int("max_chars", 0)
+    offset = max(0, _int("offset", 0))
     include_html = str(params.get("html", ["true"])[0]).lower() not in ("false", "0", "no")
 
     def fn():
@@ -2158,8 +2159,13 @@ def _get_view_phantoms(params):
                     entry["content"] = content
                 elif not text.strip():
                     continue            # html=false is for reading: spacer phantoms with no text are left out
+                text_length = len(text)
+                if offset:
+                    text = text[offset:]    # offset + max_chars read one phantom in slices
                 if max_chars and len(text) > max_chars:
                     text = text[:max_chars] + " ...[%d more characters]" % (len(text) - max_chars)
+                if offset or max_chars:
+                    entry["text_length"] = text_length
                 entry["text"] = text
                 phantoms.append(entry)
         total = len(phantoms)
@@ -5507,13 +5513,17 @@ _MCP_TOOLS = [
      "way are not listed.\n"
      "If key is omitted, returns phantoms for all keys. Output can be huge for a view with hundreds "
      "of phantoms (a GhostShell omp tab: about 290 KB): html=false drops the HTML and the empty "
-     "spacer phantoms, last=N keeps only the newest N, max_chars cuts each text.",
+     "spacer phantoms, last=N keeps only the newest N, max_chars cuts each text. One phantom can be "
+     "very long (omp's /changelog is a single phantom of about 60,000 characters): read it in slices "
+     "with offset (characters to skip) and max_chars (slice size); text_length is the full length, "
+     "and a cut text ends with how many characters are left.",
      {"type": "object", "properties": {
          "name": {"type": "string", "default": ""},
          "key": {"type": "string", "default": ""},
          "last": {"type": "integer", "default": 0, "description": "Keep only the newest N phantoms (0 = all)."},
          "html": {"type": "boolean", "default": True, "description": "false: leave out the HTML and empty phantoms."},
          "max_chars": {"type": "integer", "default": 0, "description": "Cut each phantom's text to this length (0 = no cut)."},
+         "offset": {"type": "integer", "default": 0, "description": "Skip this many characters at the start of each phantom's text, then apply max_chars: reads a long phantom in slices."},
      }},
      _g("/view_phantoms")),
     ("get_view_regions",

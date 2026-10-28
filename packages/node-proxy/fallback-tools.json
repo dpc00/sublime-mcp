@@ -1868,7 +1868,7 @@
     },
     {
       "name": "get_view_phantoms",
-      "description": "Return phantom HTML and extracted text from a view by name.\nSublime has no API to list phantoms, so this sees only phantom sets that a plugin keeps in a module-level _phantom_sets dict (view id -> PhantomSet), as GhostShell does; phantoms added any other way are not listed.\nIf key is omitted, returns phantoms for all keys. Output can be huge for a view with hundreds of phantoms (a GhostShell omp tab: about 290 KB): html=false drops the HTML and the empty spacer phantoms, last=N keeps only the newest N, max_chars cuts each text.",
+      "description": "Return phantom HTML and extracted text from a view by name.\nSublime has no API to list phantoms, so this sees only phantom sets that a plugin keeps in a module-level _phantom_sets dict (view id -> PhantomSet), as GhostShell does; phantoms added any other way are not listed.\nIf key is omitted, returns phantoms for all keys. Output can be huge for a view with hundreds of phantoms (a GhostShell omp tab: about 290 KB): html=false drops the HTML and the empty spacer phantoms, last=N keeps only the newest N, max_chars cuts each text. One phantom can be very long (omp's /changelog is a single phantom of about 60,000 characters): read it in slices with offset (characters to skip) and max_chars (slice size); text_length is the full length, and a cut text ends with how many characters are left.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1894,6 +1894,11 @@
             "type": "integer",
             "default": 0,
             "description": "Cut each phantom's text to this length (0 = no cut)."
+          },
+          "offset": {
+            "type": "integer",
+            "default": 0,
+            "description": "Skip this many characters at the start of each phantom's text, then apply max_chars: reads a long phantom in slices."
           }
         }
       }

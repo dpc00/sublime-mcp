@@ -1169,7 +1169,11 @@ TOOLS = [   {   'name': 'add_directory',
                        'If key is omitted, returns phantoms for all keys. Output can be huge for a '
                        'view with hundreds of phantoms (a GhostShell omp tab: about 290 KB): '
                        'html=false drops the HTML and the empty spacer phantoms, last=N keeps only '
-                       'the newest N, max_chars cuts each text.',
+                       'the newest N, max_chars cuts each text. One phantom can be very long '
+                       "(omp's /changelog is a single phantom of about 60,000 characters): read it "
+                       'in slices with offset (characters to skip) and max_chars (slice size); '
+                       'text_length is the full length, and a cut text ends with how many '
+                       'characters are left.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'name': {'type': 'string', 'default': ''},
                                              'key': {'type': 'string', 'default': ''},
@@ -1185,7 +1189,15 @@ TOOLS = [   {   'name': 'add_directory',
                                                               'default': 0,
                                                               'description': "Cut each phantom's "
                                                                              'text to this length '
-                                                                             '(0 = no cut).'}}}},
+                                                                             '(0 = no cut).'},
+                                             'offset': {   'type': 'integer',
+                                                           'default': 0,
+                                                           'description': 'Skip this many '
+                                                                          'characters at the start '
+                                                                          "of each phantom's text, "
+                                                                          'then apply max_chars: '
+                                                                          'reads a long phantom in '
+                                                                          'slices.'}}}},
     {   'name': 'get_view_regions',
         'description': 'Return the regions a plugin stored in a view under a region key '
                        '(view.add_regions): begin, end and the first 80 characters of each. '
