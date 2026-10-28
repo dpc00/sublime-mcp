@@ -35,11 +35,22 @@ DESTRUCTIVE_COMMANDS = frozenset({
 })
 
 
+# The person approves eval_python by reading its code, so the prompt carries all of it. Code too
+# long to read is refused rather than shown cut off (an approval of unseen lines is no approval).
+EVAL_REVIEW_LIMIT = 6000
+EVAL_TOO_LONG = "code is too long to review in a prompt ({} characters, limit {}); send it in smaller pieces"
+
+
 def _short(value, limit=200):
     try:
         text = json.dumps(value, sort_keys=True, default=str)
     except Exception:
         text = str(value)
+    return text if len(text) <= limit else text[:limit] + "..."
+
+
+def _log_text(items, limit=160):
+    text = "; ".join(" ".join(item.split()) for item in items)
     return text if len(text) <= limit else text[:limit] + "..."
 
 
@@ -59,9 +70,11 @@ def destructive_items(name, args, _depth=0):
                     items.extend(destructive_items(call.get("tool"), call.get("args") or {}, 1))
         return items
     if name == "eval_python":
-        code = str(args.get("code", "")).strip().splitlines()
-        first = code[0][:120] if code else ""
-        items.append("eval_python: runs Python code in the editor, starting: " + first)
+        code = str(args.get("code", "")).strip()
+        if len(code) > EVAL_REVIEW_LIMIT:
+            items.append("eval_python: " + EVAL_TOO_LONG.format(len(code), EVAL_REVIEW_LIMIT))
+        else:
+            items.append("eval_python: runs this Python code in the editor:\n" + code)
     elif name == "close_file":
         if args.get("discard"):
             items.append("close_file with discard: unsaved edits are thrown away: " + _short(
@@ -127,6 +140,9 @@ class ConsentGate:
         items = destructive_items(name, args)
         if not items:
             return None
+        if any(EVAL_TOO_LONG.split("{}")[0] in item for item in items):
+            self._log("consent: denied, code too long to review: " + _short(items[0], 120))
+            return _denied(items, "code too long to show the person")
         fingerprint = _fingerprint(name, args)
         state = params.get("requestState") if isinstance(params, dict) else None
         answers = params.get("inputResponses") if isinstance(params, dict) else None
@@ -135,16 +151,16 @@ class ConsentGate:
                 answer = answers.get(REQUEST_KEY)
                 action = answer.get("action") if isinstance(answer, dict) else None
                 if action == "accept":
-                    self._log("consent: approved: " + "; ".join(items))
+                    self._log("consent: approved: " + _log_text(items))
                     return None
                 self._log("consent: {} ({}): {}".format(
-                    "declined" if action == "decline" else "not approved", action, "; ".join(items)))
+                    "declined" if action == "decline" else "not approved", action, _log_text(items)))
                 return _denied(items, "the person did not approve")
         if not can_ask:
-            self._log("consent: denied, the client cannot be asked: " + "; ".join(items))
+            self._log("consent: denied, the client cannot be asked: " + _log_text(items))
             return _denied(items, "this client cannot be asked for approval (no elicitation support)")
         token = self._put(fingerprint)
-        self._log("consent: asking: " + "; ".join(items))
+        self._log("consent: asking: " + _log_text(items))
         message = "sublime-mcp wants to do this in Sublime Text. Accept to allow it:\n- " + "\n- ".join(items)
         return {
             "resultType": "input_required",
