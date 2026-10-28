@@ -2166,6 +2166,9 @@ def _set_project_data(body):
     return _on_main(fn)
 
 
+_OPEN_FILE_WAIT_SECONDS = 3
+
+
 def _open_file(body):
     path = body.get("path")
     if not path:
@@ -2180,7 +2183,35 @@ def _open_file(body):
         w.open_file(fname, flags)
         return {"ok": True}
 
-    return _on_main(fn)
+    result = _on_main(fn)
+    if not (isinstance(result, dict) and result.get("ok")):
+        return result
+
+    # Sublime opens the file asynchronously: until it is loaded and active, the PREVIOUS tab is
+    # still the active one, and a keystroke or an "active tab" tool sent next lands there
+    # (ui_type_text typed into the old untitled tab in 1 of 3 runs). Wait, off the main thread, until
+    # the new tab is loaded and active.
+    def check():
+        w = sublime.active_window()
+        v = w.find_open_file(path)
+        if v is None:
+            return None
+        active = w.active_view()
+        return {"loading": v.is_loading(), "active": active is not None and active.id() == v.id()}
+
+    deadline = time.time() + _OPEN_FILE_WAIT_SECONDS
+    while True:
+        state = _on_main(check)
+        if isinstance(state, dict) and not state["loading"] and state["active"]:
+            result["active"] = True
+            return result
+        if time.time() >= deadline:
+            result["pending"] = True
+            result["note"] = ("the file was sent to Sublime but is not yet loaded and active after {} s; "
+                              "check get_sheets (is_focused) before typing or using an active-tab tool"
+                              .format(_OPEN_FILE_WAIT_SECONDS))
+            return result
+        time.sleep(0.05)
 
 
 def _goto_line(body):
@@ -5470,7 +5501,9 @@ _MCP_TOOLS = [
      }, "required": ["group"]},
      _p("/move_sheets_to_group")),
     ("open_file",
-     "Open a file in Sublime Text, optionally jumping to a specific line and column.",
+     "Open a file in Sublime Text, optionally jumping to a specific line and column. Returns once the "
+     "file is loaded and is the active tab (active: true); if that takes longer than 3 s the answer is "
+     "pending: true with a note, so check get_sheets before typing into it.",
      {"type": "object", "properties": {
          "path": {"type": "string"},
          "line": {"type": "integer", "default": 0},
