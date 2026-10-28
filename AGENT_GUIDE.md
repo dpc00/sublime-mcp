@@ -379,8 +379,9 @@ whole batch ask once, before any call of it runs.
   Tell the person what you wanted to do and why.
 - Pick the right target before asking: the question names the target, and a vague name (`close_file name="test"`
   matches the first tab containing "test") can ask about the wrong tab.
-- The setting `require_consent_for_destructive` turns this off; it is on by default. The direct HTTP bridge
-  routes are not covered.
+- The setting `require_consent_for_destructive` turns this off (read at plugin start); it is on by default.
+  The direct HTTP bridge cannot ask, so it refuses these calls outright (403, "Denied, nothing was
+  changed"); `eval_python` stays open there.
 
 ## Tools with side effects
 

@@ -4149,6 +4149,10 @@ class _Handler(BaseHTTPRequestHandler):
         if not isinstance(body, dict):
             self._json({"error": "request body must be a JSON object"}, 400)
             return
+        denial = _bridge_consent_denial(tool_name, body)
+        if denial:
+            self._json({"error": denial}, 403)
+            return
         handler = _POST.get(parsed.path)
         if handler:
             try:
@@ -7405,6 +7409,24 @@ def _mcp_list_tools():
             input_schema["properties"] = {}
         tools.append({"name": name, "description": desc, "inputSchema": input_schema})
     return tools
+
+
+def _bridge_consent_denial(tool_name, body):
+    """Why a direct HTTP bridge POST is refused, or None.
+
+    The bridge cannot ask the person, so a plainly destructive route (delete_file, delete_folder,
+    revert_file, exit, close_window, close_workspace, remove_folder, a close_file with discard, a
+    run_command of those commands, also inside a batch) is refused here instead of run. eval_python
+    stays open on the bridge: local tools drive the editor through it."""
+    if not _REQUIRE_CONSENT:
+        return None
+    items = [i for i in consent.destructive_items(tool_name, body) if not i.startswith("eval_python")]
+    if not items:
+        return None
+    print("sublime-mcp: consent: denied on the HTTP bridge, it cannot ask: " + "; ".join(items))
+    return ("Denied, nothing was changed: the HTTP bridge cannot ask the person for approval. "
+            "Use the MCP connection of a client that can, or set require_consent_for_destructive to "
+            "false. Held back: " + "; ".join(items))
 
 
 def _consent_gate_result(params, modern):

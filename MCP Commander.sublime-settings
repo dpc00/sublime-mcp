@@ -46,7 +46,9 @@
     // the client shows the question (Claude Code: an Accept / Decline prompt in
     // the terminal); a client that cannot be asked is denied. Default true. Set
     // false to run them without asking (a test instance, for example).
-    // The direct HTTP bridge routes are not covered.
+    // The direct HTTP bridge cannot ask, so it refuses those routes (eval_python
+    // stays open there). The setting is read when the plugin starts: restart
+    // Sublime after changing it.
     // "require_consent_for_destructive": true
 
     // get_quick_panel and pick_quick_panel can only see quick panels opened by
