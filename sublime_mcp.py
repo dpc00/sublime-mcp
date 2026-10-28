@@ -70,6 +70,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 import sublime
 import sublime_plugin
 
+from .lib import consent
 from .lib import native_windows
 from .lib.search_results import parse_find_results, search_is_complete
 
@@ -4161,6 +4162,11 @@ _PLATFORM_UNAVAILABLE_TOOLS = _WINDOWS_ONLY_TOOLS if sys.platform != "win32" els
 _PLATFORM_UNAVAILABLE_ROUTES = _WINDOWS_ONLY_ROUTES if sys.platform != "win32" else frozenset()
 _DISABLED_TOOLS = set(_PLATFORM_UNAVAILABLE_TOOLS)
 
+# Destructive actions asked about before they run (lib/consent.py). On by default; the setting
+# "require_consent_for_destructive": false in MCP Commander.sublime-settings turns it off.
+_REQUIRE_CONSENT = True
+_CONSENT_GATE = consent.ConsentGate(log=lambda text: print("sublime-mcp: " + text))
+
 
 _LOOPBACK_NAMES = frozenset({"localhost", "127.0.0.1", "[::1]", "::1"})
 
@@ -4214,8 +4220,9 @@ def _tool_disabled_error(name):
 
 
 def _load_ports():
-    global _PORT, _MCP_PORT, _BIND_HOST, _AUTH_TOKEN, _DISABLED_TOOLS
+    global _PORT, _MCP_PORT, _BIND_HOST, _AUTH_TOKEN, _DISABLED_TOOLS, _REQUIRE_CONSENT
     settings = sublime.load_settings("MCP Commander.sublime-settings")
+    _REQUIRE_CONSENT = bool(settings.get("require_consent_for_destructive", True))
     default_mcp_port = 9502 if sys.platform == "win32" else 9503
     default_http_port = 9500 if sys.platform == "win32" else 9501
     _MCP_PORT = int(settings.get("mcp_port", default_mcp_port))
@@ -7277,6 +7284,20 @@ def _mcp_list_tools():
     return tools
 
 
+def _consent_gate_result(params, modern):
+    """None when this tools/call may run; otherwise the result to send instead.
+
+    A destructive call is answered with a question on a 2026-07-28 connection (the client asks
+    the person and repeats the call) and is denied on any connection that cannot be asked. An
+    error here refuses the call. See lib/consent.py. Reached only through tools/call, so the HTTP
+    bridge routes are not covered."""
+    if not _REQUIRE_CONSENT:
+        return None
+    can_ask = modern and consent.client_can_elicit(params.get("_meta"))
+    return _CONSENT_GATE.check(params.get("name"), params.get("arguments") or {},
+                               params if modern else {}, can_ask)
+
+
 def _mcp_call_tool(params):
     """The result of a tools/call. A tool that fails is reported in the result with isError
     (all protocol versions); only a tool that does not exist raises _UnknownTool (-32602)."""
@@ -7321,6 +7342,37 @@ def _mcp_header_problem(headers, method, params, version):
     return None
 
 
+_client_decl_seen = set()
+
+
+def _note_client_declaration(method, params):
+    """Print once per distinct client what it declares (capabilities, client info, _meta).
+
+    Read-only diagnostic: it answers whether a client can be asked a question mid-call
+    (MCP elicitation). It never changes a response and never raises."""
+    try:
+        if not isinstance(params, dict) or len(_client_decl_seen) >= 20:
+            return
+        meta = params.get("_meta")
+        shown = {}
+        if method == "initialize":
+            shown = {"protocolVersion": params.get("protocolVersion"),
+                     "clientInfo": params.get("clientInfo"),
+                     "capabilities": params.get("capabilities")}
+        elif isinstance(meta, dict):
+            shown = {k: v for k, v in meta.items()
+                     if k != "progressToken" and not k.endswith("toolUseId")}
+        if not shown:
+            return
+        text = json.dumps(shown, sort_keys=True, default=str)
+        if text in _client_decl_seen:
+            return
+        _client_decl_seen.add(text)
+        print("sublime-mcp: client declares ({}): {}".format(method, text[:700]))
+    except Exception:
+        pass
+
+
 def _mcp_dispatch(msg, headers=None):
     """Run one JSON-RPC message; return (http_status, response dict or None).
 
@@ -7329,6 +7381,7 @@ def _mcp_dispatch(msg, headers=None):
     method = msg.get("method", "")
     msg_id = msg.get("id")
     params = msg.get("params") or {}
+    _note_client_declaration(method, params)
     meta = params.get("_meta") if isinstance(params, dict) else None
     version = meta.get(_MCP_META_VERSION) if isinstance(meta, dict) else None
     if version is None and headers is not None and headers.get("MCP-Protocol-Version") in _MCP_MODERN_VERSIONS:
@@ -7360,14 +7413,16 @@ def _mcp_dispatch_modern(msg_id, method, params, version, headers):
             # ttlMs 0: tools can be registered or disabled while the plugin runs.
             result = {"tools": _mcp_list_tools(), "ttlMs": 0, "cacheScope": "private"}
         elif method == "tools/call":
-            result = _mcp_call_tool(params)
+            result = _consent_gate_result(params, True)
+            if result is None:
+                result = _mcp_call_tool(params)
         else:
             return 404, _mcp_error(msg_id, -32601, "Method not found: " + method)
     except _UnknownTool as e:
         return 200, _mcp_error(msg_id, -32602, "Unknown tool: " + str(e))
     except Exception as e:
         return 200, _mcp_error(msg_id, -32603, str(e))
-    result["resultType"] = "complete"
+    result.setdefault("resultType", "complete")
     result["_meta"] = {_MCP_META_SERVER_INFO: {"name": "sublime-mcp", "version": __version__}}
     return 200, {"jsonrpc": "2.0", "id": msg_id, "result": result}
 
@@ -7395,7 +7450,9 @@ def _mcp_dispatch_legacy(msg):
         elif method == "tools/list":
             result = {"tools": _mcp_list_tools()}
         elif method == "tools/call":
-            result = _mcp_call_tool(params)
+            result = _consent_gate_result(params, False)
+            if result is None:
+                result = _mcp_call_tool(params)
         else:
             return _mcp_error(msg_id, -32601, "Method not found: " + method)
 
