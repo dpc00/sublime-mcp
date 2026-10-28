@@ -534,7 +534,15 @@ def _view_syntax(v):
     return None, None
 
 
+# get_active_file returns at most this many characters unless max_chars says otherwise. A whole
+# tab can be tens of kilobytes (the agent's own terminal tab was 28 KB), and every byte stays in
+# the conversation for the rest of the session.
+_ACTIVE_FILE_MAX_CHARS = 20000
+
+
 def _get_active_file(params):
+    max_chars = int(params.get("max_chars", [_ACTIVE_FILE_MAX_CHARS])[0])
+
     def fn():
         v = _active_view()
         if not v:
@@ -543,16 +551,25 @@ def _get_active_file(params):
         pt = sel[0].begin() if sel else 0
         row, col = v.rowcol(pt)
         syntax_label, syntax_path = _view_syntax(v)
-        return {
+        size = v.size()
+        limit = size if max_chars <= 0 else min(size, max_chars)
+        out = {
             "path": v.file_name(),
             "name": v.name(),
-            "content": v.substr(sublime.Region(0, v.size())),
+            "content": v.substr(sublime.Region(0, limit)),
+            "size": size,
             "line": row + 1,
             "col": col + 1,
             "is_dirty": v.is_dirty(),
             "syntax": syntax_label,
             "syntax_path": syntax_path,
         }
+        if limit < size:
+            out["truncated"] = True
+            out["returned_chars"] = limit
+            out["note"] = ("content is cut at {} of {} characters; read the rest with get_view_chars "
+                           "(begin, end), or pass max_chars=0 for everything".format(limit, size))
+        return out
 
     return _on_main(fn)
 
@@ -3376,6 +3393,8 @@ def _set_setting(body):
     key = body.get("key", "")
     value = body.get("value")
     scope = body.get("scope", "view")
+    name = body.get("name", "") or ""
+    index = int(body.get("index", -1))
     if not key:
         return {"error": "key required"}
     if value is None:
@@ -3384,7 +3403,12 @@ def _set_setting(body):
     def fn():
         w = sublime.active_window()
         if scope == "view":
-            v = w.active_view()
+            if name or index >= 0:
+                v, err = _resolve_view(w, name, index, unique=True)
+                if err:
+                    return err
+            else:
+                v = w.active_view()
             if not v:
                 return {"error": "no active view"}
             v.settings().set(key, value)
@@ -5157,8 +5181,15 @@ _MCP_TOOLS = [
      _p("/list_claims")),
     # ── no-parameter GET tools ────────────────────────────────────────────────
     ("get_active_file",
-     "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name.",
-     {}, _g("/active_file")),
+     "Return the active file's path, content, cursor line/col, dirty flag, and syntax name. "
+     "Content is cut at 20000 characters by default (truncated: true, size = the full length, with a "
+     "note); pass max_chars to change the cut, or 0 for the whole file. Read a slice of any tab with "
+     "get_view_chars.",
+     {"type": "object", "properties": {
+         "max_chars": {"type": "integer", "default": 20000,
+                       "description": "Most characters of content to return; 0 = no limit."},
+     }},
+     _g("/active_file")),
     ("get_selection",
      "Return the current selection(s): text and begin/end line+col for each.",
      {}, _g("/selection")),
@@ -5662,11 +5693,15 @@ _MCP_TOOLS = [
      }, "required": ["key"]},
      _p("/get_setting")),
     ("set_setting",
-     "Set a Sublime Text setting by key. scope='view' (default) or 'window'.",
+     "Set a Sublime Text setting by key. scope='view' (default) or 'window'. A view setting goes to "
+     "the tab given by name (partial, refused if it fits several tabs) or index (0-based, from "
+     "get_open_files); with neither it goes to the ACTIVE tab, so name the tab you mean.",
      {"type": "object", "properties": {
          "key": {"type": "string"},
          "value": {},
          "scope": {"type": "string", "default": "view"},
+         "name": {"type": "string", "default": ""},
+         "index": {"type": "integer", "default": -1},
      }, "required": ["key", "value"]},
      _p("/set_setting")),
     ("focus_group",
