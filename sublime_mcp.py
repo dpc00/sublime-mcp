@@ -4668,6 +4668,13 @@ def _get_package_mcp_info(body):
                 return {"error": "Package '{}' not found".format(package)}
 
         commands = {}
+        loaded_here = False
+        for classes in (getattr(sublime_plugin, "event_listener_classes", []),
+                        getattr(sublime_plugin, "view_event_listener_classes", [])):
+            for cls in classes:
+                module = getattr(cls, "__module__", "")
+                if (module.split(".", 1)[0] if module else "").lower() == package.lower():
+                    loaded_here = True
         for scope_name, classes in (
             ("application", getattr(sublime_plugin, "application_command_classes", [])),
             ("window", getattr(sublime_plugin, "window_command_classes", [])),
@@ -4678,6 +4685,7 @@ def _get_package_mcp_info(body):
                 pkg = module.split(".", 1)[0] if module else ""
                 if pkg.lower() != package.lower():
                     continue
+                loaded_here = True
                 cmd = _command_name_from_class(cls)
                 entry = commands.setdefault(cmd, {"command": cmd, "scopes": [], "caption": "", "args": {}})
                 if scope_name not in entry["scopes"]:
@@ -4727,6 +4735,7 @@ def _get_package_mcp_info(body):
             "pkg_path": pkg_path,
             "zip_path": zip_path,
             "output_file": output_file,
+            "loaded_here": loaded_here,
         }
 
     st = _on_main(collect_st_data)
@@ -4736,10 +4745,14 @@ def _get_package_mcp_info(body):
     # Phase 2: file IO off the main thread (here in the HTTP handler thread).
     import zipfile as _zipfile
     python_files = []
+    declared_version = None
     if st["zip_path"]:
         try:
             with _zipfile.ZipFile(st["zip_path"], "r") as zf:
-                python_files = sorted(n for n in zf.namelist() if n.endswith(".py"))
+                names = zf.namelist()
+                python_files = sorted(n for n in names if n.endswith(".py"))
+                if ".python-version" in names:
+                    declared_version = zf.read(".python-version").decode("utf-8", "replace").strip()
         except Exception:
             pass
     else:
@@ -4748,6 +4761,22 @@ def _get_package_mcp_info(body):
             for fname in sorted(files):
                 if fname.endswith(".py"):
                     python_files.append(os.path.join(root, fname))
+        try:
+            with open(os.path.join(st["pkg_path"], ".python-version"), encoding="utf-8") as fh:
+                declared_version = fh.read().strip()
+        except OSError:
+            pass
+
+    this_host = ".".join(str(n) for n in sys.version_info[:3])
+    if st["loaded_here"]:
+        host_note = ("Its commands or listeners are loaded in the same Python host as sublime-mcp "
+                     "(Python {}).".format(this_host))
+    else:
+        host_note = ("None of its commands or listeners are loaded in the Python host sublime-mcp runs in "
+                     "(Python {}). It runs in another plugin host (see python_version_file), has no Python "
+                     "plugins, or has not finished loading, so its commands may be missing from this list; "
+                     "look for 'reloading python <version> plugin {}' in the console."
+                     .format(this_host, package))
 
     return {
         "package": package,
@@ -4756,6 +4785,10 @@ def _get_package_mcp_info(body):
         "commands": st["commands"],
         "settings_keys": st["settings_keys"],
         "python_files": python_files,
+        "python_version_file": declared_version,
+        "loaded_in_this_host": st["loaded_here"],
+        "this_host_python": this_host,
+        "host_note": host_note,
         "extension_template": _EXTENSION_TEMPLATE,
     }
 
@@ -5795,7 +5828,11 @@ _MCP_TOOLS = [
      "for example, only shows up here as that one wrapper command), then call the real thing\n"
      "with run_command or eval_python. That loop -- discover, read source, call directly -- is\n"
      "almost always enough on its own.\n"
-     "Returns: path, commands (with captions and args), settings_keys, python_files, plus\n"
+     "Returns: path, commands (with captions and args), settings_keys, python_files,\n"
+     "python_version_file (the package's .python-version, or null), loaded_in_this_host and\n"
+     "this_host_python (whether its commands/listeners are loaded in the same Python host as\n"
+     "sublime-mcp; false means another plugin host, no Python plugins, or still loading) and\n"
+     "host_note, plus\n"
      "output_file/extension_template for the rare theoretical case where a standing,\n"
      "independently-reachable MCP server is needed (e.g. a client with no eval_python-\n"
      "equivalent of its own) -- write the extension to output_file following extension_template\n"
