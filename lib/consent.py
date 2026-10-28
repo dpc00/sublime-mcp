@@ -74,7 +74,10 @@ def destructive_items(name, args, _depth=0):
         if len(code) > EVAL_REVIEW_LIMIT:
             items.append("eval_python: " + EVAL_TOO_LONG.format(len(code), EVAL_REVIEW_LIMIT))
         else:
-            items.append("eval_python: runs this Python code in the editor:\n" + code)
+            # One line, line breaks written \n: Claude Code folds a multi-line prompt to its first
+            # line ("... (+3 more lines)"), which would hide the code the person is approving.
+            items.append("eval_python: runs this Python code in the editor (one line, \\n is a line break): "
+                         + json.dumps(code, ensure_ascii=False))
     elif name == "close_file":
         if args.get("discard"):
             items.append("close_file with discard: unsaved edits are thrown away: " + _short(
