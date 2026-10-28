@@ -2076,7 +2076,11 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'save_file',
         'description': 'Save a file. Pass path to save a specific open file; omit path to save the '
-                       'active file.',
+                       "active file. Refuses with an error when the file's folder does not exist "
+                       '(nothing is created; make the folder first). The result says saved: true '
+                       'once the tab is clean; saved: false with pending: true means it is still '
+                       "modified after 1.5 s (a Save As dialog for an untitled tab, an 'Unable to "
+                       "save' dialog, or a read-only file): look before repeating.",
         'inputSchema': {   'type': 'object',
                            'properties': {'path': {'type': 'string', 'default': ''}}}},
     {   'name': 'save_macro',

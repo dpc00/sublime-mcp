@@ -78,7 +78,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.17.1"
+__version__ = "1.17.2"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -110,6 +110,12 @@ def _timeout_message(label, windows):
     then sends the caller looking for something that is not there.
     """
     head = "main-thread timeout after 5s."
+    if windows is None and not native_windows.SUPPORTED:
+        return (head + " A native dialog may be waiting for an answer (a Save Changes, Unable to save or "
+                "package error dialog is the usual cause), or a package is busy loading. On this platform "
+                "no tool can list or dismiss dialogs: look at the screen and answer it there. Under WSL "
+                "(WSLg) a computer-use client can read and click it: its windows are titled ' (Ubuntu)'. "
+                "Tools that do not need the main thread (get_console, get_help) still answer.")
     if windows is None:
         return (head + " A native dialog or menu may be blocking Sublime's main thread until it is "
                 "dismissed; list_native_windows (Windows only) shows it and dismiss_native_window "
@@ -626,16 +632,33 @@ def _get_cursor_context(params):
     return _on_main(fn)
 
 
+def _disk_differs(v):
+    """True when a tab that reads as clean holds an EMPTY buffer for a file that has content on disk.
+
+    Seen 2026-10-28: a package opened a tab for a file that did not exist yet, a script then wrote the
+    file. get_sheets said is_dirty false, but Sublime still counted the buffer as modified (modified dot in
+    the title) and every close raised a "Save changes?" dialog. The Sublime API has no flag for this, so
+    flag the case we can see cheaply: not dirty, empty buffer, non-empty file.
+    """
+    try:
+        path = v.file_name()
+        if not path or v.is_dirty() or v.is_loading() or v.size() != 0:
+            return False
+        return os.path.getsize(path) > 0
+    except Exception:
+        return False
+
+
 def _get_open_files(params):
     def fn():
         w = sublime.active_window()
-
-        return {
-            "files": [
-                {"path": v.file_name(), "name": _view_display_name(v), "is_dirty": v.is_dirty()}
-                for v in w.views()
-            ]
-        }
+        files = []
+        for v in w.views():
+            item = {"path": v.file_name(), "name": _view_display_name(v), "is_dirty": v.is_dirty()}
+            if _disk_differs(v):
+                item["disk_differs"] = True
+            files.append(item)
+        return {"files": files}
 
     return _on_main(fn)
 
@@ -677,6 +700,8 @@ def _get_sheets(params):
                 "is_focused": s.id() == active_sheet_id,
                 "is_active_group": s.group() == active_group,
             }
+            if v is not None and _disk_differs(v):
+                item["disk_differs"] = True
             # Any package can tag a view with its own settings (GhostShell's
             # ai_terminal_* keys, for example) -- surface all of it rather
             # than a hand-picked subset, so a caller can always tell what a
@@ -2442,6 +2467,9 @@ def _set_status(body):
     return _on_main(fn)
 
 
+_SAVE_FILE_WAIT_SECONDS = 1.5
+
+
 def _save_file(body):
     path = body.get("path")
 
@@ -2455,10 +2483,45 @@ def _save_file(body):
             v = _active_view()
         if not v:
             return {"error": "no active view"}
+        target = v.file_name()
+        if target and not os.path.isdir(os.path.dirname(target)):
+            # Sublime would answer the save with a "Unable to save" dialog and leave the tab modified,
+            # while this call used to say ok. Nothing is created: make the folder first.
+            return {"error": "cannot save: the folder does not exist: {} (nothing was written; create "
+                             "the folder first, there is no tool that makes one for you)"
+                             .format(os.path.dirname(target))}
         v.run_command("save")
-        return {"ok": True}
+        return {"ok": True, "_view_id": v.id()}
 
-    return _on_main(fn)
+    result = _on_main(fn)
+    if not (isinstance(result, dict) and result.get("ok")):
+        return result
+    vid = result.pop("_view_id", None)
+
+    # `save` only asks Sublime to save. An untitled tab opens a Save As dialog, and a failed write
+    # (read-only file, full disk) shows an error dialog; both used to come back as plain ok.
+    def is_clean():
+        for win in sublime.windows():
+            for vw in win.views():
+                if vw.id() == vid:
+                    return not vw.is_dirty()
+        return True
+
+    deadline = time.time() + _SAVE_FILE_WAIT_SECONDS
+    while True:
+        if _on_main(is_clean) is True:
+            result["saved"] = True
+            return result
+        if time.time() >= deadline:
+            result["saved"] = False
+            result["pending"] = True
+            result["note"] = ("the save was sent but the tab is still modified after {} s: Sublime is "
+                              "probably showing a Save As or an 'Unable to save' dialog (Windows: "
+                              "list_native_windows and dismiss_native_window; elsewhere answer it on "
+                              "screen), or the file is read-only. Do not repeat the call before you have "
+                              "looked.".format(_SAVE_FILE_WAIT_SECONDS))
+            return result
+        time.sleep(0.05)
 
 
 def _save_all(body):
@@ -4311,7 +4374,9 @@ def _deny_auth_json(handler):
 
 def _tool_disabled_error(name):
     if name in _PLATFORM_UNAVAILABLE_TOOLS:
-        return {"error": "tool '{}' is only available on Windows".format(name)}
+        return {"error": "tool '{}' is only available on Windows. For a dialog here: look at the screen; "
+                         "under WSL (WSLg) a computer-use client lists it as a window titled ' (Ubuntu)', "
+                         "reads it with an image snapshot and clicks its button.".format(name)}
     return {"error": "tool '{}' is disabled by this server's settings (disabled_tools)".format(name)}
 
 
@@ -4940,7 +5005,9 @@ def _sublime_process_id():
 
 def _list_native_windows(body):
     if not native_windows.SUPPORTED:
-        return {"error": "list_native_windows is implemented for Windows only"}
+        return {"error": "list_native_windows is implemented for Windows only. Here, look at the screen; under "
+                         "WSL (WSLg) a computer-use client lists the dialog as a window titled ' (Ubuntu)', "
+                         "reads it with an image snapshot and clicks its button."}
     started = _in_flight_dispatch.get("started")
     label = _in_flight_dispatch.get("label")
     running_for = round(time.time() - started, 1) if started else None
@@ -4957,7 +5024,8 @@ def _list_native_windows(body):
 
 def _dismiss_native_window(body):
     if not native_windows.SUPPORTED:
-        return {"error": "dismiss_native_window is implemented for Windows only"}
+        return {"error": "dismiss_native_window is implemented for Windows only. Here, answer the dialog on the "
+                         "screen; under WSL (WSLg) a computer-use client can click its button."}
     hwnd = body.get("hwnd")
     try:
         hwnd = int(hwnd) if hwnd is not None else None
@@ -5643,7 +5711,11 @@ _MCP_TOOLS = [
      }, "required": ["value"]},
      _p("/set_status")),
     ("save_file",
-     "Save a file. Pass path to save a specific open file; omit path to save the active file.",
+     "Save a file. Pass path to save a specific open file; omit path to save the active file. "
+     "Refuses with an error when the file's folder does not exist (nothing is created; make the folder "
+     "first). The result says saved: true once the tab is clean; saved: false with pending: true means "
+     "it is still modified after 1.5 s (a Save As dialog for an untitled tab, an 'Unable to save' "
+     "dialog, or a read-only file): look before repeating.",
      {"type": "object", "properties": {"path": {"type": "string", "default": ""}}},
      _p("/save_file")),
     ("close_file",

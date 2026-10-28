@@ -71,7 +71,12 @@ batch(calls=[{"tool": "close_file", "args": {"path": "..."}}])      # hidden too
 
 `create` opens the new tab itself (no `open_file` needed) and fails if the file already exists;
 the file reaches the disk when `save_file` runs. `str_replace` and `insert` edit the open tab, so
-they also need `save_file`. `create` does not make missing folders. To open an existing file use
+they also need `save_file`. `create` does not make missing folders, and `save_file` into a missing folder is
+refused with an error (it used to answer ok while Sublime showed an "Unable to save" dialog); the result says
+`saved: true`, or `saved: false` with `pending: true` when the tab is still modified after 1.5 s (a Save As or
+error dialog, or a read-only file). `get_sheets` and `get_open_files` add `disk_differs: true` to a tab that
+reads as clean but holds an empty buffer for a file that has content on disk: Sublime then counts the buffer as
+modified and asks "Save changes?" on close. To open an existing file use
 the hidden tool `open_file(path=...)`; it returns once the file is loaded and is the active tab
 (`active: true`), or says `pending: true` after 3 s when it is not yet.
 
@@ -454,6 +459,16 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
 - `ui_click`, `ui_hover` and `ui_press_key` with `method="input"` need the target window uncovered and the
   person at the keyboard idle for `min_idle_s` (default 8); pass `wait_idle_s` (up to 120) to wait, or a
   smaller `min_idle_s`. `ui_press_key` with the default `post` method needs neither.
+
+## When a native dialog blocks Sublime (Linux, macOS, WSL)
+
+`list_native_windows` and `dismiss_native_window` are Windows only, so off Windows a dialog shows up as
+"main-thread timeout after 5s" (the message says so) and only the person, or a computer-use client, can answer it.
+Under WSL (WSLg) a computer-use client sees each dialog as its own window titled " (Ubuntu)": `list_apps`,
+`get_window_state` with an image snapshot shows the message (read it, it is often the finding), then `click` at the
+button's position in the picture. Tools that do not need the main thread (`get_console`, `get_help`) keep
+answering. Seen on the WSL Sublime 4215: Save Changes, Unable to save, Error loading syntax file, and a package's
+own "cannot find perltidy" message. Do not repeat a call that raised a dialog before you have answered it.
 
 ## When a native dialog blocks Sublime (Windows)
 
