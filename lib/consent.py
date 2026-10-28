@@ -54,11 +54,26 @@ def _log_text(items, limit=160):
     return text if len(text) <= limit else text[:limit] + "..."
 
 
-def destructive_items(name, args, _depth=0):
+def eval_codes(name, args, _depth=0):
+    """The Python code of every eval_python call a tools/call would run (also inside a batch)."""
+    if not isinstance(args, dict):
+        args = {}
+    if name == "batch" and _depth == 0:
+        codes = []
+        for call in args.get("calls") if isinstance(args.get("calls"), list) else []:
+            if isinstance(call, dict):
+                codes.extend(eval_codes(call.get("tool"), call.get("args") or {}, 1))
+        return codes
+    return [str(args.get("code", "")).strip()] if name == "eval_python" else []
+
+
+def destructive_items(name, args, _depth=0, prompt=False):
     """One line per destructive action a tools/call would run; empty when it is safe.
 
     A batch is read call by call, so one destructive call makes the whole batch ask once,
-    before any call of it runs."""
+    before any call of it runs. With prompt=True an eval_python item is the short text for the
+    question: the whole code is in the panel the gate opens, because a client such as Claude Code
+    folds a long prompt to about three short lines."""
     if not isinstance(args, dict):
         args = {}
     items = []
@@ -67,15 +82,17 @@ def destructive_items(name, args, _depth=0):
         if isinstance(calls, list):
             for call in calls:
                 if isinstance(call, dict):
-                    items.extend(destructive_items(call.get("tool"), call.get("args") or {}, 1))
+                    items.extend(destructive_items(call.get("tool"), call.get("args") or {}, 1, prompt))
         return items
     if name == "eval_python":
         code = str(args.get("code", "")).strip()
         if len(code) > EVAL_REVIEW_LIMIT:
             items.append("eval_python: " + EVAL_TOO_LONG.format(len(code), EVAL_REVIEW_LIMIT))
+        elif prompt:
+            first = (code.splitlines() or [""])[0][:60]
+            items.append("eval_python: runs Python code ({} lines). READ ALL OF IT in the panel at the "
+                         "bottom of Sublime before accepting. It starts: {}".format(len(code.splitlines()), first))
         else:
-            # One line, line breaks written \n: Claude Code folds a multi-line prompt to its first
-            # line ("... (+3 more lines)"), which would hide the code the person is approving.
             items.append("eval_python: runs this Python code in the editor (one line, \\n is a line break): "
                          + json.dumps(code, ensure_ascii=False))
     elif name == "close_file":
@@ -112,13 +129,23 @@ def _denied(items, why):
 
 
 class ConsentGate:
-    def __init__(self, ttl=300, max_pending=100, clock=time.time, log=None):
+    def __init__(self, ttl=300, max_pending=100, clock=time.time, log=None, show_code=None):
         self._ttl = ttl
         self._max = max_pending
         self._clock = clock
         self._log = log or (lambda text: None)
+        # show_code(codes) puts the whole eval_python code where the person can read it while the
+        # question is open and returns True when it did; show_code(None) takes it away again.
+        self._show_code = show_code
         self._pending = {}
         self._lock = threading.Lock()
+
+    def _clear_code(self):
+        if self._show_code:
+            try:
+                self._show_code(None)
+            except Exception:
+                pass
 
     def _take(self, token):
         with self._lock:
@@ -151,6 +178,7 @@ class ConsentGate:
         answers = params.get("inputResponses") if isinstance(params, dict) else None
         if isinstance(state, str) and isinstance(answers, dict):
             if self._take(state) == fingerprint:
+                self._clear_code()
                 answer = answers.get(REQUEST_KEY)
                 action = answer.get("action") if isinstance(answer, dict) else None
                 if action == "accept":
@@ -164,6 +192,15 @@ class ConsentGate:
             return _denied(items, "this client cannot be asked for approval (no elicitation support)")
         token = self._put(fingerprint)
         self._log("consent: asking: " + _log_text(items))
+        codes = eval_codes(name, args)
+        shown = False
+        if codes and self._show_code:
+            try:
+                shown = bool(self._show_code(codes))
+            except Exception as error:
+                self._log("consent: could not show the code panel: {}".format(error))
+        if shown:
+            items = destructive_items(name, args, prompt=True)
         message = "sublime-mcp wants to do this in Sublime Text. Accept to allow it:\n- " + "\n- ".join(items)
         return {
             "resultType": "input_required",

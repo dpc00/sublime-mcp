@@ -78,7 +78,7 @@ from .lib.search_results import parse_find_results, search_is_complete
 # Keep in step with packages/node-proxy/package.json,
 # packages/python-proxy/pyproject.toml, and server.json (no automated
 # test enforces this; check by hand on release).
-__version__ = "1.17.3"
+__version__ = "1.17.4"
 
 from .lib.mcp_http_policy import is_oauth_discovery_path, send_no_authorization
 
@@ -4324,7 +4324,41 @@ _DISABLED_TOOLS = set(_PLATFORM_UNAVAILABLE_TOOLS)
 # Destructive actions asked about before they run (lib/consent.py). On by default; the setting
 # "require_consent_for_destructive": false in MCP Commander.sublime-settings turns it off.
 _REQUIRE_CONSENT = True
-_CONSENT_GATE = consent.ConsentGate(log=lambda text: print("sublime-mcp: " + text))
+_CONSENT_PANEL = "sublime_mcp_consent"
+
+
+def _show_consent_code(codes):
+    """Open (codes) or close (None) the panel with the whole eval_python code while the question
+    is open. The prompt of a client like Claude Code shows only a few short lines, so the code the
+    person approves is read here. Returns True when a panel will be shown."""
+    if codes is None:
+        def close():
+            window = sublime.active_window()
+            if window:
+                window.destroy_output_panel(_CONSENT_PANEL)
+        sublime.set_timeout(close, 0)
+        return False
+    if not sublime.active_window():
+        return False
+
+    def show():
+        window = sublime.active_window()
+        if not window:
+            return
+        view = window.create_output_panel(_CONSENT_PANEL)
+        view.set_read_only(False)
+        text = "\n\n".join("# eval_python code to approve ({} of {})\n{}".format(i + 1, len(codes), code)
+                           for i, code in enumerate(codes))
+        view.run_command("append", {"characters": text})
+        view.set_read_only(True)
+        view.set_syntax_file("Packages/Python/Python.sublime-syntax")
+        window.run_command("show_panel", {"panel": "output." + _CONSENT_PANEL})
+    sublime.set_timeout(show, 0)
+    return True
+
+
+_CONSENT_GATE = consent.ConsentGate(log=lambda text: print("sublime-mcp: " + text),
+                                    show_code=_show_consent_code)
 
 
 _LOOPBACK_NAMES = frozenset({"localhost", "127.0.0.1", "[::1]", "::1"})
