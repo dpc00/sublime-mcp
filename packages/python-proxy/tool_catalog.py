@@ -312,11 +312,13 @@ TOOLS = [   {   'name': 'add_directory',
                        "case-insensitive match on the tab's title) or index (0-based, from "
                        'get_open_files); with none of the three it closes whichever tab is active, '
                        'so name the tab you mean. A name or index that matches nothing is an error '
-                       "and closes nothing. A tab with unsaved edits normally raises Sublime's "
-                       'native "Save Changes?" dialog, which blocks the main thread until someone '
-                       'answers it; pass discard=true to throw the unsaved edits away and close at '
-                       "once (the result then says discarded). (run_command 'close' with "
-                       "scope='view' does not close a tab: use this tool.)",
+                       'and closes nothing; a name that fits several tabs is also refused (the '
+                       'error lists them with their indexes) unless exactly one has that exact '
+                       'name. A tab with unsaved edits normally raises Sublime\'s native "Save '
+                       'Changes?" dialog, which blocks the main thread until someone answers it; '
+                       'pass discard=true to throw the unsaved edits away and close at once (the '
+                       "result then says discarded). (run_command 'close' with scope='view' does "
+                       'not close a tab: use this tool.)',
         'inputSchema': {   'type': 'object',
                            'properties': {   'path': {'type': 'string', 'default': ''},
                                              'name': {'type': 'string', 'default': ''},
@@ -878,9 +880,16 @@ TOOLS = [   {   'name': 'add_directory',
                        'nothing: use fold to fold the block at the cursor.',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'get_active_file',
-        'description': "Return the active file's path, full content, cursor line/col, dirty flag, "
-                       'and syntax name.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'description': "Return the active file's path, content, cursor line/col, dirty flag, and "
+                       'syntax name. Content is cut at 20000 characters by default (truncated: '
+                       'true, size = the full length, with a note); pass max_chars to change the '
+                       'cut, or 0 for the whole file. Read a slice of any tab with get_view_chars.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'max_chars': {   'type': 'integer',
+                                                              'default': 20000,
+                                                              'description': 'Most characters of '
+                                                                             'content to return; 0 '
+                                                                             '= no limit.'}}}},
     {   'name': 'get_active_panel',
         'description': 'Return the active panel id and, if it is an output panel, its content.',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1010,7 +1019,14 @@ TOOLS = [   {   'name': 'add_directory',
                        'directly -- is\n'
                        'almost always enough on its own.\n'
                        'Returns: path, commands (with captions and args), settings_keys, '
-                       'python_files, plus\n'
+                       'python_files,\n'
+                       "python_version_file (the package's .python-version, or null), "
+                       'loaded_in_this_host and\n'
+                       'this_host_python (whether its commands/listeners are loaded in the same '
+                       'Python host as\n'
+                       'sublime-mcp; false means another plugin host, no Python plugins, or still '
+                       'loading) and\n'
+                       'host_note, plus\n'
                        'output_file/extension_template for the rare theoretical case where a '
                        'standing,\n'
                        'independently-reachable MCP server is needed (e.g. a client with no '
@@ -1123,11 +1139,13 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'get_view_chars',
         'description': 'Return text at character offsets begin..end (0-based, end exclusive) from '
                        'any open tab.\n'
-                       'Clamps to buffer bounds automatically. Omit name for the active view.',
+                       'Clamps to buffer bounds automatically. Pass name, or index (0-based, from '
+                       'get_open_files); omit both for the active view.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'begin': {'type': 'integer'},
                                              'end': {'type': 'integer'},
-                                             'name': {'type': 'string', 'default': ''}},
+                                             'name': {'type': 'string', 'default': ''},
+                                             'index': {'type': 'integer', 'default': -1}},
                            'required': ['begin', 'end']}},
     {   'name': 'get_view_content',
         'description': 'Return the full content of any open tab by name (partial match, '
@@ -1180,10 +1198,11 @@ TOOLS = [   {   'name': 'add_directory',
     {   'name': 'get_view_size',
         'description': 'Return the total character count of any open tab by name (partial match, '
                        'case-insensitive).\n'
-                       'Use before get_view_chars to compute offsets. Omit name for the active '
-                       'view.',
+                       'Use before get_view_chars to compute offsets. Pass name, or index '
+                       '(0-based, from get_open_files); omit both for the active view.',
         'inputSchema': {   'type': 'object',
-                           'properties': {'name': {'type': 'string', 'default': ''}}}},
+                           'properties': {   'name': {'type': 'string', 'default': ''},
+                                             'index': {'type': 'integer', 'default': -1}}}},
     {   'name': 'get_word_at_cursor',
         'description': 'Return the word under the cursor and its line/col.',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -1524,7 +1543,9 @@ TOOLS = [   {   'name': 'add_directory',
                                                                         'the directory.'}}}},
     {   'name': 'open_file',
         'description': 'Open a file in Sublime Text, optionally jumping to a specific line and '
-                       'column.',
+                       'column. Returns once the file is loaded and is the active tab (active: '
+                       'true); if that takes longer than 3 s the answer is pending: true with a '
+                       'note, so check get_sheets before typing into it.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'path': {'type': 'string'},
                                              'line': {'type': 'integer', 'default': 0},
@@ -1966,9 +1987,13 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Reloads the file. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
     {   'name': 'revert_file',
-        'description': 'Revert the active file to its last saved state, discarding unsaved '
-                       'changes.',
-        'inputSchema': {'type': 'object', 'properties': {}}},
+        'description': 'Revert a file to its last saved state, discarding unsaved changes. Pass '
+                       'name (partial, case-insensitive; refused if it fits several tabs) or index '
+                       '(0-based, from get_open_files); with neither it reverts the active tab, so '
+                       'name the tab you mean. Asks the person first.',
+        'inputSchema': {   'type': 'object',
+                           'properties': {   'name': {'type': 'string', 'default': ''},
+                                             'index': {'type': 'integer', 'default': -1}}}},
     {   'name': 'revert_hunk',
         'description': 'Reverts a diff hunk. (TextCommand)',
         'inputSchema': {'type': 'object', 'properties': {}}},
@@ -2231,11 +2256,16 @@ TOOLS = [   {   'name': 'add_directory',
                            'properties': {'columns': {'type': 'integer', 'description': '1 to 4.'}},
                            'required': ['columns']}},
     {   'name': 'set_setting',
-        'description': "Set a Sublime Text setting by key. scope='view' (default) or 'window'.",
+        'description': "Set a Sublime Text setting by key. scope='view' (default) or 'window'. A "
+                       'view setting goes to the tab given by name (partial, refused if it fits '
+                       'several tabs) or index (0-based, from get_open_files); with neither it '
+                       'goes to the ACTIVE tab, so name the tab you mean.',
         'inputSchema': {   'type': 'object',
                            'properties': {   'key': {'type': 'string'},
                                              'value': {},
-                                             'scope': {'type': 'string', 'default': 'view'}},
+                                             'scope': {'type': 'string', 'default': 'view'},
+                                             'name': {'type': 'string', 'default': ''},
+                                             'index': {'type': 'integer', 'default': -1}},
                            'required': ['key', 'value']}},
     {   'name': 'set_sheet_index',
         'description': "Move one sheet to a group and position using Sublime's set_sheet_index "

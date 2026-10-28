@@ -451,7 +451,7 @@
     },
     {
       "name": "close_file",
-      "description": "Close a file by path, or close the active file if path is omitted. Routed through Sublime's real close command (not a direct API call), so a host-side close-blocking hook gets a chance to run -- e.g. GhostShell's ai_terminal package refuses this outright (no dialog, just a no-op) for any ai_terminal tab, so calling this on one does nothing rather than closing it. Only ever targets an already-open view found by path, by name or index, or the current active view. Pass path for a saved file. For a tab with no path (unsaved buffer, scratch view) pass name (partial, case-insensitive match on the tab's title) or index (0-based, from get_open_files); with none of the three it closes whichever tab is active, so name the tab you mean. A name or index that matches nothing is an error and closes nothing. A tab with unsaved edits normally raises Sublime's native \"Save Changes?\" dialog, which blocks the main thread until someone answers it; pass discard=true to throw the unsaved edits away and close at once (the result then says discarded). (run_command 'close' with scope='view' does not close a tab: use this tool.)",
+      "description": "Close a file by path, or close the active file if path is omitted. Routed through Sublime's real close command (not a direct API call), so a host-side close-blocking hook gets a chance to run -- e.g. GhostShell's ai_terminal package refuses this outright (no dialog, just a no-op) for any ai_terminal tab, so calling this on one does nothing rather than closing it. Only ever targets an already-open view found by path, by name or index, or the current active view. Pass path for a saved file. For a tab with no path (unsaved buffer, scratch view) pass name (partial, case-insensitive match on the tab's title) or index (0-based, from get_open_files); with none of the three it closes whichever tab is active, so name the tab you mean. A name or index that matches nothing is an error and closes nothing; a name that fits several tabs is also refused (the error lists them with their indexes) unless exactly one has that exact name. A tab with unsaved edits normally raises Sublime's native \"Save Changes?\" dialog, which blocks the main thread until someone answers it; pass discard=true to throw the unsaved edits away and close at once (the result then says discarded). (run_command 'close' with scope='view' does not close a tab: use this tool.)",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1413,10 +1413,16 @@
     },
     {
       "name": "get_active_file",
-      "description": "Return the active file's path, full content, cursor line/col, dirty flag, and syntax name.",
+      "description": "Return the active file's path, content, cursor line/col, dirty flag, and syntax name. Content is cut at 20000 characters by default (truncated: true, size = the full length, with a note); pass max_chars to change the cut, or 0 for the whole file. Read a slice of any tab with get_view_chars.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "max_chars": {
+            "type": "integer",
+            "default": 20000,
+            "description": "Most characters of content to return; 0 = no limit."
+          }
+        }
       }
     },
     {
@@ -1645,7 +1651,7 @@
     },
     {
       "name": "get_package_mcp_info",
-      "description": "Discover what an installed Sublime package can do, then just control it directly --\nno separate MCP server needed. Primary workflow: call this for the package name, Read\nthe files it lists under python_files to find the package's real command-dispatch table\nand settings (this tool's own commands/settings_keys are a starting point, not the full\npicture -- a package that routes many actions through one command with an 'action' arg,\nfor example, only shows up here as that one wrapper command), then call the real thing\nwith run_command or eval_python. That loop -- discover, read source, call directly -- is\nalmost always enough on its own.\nReturns: path, commands (with captions and args), settings_keys, python_files, plus\noutput_file/extension_template for the rare theoretical case where a standing,\nindependently-reachable MCP server is needed (e.g. a client with no eval_python-\nequivalent of its own) -- write the extension to output_file following extension_template\nand ST loads it automatically. A full audit of the real, current, popular Package Control\ncatalog (2026-09-14) found zero packages that actually needed this path -- treat it as a\ndocumented escape hatch, not something to reach for by default.",
+      "description": "Discover what an installed Sublime package can do, then just control it directly --\nno separate MCP server needed. Primary workflow: call this for the package name, Read\nthe files it lists under python_files to find the package's real command-dispatch table\nand settings (this tool's own commands/settings_keys are a starting point, not the full\npicture -- a package that routes many actions through one command with an 'action' arg,\nfor example, only shows up here as that one wrapper command), then call the real thing\nwith run_command or eval_python. That loop -- discover, read source, call directly -- is\nalmost always enough on its own.\nReturns: path, commands (with captions and args), settings_keys, python_files,\npython_version_file (the package's .python-version, or null), loaded_in_this_host and\nthis_host_python (whether its commands/listeners are loaded in the same Python host as\nsublime-mcp; false means another plugin host, no Python plugins, or still loading) and\nhost_note, plus\noutput_file/extension_template for the rare theoretical case where a standing,\nindependently-reachable MCP server is needed (e.g. a client with no eval_python-\nequivalent of its own) -- write the extension to output_file following extension_template\nand ST loads it automatically. A full audit of the real, current, popular Package Control\ncatalog (2026-09-14) found zero packages that actually needed this path -- treat it as a\ndocumented escape hatch, not something to reach for by default.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1818,7 +1824,7 @@
     },
     {
       "name": "get_view_chars",
-      "description": "Return text at character offsets begin..end (0-based, end exclusive) from any open tab.\nClamps to buffer bounds automatically. Omit name for the active view.",
+      "description": "Return text at character offsets begin..end (0-based, end exclusive) from any open tab.\nClamps to buffer bounds automatically. Pass name, or index (0-based, from get_open_files); omit both for the active view.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1831,6 +1837,10 @@
           "name": {
             "type": "string",
             "default": ""
+          },
+          "index": {
+            "type": "integer",
+            "default": -1
           }
         },
         "required": [
@@ -1910,13 +1920,17 @@
     },
     {
       "name": "get_view_size",
-      "description": "Return the total character count of any open tab by name (partial match, case-insensitive).\nUse before get_view_chars to compute offsets. Omit name for the active view.",
+      "description": "Return the total character count of any open tab by name (partial match, case-insensitive).\nUse before get_view_chars to compute offsets. Pass name, or index (0-based, from get_open_files); omit both for the active view.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
             "default": ""
+          },
+          "index": {
+            "type": "integer",
+            "default": -1
           }
         }
       }
@@ -2582,7 +2596,7 @@
     },
     {
       "name": "open_file",
-      "description": "Open a file in Sublime Text, optionally jumping to a specific line and column.",
+      "description": "Open a file in Sublime Text, optionally jumping to a specific line and column. Returns once the file is loaded and is the active tab (active: true); if that takes longer than 3 s the answer is pending: true with a note, so check get_sheets before typing into it.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3333,10 +3347,19 @@
     },
     {
       "name": "revert_file",
-      "description": "Revert the active file to its last saved state, discarding unsaved changes.",
+      "description": "Revert a file to its last saved state, discarding unsaved changes. Pass name (partial, case-insensitive; refused if it fits several tabs) or index (0-based, from get_open_files); with neither it reverts the active tab, so name the tab you mean. Asks the person first.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "name": {
+            "type": "string",
+            "default": ""
+          },
+          "index": {
+            "type": "integer",
+            "default": -1
+          }
+        }
       }
     },
     {
@@ -3847,7 +3870,7 @@
     },
     {
       "name": "set_setting",
-      "description": "Set a Sublime Text setting by key. scope='view' (default) or 'window'.",
+      "description": "Set a Sublime Text setting by key. scope='view' (default) or 'window'. A view setting goes to the tab given by name (partial, refused if it fits several tabs) or index (0-based, from get_open_files); with neither it goes to the ACTIVE tab, so name the tab you mean.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3858,6 +3881,14 @@
           "scope": {
             "type": "string",
             "default": "view"
+          },
+          "name": {
+            "type": "string",
+            "default": ""
+          },
+          "index": {
+            "type": "integer",
+            "default": -1
           }
         },
         "required": [
