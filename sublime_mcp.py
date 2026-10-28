@@ -2469,6 +2469,9 @@ def _save_all(body):
     return _on_main(fn)
 
 
+_CLOSE_FILE_WAIT_SECONDS = 1.5
+
+
 def _close_file(body):
     path = body.get("path")
     name = body.get("name", "") or ""
@@ -2508,14 +2511,45 @@ def _close_file(body):
         # That gap is how a "close the disposable test tab" call ended up
         # silently closing an unrelated tab instead (2026-09-15) -- going
         # through the command path gives any such hook a chance to run.
+        vid = v.id()
         if v is w.active_view():
             w.run_command("close_file")
         else:
             group, pos = w.get_view_index(v)
             w.run_command("close_by_index", {"group": group, "index": pos})
-        return {"ok": True, "discarded": True} if discarded else {"ok": True}
+        res = {"ok": True, "discarded": True} if discarded else {"ok": True}
+        res["_view_id"] = vid
+        return res
 
-    return _on_main(fn)
+    result = _on_main(fn)
+    if not (isinstance(result, dict) and result.get("ok")):
+        return result
+    vid = result.pop("_view_id", None)
+
+    # The close command only ASKS Sublime to close the tab. It stays open when Sublime shows a
+    # "Save Changes?" dialog (also for a tab that get_sheets reports is_dirty false, for example a
+    # file that was created after its tab was opened: the window title still shows the modified dot)
+    # or when a host hook refuses the close. Before, the call said ok either way. Check, off the
+    # main thread, that the tab is really gone.
+    def still_open():
+        return any(vw.id() == vid for win in sublime.windows() for vw in win.views())
+
+    deadline = time.time() + _CLOSE_FILE_WAIT_SECONDS
+    while True:
+        if not _on_main(still_open):
+            result["closed"] = True
+            return result
+        if time.time() >= deadline:
+            result["closed"] = False
+            result["pending"] = True
+            result["note"] = ("the close was sent but the tab is still open after {} s: Sublime is probably "
+                              "asking 'Save changes before closing?' (a dialog that may not block other tools; "
+                              "on Windows list_native_windows and dismiss_native_window answer it, elsewhere "
+                              "answer it on screen), or a host hook refused the close. get_sheets may still say "
+                              "is_dirty false. Retrying the call raises another dialog: answer the first one."
+                              .format(_CLOSE_FILE_WAIT_SECONDS))
+            return result
+        time.sleep(0.05)
 
 
 def _open_folder(body):
@@ -5629,6 +5663,9 @@ _MCP_TOOLS = [
      "A tab with unsaved edits normally raises Sublime's native \"Save Changes?\" dialog, which "
      "blocks the main thread until someone answers it; pass discard=true to throw the unsaved "
      "edits away and close at once (the result then says discarded). "
+     "The result says closed: true once the tab is gone; closed: false with pending: true means the tab "
+     "is still open after 1.5 s (a Save Changes dialog, even when get_sheets says is_dirty false, or a "
+     "host hook refused): do not repeat the call, each repeat raises another dialog. "
      "(run_command 'close' with scope='view' does not close a tab: use this tool.)",
      {"type": "object", "properties": {
          "path": {"type": "string", "default": ""},

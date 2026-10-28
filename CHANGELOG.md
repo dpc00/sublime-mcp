@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+`close_file` now says whether the tab really closed. It only asks Sublime to close the tab, and the tab stays open when Sublime shows "Save changes before closing?" (this also happens for a tab that `get_sheets` reports as `is_dirty: false`, for example a file created after its tab was opened: the title bar shows the modified dot) or when a host hook refuses. Before, the call answered `ok` either way, and each retry raised another dialog (five retries on a `config.py` tab raised five). The result now carries `closed: true`, or `closed: false` with `pending: true` and a note when the tab is still open after 1.5 s. Found in the WSL Sublime during the package audit; tested there with a dirty tab (pending, dialog answered on screen) and with `discard` (`closed: true`).
+
 ## 1.17.1
 
 Guides only, no code change. `AGENT_GUIDE.md` (served by `get_help`), `docs/AGENT_GUIDE.md`, `docs/agents.md` and `skills/sublime-mcp/SKILL.md` said things that 1.17.0 made false: the quick-start closed a tab through `eval_python` (which now asks the person every time; it uses `close_file` with `name` and `discard`), the terminal-typing guard used `eval_python` (it uses `get_sheets` `is_focused`), and the sections on closing tabs, `revert_file`, `delete_file`/`delete_folder`, `get_active_file` (content cut at 20000 characters) and `open_file` (returns once the file is loaded and active) lacked the new behavior. Every guide now says to name the tab, that a name fitting several tabs is refused, and that "Denied, nothing was changed" is a no to respect. `docs/AGENT_GUIDE.md` was an older copy that had drifted; it is now the same text as the root guide.

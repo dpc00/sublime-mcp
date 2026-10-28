@@ -126,7 +126,11 @@ Skip save and ST looks edited while `git diff` is empty.
 A dirty view makes `close_file` open ST's save prompt. Save first, or pass `discard: true`
 (it asks the person). Always give `name` (or `index`, or `path`): with none of them `close_file`
 closes the ACTIVE tab, which the person may be typing in. A `name` that fits several tabs is
-refused with the list of matches.
+refused with the list of matches. The result says `closed: true` once the tab is gone. `closed: false` with
+`pending: true` means it is still open after 1.5 s because Sublime is asking "Save changes before closing?" (this
+can happen even when `get_sheets` says `is_dirty: false`, for example a file that was created after its tab was
+opened) or a host hook refused the close. Do not repeat the call: each repeat raises another dialog. Answer the
+first dialog (Windows: `list_native_windows`, `dismiss_native_window`; WSL/Linux: on screen).
 
 ## eval_python
 

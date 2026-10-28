@@ -317,8 +317,12 @@ TOOLS = [   {   'name': 'add_directory',
                        'name. A tab with unsaved edits normally raises Sublime\'s native "Save '
                        'Changes?" dialog, which blocks the main thread until someone answers it; '
                        'pass discard=true to throw the unsaved edits away and close at once (the '
-                       "result then says discarded). (run_command 'close' with scope='view' does "
-                       'not close a tab: use this tool.)',
+                       'result then says discarded). The result says closed: true once the tab is '
+                       'gone; closed: false with pending: true means the tab is still open after '
+                       '1.5 s (a Save Changes dialog, even when get_sheets says is_dirty false, or '
+                       'a host hook refused): do not repeat the call, each repeat raises another '
+                       "dialog. (run_command 'close' with scope='view' does not close a tab: use "
+                       'this tool.)',
         'inputSchema': {   'type': 'object',
                            'properties': {   'path': {'type': 'string', 'default': ''},
                                              'name': {'type': 'string', 'default': ''},
