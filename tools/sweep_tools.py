@@ -63,7 +63,7 @@ w = sublime.windows()[0]
 for s in list(w.sheets()):
     v = s.view()
     if v: v.set_scratch(True)
-    s.close()
+w.run_command('close_all')
 v = w.new_file(); v.set_scratch(True); v.run_command('append', {'characters': 'alpha beta\\ngamma delta\\n'}); w.focus_view(v)
 """)
 
@@ -140,7 +140,7 @@ w = sublime.windows()[0]
 for s in list(w.sheets()):
     v = s.view()
     if v: v.set_scratch(True)
-    s.close()
+w.run_command('close_all')
 """)
 shutil.copy2(PREFS_BAK, PREFS)
 json.dump(records, open(a.out, "w"), indent=1)
