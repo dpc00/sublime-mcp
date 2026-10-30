@@ -97,7 +97,7 @@ def _dispatch_label(fn):
     return "{}:{}".format(os.path.basename(code.co_filename), code.co_firstlineno)
 
 
-_BLOCKING_WINDOW_KINDS = ("dialog", "menu", "window")
+_BLOCKING_WINDOW_KINDS = ("dialog", "menu", "other")
 
 
 def _timeout_message(label, windows):
@@ -121,6 +121,12 @@ def _timeout_message(label, windows):
                 "dismissed; list_native_windows (Windows only) shows it and dismiss_native_window "
                 "answers it.")
     blocking = [w for w in windows if w.get("kind") in _BLOCKING_WINDOW_KINDS]
+    # A plain Sublime window (Switch Project, Indexing Status, About, a settings editor) blocks the
+    # main thread only when it is modal: it then disables the editor window that owns it. Without
+    # this test every such window, even one that is only open, was named as the blocker, and the real
+    # one (the Windows file-operation progress window, kind "other") was left out.
+    if any(w.get("kind") == "editor_window" and not w.get("enabled", True) for w in windows):
+        blocking += [w for w in windows if w.get("kind") == "window" and w.get("enabled", True)]
     if blocking:
         names = ", ".join('"{}" ({})'.format(w.get("title") or w.get("class") or "untitled", w.get("kind"))
                           for w in blocking)

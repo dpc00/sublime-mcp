@@ -256,8 +256,13 @@ Observed on build 4200 (2026-10-07).
   confirmation is always shown, even with `prompt: false`. They open a Windows
   confirmation ("permanently delete" when the drive has no Recycle Bin) for every
   item, block the main thread until it is answered, and can stall at "99% complete".
-  Use `list_native_windows`, then answer each dialog. `dismiss_native_window` does
-  not see the Windows progress window.
+  Use `list_native_windows`, then answer each dialog. The Windows file-operation progress window
+  ("Preparing to recycle", "Discovered N items", title "N% complete", class `OperationStatusWindow`, kind
+  `other`) is listed too, `ui_screenshot` with its `hwnd` shows it, and `dismiss_native_window` with
+  `action="close"` (or `cancel`) asks Windows to cancel the operation (its title becomes "Canceling -
+  0% complete"); tested on build 4215 with a 150,000-file folder. The "main-thread timeout" message names it
+  as the blocker. A progress window that has already finished is no longer a window: the call then
+  answers "not a visible window of this Sublime Text process".
 - **Tabs of deleted files:** if files vanish while they are open (for example because a package
   folder was removed), closing each tab raises a "Save Deleted File?" dialog; answer No.
 
