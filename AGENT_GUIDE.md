@@ -207,7 +207,6 @@ Call these through `batch`; find more with `discover_tools`.
 
 ```
 search_packages(query="<name>")                # package manager search
-install_package(package="<exact name>")       # exact name; installs in the background, watch the console
 get_menu_items(caption="Command Palette")     # menu items with their command and args (filters: menu, caption, command)
 run_command(command="show_overlay", args={"overlay": "command_palette", "text": "Install Package"})
 get_command_palette(caption="Install")        # palette entries (filters: package, command, caption)
@@ -432,10 +431,13 @@ the editor. Know these before calling a tool you have not used (checked on 1.14.
   every modified file first; `next_modification`, `prev_modification`, `revert_hunk` and `revert_modification`
   need a saved file with unsaved edits; `close_deleted_files` closes a tab only after Sublime has noticed the
   file is gone.
-- **They install packages:** `install_package` installs the package; the libraries it depends on come from
-  `satisfy_libraries`. A package loads the moment it is installed, so to install one that needs libraries
-  (its libraries are named in its install message): add the package to `ignored_packages`,
-  `install_package`, run `satisfy_libraries`, then remove it from `ignored_packages`.
+- **They install packages:** sublime-mcp has no tool for it, because installing is Package Control's job (and
+  Package Control may not be installed). Open its picker with `run_command show_overlay`
+  (`{"overlay": "command_palette", "text": "Package Control: Install Package"}`) and answer with
+  `pick_quick_panel` (`wait_ms` for the list that is still loading). The libraries a package depends on come
+  from `satisfy_libraries`. A package loads the moment it is installed, so to install one that needs libraries
+  (its libraries are named in its install message): add the package to `ignored_packages`, install it
+  through the picker, run `satisfy_libraries`, then remove it from `ignored_packages`.
 - **They ask a question in an overlay or picker, and wait for the answer:** `rename_file`, `rename_path`,
   `new_file_at`, `new_folder`, `view_resource`, `show_overlay`, `prompt_goto_line`, `select_color_scheme`,
   `select_theme`, `set_file_type`, `set_build_system`, `paste_from_history`, `build` (when the build system has

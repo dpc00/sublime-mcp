@@ -1303,13 +1303,6 @@ TOOLS = [   {   'name': 'add_directory',
         'inputSchema': {   'type': 'object',
                            'properties': {'contents': {'type': 'string'}},
                            'required': ['contents']}},
-    {   'name': 'install_package',
-        'description': 'Install a Package Control package by exact name. Use search_packages first '
-                       'to find the correct name. Installation runs in the background — check the '
-                       'ST console for progress.',
-        'inputSchema': {   'type': 'object',
-                           'properties': {'package': {'type': 'string'}},
-                           'required': ['package']}},
     {   'name': 'install_package_control',
         'description': 'Install Package Control (ApplicationCommand).',
         'inputSchema': {'type': 'object', 'properties': {}}},

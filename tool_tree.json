@@ -268,7 +268,6 @@
    "packages": {
     "description": "Search, install and inspect packages",
     "tools": [
-     "install_package",
      "install_package_control",
      "search_packages"
     ]

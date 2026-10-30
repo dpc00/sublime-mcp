@@ -52,7 +52,6 @@ DEFAULT_TIMEOUT = 10.0
 SLOW_TIMEOUT = 120.0
 SLOW_ENDPOINTS = frozenset({
     "/batch",
-    "/install_package",
     "/search_packages",
     "/find_in_files",
     "/project_search",

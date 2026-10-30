@@ -4998,53 +4998,7 @@ def _search_packages(body):
     return {"packages": results[:limit], "total_matches": len(results)}
 
 
-def _install_package(body):
-    package = body.get("package", "").strip()
-    if not package:
-        return {"error": "package required"}
-
-    # Only create PackageManager on the main thread (needs sublime.load_settings()).
-    # list_available_packages() and install_package() may do network IO so they
-    # run in the background thread to avoid freezing ST's main thread.
-    def get_pm():
-        try:
-            pm_mod = sys.modules["Package Control.package_control.package_manager"]
-            return {"pm": pm_mod.PackageManager()}
-        except KeyError:
-            return {"error": "Package Control not installed"}
-        except Exception as e:
-            return {"error": str(e)}
-
-    result = _on_main(get_pm)
-    if "error" in result:
-        return result
-
-    pm = result["pm"]
-
-    def do_install():
-        try:
-            avail = pm.list_available_packages()
-            if package not in avail:
-                print("sublime-mcp: install_package: '{}' not found in Package Control".format(package))
-                return
-            installed = pm.install_package(package, unattended=False)
-            if installed is not False:
-                # PackageManager.install_package records the name in
-                # installed_packages with persist=False, so the caller must save.
-                # Without this the settings file never lists the package and
-                # Package Control removes it (and its libraries) at the next start.
-                sublime.set_timeout(
-                    lambda: sublime.save_settings("Package Control.sublime-settings"), 0
-                )
-        except Exception as e:
-            print("sublime-mcp: install_package '{}' error: {}".format(package, e))
-
-    sublime.set_timeout_async(do_install, 0)
-    return {"ok": True, "message": "Installing '{}' — check ST console for progress".format(package)}
-
-
 _POST["/search_packages"] = _search_packages
-_POST["/install_package"] = _install_package
 
 
 # ── Native windows (dialogs, menus): work while ST's main thread is blocked ──
@@ -6028,12 +5982,6 @@ _MCP_TOOLS = [
          "limit": {"type": "integer", "default": 20, "description": "Max results (1-100)."},
      }},
      _search_packages),
-    ("install_package",
-     "Install a Package Control package by exact name. "
-     "Use search_packages first to find the correct name. "
-     "Installation runs in the background — check the ST console for progress.",
-     {"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]},
-     _install_package),
     ("get_help",
      "Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use sublime-mcp tools correctly. "
      "Call this first if you are unsure how to save files, close tabs, or use eval_python. "

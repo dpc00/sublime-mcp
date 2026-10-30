@@ -37,7 +37,7 @@ batch(calls=[{"tool": "get_bookmarks", "args": {}}])
 
 ## Packages, menus, palette, input prompts (no `eval_python`)
 
-`search_packages`, `install_package`, `get_menu_items`, `get_command_palette`,
+`search_packages`, `get_menu_items`, `get_command_palette`,
 `drive_input_panel`, `get_quick_panel`, `pick_quick_panel`, `click_menu_item`, and
 `run_command` with `show_overlay`: see "Packages, menus, palette and input panels" in
 `get_help`. Do not reach for `eval_python` or scripts for these.
