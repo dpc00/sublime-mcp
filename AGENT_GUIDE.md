@@ -548,7 +548,7 @@ again before assuming it did not.
 
 **Closing a tab that has no path.** `close_file(name="...")` (partial, case-insensitive) or
 `close_file(index=N)` closes that tab (a name that fits several tabs is refused, with the list);
-with none of `path`, `name`, `index` it closes the active tab, so always name the tab. `run_command` with `command="close"` and `scope="view"` returns ok and closes
+with none of `path`, `name`, `index` it refuses and lists the open tabs (it no longer closes the active tab). `run_command` with `command="close"` and `scope="view"` returns ok and closes
 nothing.
 
 ## More

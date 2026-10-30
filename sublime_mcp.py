@@ -2562,7 +2562,10 @@ def _close_file(body):
             if err:
                 return err
         else:
-            v = w.active_view()
+            # No path, name or index: refuse. The active tab is whatever the person clicked last,
+            # so acting on it closed the wrong tab (B1, 2026-10-20).
+            return {"error": "close_file needs path, name or index; it no longer closes the active tab",
+                    "open_views": [_view_display_name(x) for x in w.views()]}
         if not v:
             return {"error": "no active view"}
         discarded = False
@@ -5780,18 +5783,19 @@ _MCP_TOOLS = [
      {"type": "object", "properties": {"path": {"type": "string", "default": ""}}},
      _p("/save_file")),
     ("close_file",
-     "Close a file by path, or close the active file if path is omitted. "
+     "Close a tab: pass path (a saved file), name or index (a tab with no path). With none of the "
+     "three it refuses and lists the open tabs; it never closes the active tab, because the active "
+     "tab is whatever the person clicked last. "
      "Routed through Sublime's real close command (not a direct API call), "
      "so a host-side close-blocking hook gets a chance to run -- e.g. "
      "GhostShell's ai_terminal package refuses this outright (no dialog, "
      "just a no-op) for any ai_terminal tab, so calling this on one does "
      "nothing rather than closing it. Only ever targets an already-open "
-     "view found by path, by name or index, or the current active view. "
-     "Pass path for a saved file. For a tab with no path (unsaved buffer, scratch "
+     "view found by path, by name or by index. "
+     "For a tab with no path (unsaved buffer, scratch "
      "view) pass name (partial, case-insensitive match on the tab's title) or "
-     "index (0-based, from get_open_files); with none of the three it closes "
-     "whichever tab is active, so name the tab you mean. A name or index that "
-     "matches nothing is an error and closes nothing; a name that fits several tabs is also refused "
+     "index (0-based, from get_open_files). "
+     "A name or index that matches nothing is an error and closes nothing; a name that fits several tabs is also refused "
      "(the error lists them with their indexes) unless exactly one has that exact name. "
      "A tab with unsaved edits normally raises Sublime's native \"Save Changes?\" dialog, which "
      "blocks the main thread until someone answers it; pass discard=true to throw the unsaved "
