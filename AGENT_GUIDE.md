@@ -195,6 +195,11 @@ batch(calls=[
 ```
 4. **Watch it.** `get_sheet_content(index=<target index>)` and `get_sheets` again: running = no prompt at the end of the text;
    finished = the prompt at the end. Quote the echoed command, its output, and say the console is back at its prompt.
+5. **End a console you launched; never just close it.** A tab opened with `ai_terminal_open_here` keeps its shell alive in a
+   separate GhostShell broker process, so closing the tab or quitting Sublime leaves an orphan the person must kill in Task Manager.
+   Use `run_command` `ai_terminal_end_session` ("End Session (Kill + Close)") with `{"group": 0, "index": <tab index>}`, tabs from the
+   highest index down, then `get_sheets` and `list_native_windows` to see the tabs gone and no dialog open (tested 2026-10-30: five
+   tabs ended this way). A console that was already open before you started is not yours to end. Plain text tabs: `close_file`.
 
 Tested 2026-10-30 on build 4215: in a `cmd.exe` tab `echo CR_TEST_1` and `ping -n 6 127.0.0.1 & echo DONE_2`; in launched tabs
 (Dos Console `start chrome "https://www.google.com/search?q=..."`, PowerShell, Git Bash, WSL Bash) a command with a `sleep`; in an omp
