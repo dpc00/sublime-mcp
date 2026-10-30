@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.17.6
 
 Destructive tools could never be approved on a 2025-11-25 SSE connection. The approval question was only built for the 2026-07-28 connection, so a client on the older connection (Claude Code 2.1.312 on a portable's `/sse` endpoint) always got "this client cannot be asked for approval (no elicitation support)", although its `initialize` declared `elicitation`. `close_file` with `discard`, `eval_python`, `delete_file` and the other gated calls were refused outright. Now, when the client declared elicitation in `initialize`, the server sends `elicitation/create` to it over the session's SSE stream, waits up to five minutes for the answer, and runs the call only on "accept"; a decline, a cancel, no answer or a lost session is "denied, nothing was changed". Streamable HTTP without the 2026-07-28 header and the HTTP bridge are unchanged (still refused). Found as B11 in the audit; read in `lib/consent.py` and `sublime_mcp.py` (`_consent_gate_result`), then tested on the audit portable 4215 with Claude Code 2.1.312: `close_file` with `discard` logged "consent: asking" and "consent: approved" and closed the tab. The decline and timeout answers were not tested (the client answered accept at once).
 
