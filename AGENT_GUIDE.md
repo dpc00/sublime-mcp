@@ -550,7 +550,9 @@ static text, so `messages` carries it (tested on build 4215 with a dialog from a
 and only a computer-use client could read them. If `messages` is still empty, take a
 `ui_screenshot` of the dialog's `hwnd`. `dismiss_native_window` with `action="button"` and the
 button's text clicks it; a message box can take a second or two to close, so list the windows
-again before assuming it did not.
+again before assuming it did not. The first click on a dialog that is not yet active (Package Control's
+restart message right after Sublime starts) can be dropped; `dismiss_native_window` then clicks once more
+and says `retried: true` in its result.
 
 **Closing a tab that has no path.** `close_file(name="...")` (partial, case-insensitive) or
 `close_file(index=N)` closes that tab (a name that fits several tabs is refused, with the list);

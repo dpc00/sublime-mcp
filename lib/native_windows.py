@@ -344,6 +344,7 @@ def dismiss(pid, hwnd=None, action="cancel", button_text=None, wait=2.0):
             return {"ok": False, "error": "no native dialog or menu is open", "windows": len(windows)}
 
     done = None
+    chosen = None
     if target["kind"] == "dialog" and action != "close":
         chosen = pick_button(target.get("buttons", []), action, button_text)
         if chosen is not None:
@@ -355,12 +356,27 @@ def dismiss(pid, hwnd=None, action="cancel", button_text=None, wait=2.0):
     if done is None:
         _user32.PostMessageW(target["hwnd"], WM_CLOSE, 0, 0)
         done = "sent WM_CLOSE"
-    deadline = time.time() + wait
-    closed = False
-    while time.time() < deadline:
-        if not _user32.IsWindow(target["hwnd"]) or not _user32.IsWindowVisible(target["hwnd"]):
-            closed = True
-            break
-        time.sleep(0.05)
-    return {"ok": True, "closed": closed, "did": done, "hwnd": target["hwnd"],
-            "kind": target["kind"], "title": target["title"]}
+
+    def wait_closed(seconds):
+        deadline = time.time() + seconds
+        while time.time() < deadline:
+            if not _user32.IsWindow(target["hwnd"]) or not _user32.IsWindowVisible(target["hwnd"]):
+                return True
+            time.sleep(0.05)
+        return False
+
+    closed = wait_closed(wait)
+    retried = False
+    if not closed and chosen is not None:
+        # The first click on a dialog that is not yet active is sometimes dropped: Package Control's
+        # "needs to be restarted" message (button not yet the default) stayed open after the first
+        # BM_CLICK and closed after the second (bug log B14, 2026-10-30, reproduced). Click once more;
+        # a click on a button of a window that has closed in the meantime does nothing.
+        _user32.PostMessageW(chosen["hwnd"], BM_CLICK, 0, 0)
+        retried = True
+        closed = wait_closed(wait)
+    out = {"ok": True, "closed": closed, "did": done, "hwnd": target["hwnd"],
+           "kind": target["kind"], "title": target["title"]}
+    if retried:
+        out["retried"] = True
+    return out
