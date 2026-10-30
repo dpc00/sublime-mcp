@@ -16,7 +16,7 @@ Eight workflow tools are advertised by default (`discover_tools`, `batch`,
 `get_help`, `get_active_file`, `project_search`, `save_file`,
 `str_replace_based_edit_tool`, `ui_screenshot`). `discover_tools` lists a tree of
 categories (`category=`) or searches (`query=`) the
-complete internal catalog of 381 typed Sublime capabilities, and `batch` invokes
+complete internal catalog of 379 typed Sublime capabilities, and `batch` invokes
 discovered capabilities without flooding the model's initial tool context.
 
 Since 1.9.0, 160 of those tools are generated wrappers named after Sublime Text's
@@ -45,11 +45,17 @@ native dialog or menu while it blocks Sublime's main thread. See
   edits without the Save Changes dialog.
 - **Drive quick panels and menus (1.12).** `get_quick_panel`, `pick_quick_panel`
   (with `wait_ms` for a list that is still loading) and `click_menu_item`;
-  `install_package` now persists the install, `get_view_regions` and
+  `get_view_regions` and
   `get_view_phantoms` (with `last`, `html`, `max_chars`) inspect what a plugin drew.
   Panels of older Python 3.3 packages are visible with `"install_py33_helper": true`
   (1.16, off by default); a pick whose callback opens a dialog answers `pending`
   (1.16.1) and the dialog is answered with `dismiss_native_window`.
+- **Dialogs and tabs (1.18).** `list_native_windows` reads the message of a Windows task dialog
+  (Package Control's "needs to be restarted" text) and answers while a dialog blocks Sublime;
+  `dismiss_native_window` clicks again if the first click is dropped and can cancel the Windows
+  file-operation progress window. `close_file` needs a `path`, `name` or `index` and never closes the
+  active tab. The `install_package` and `search_packages` tools are gone: installing and searching are
+  Package Control's job, so drive its own picker with `run_command` and `pick_quick_panel`.
 - **Share one Sublime between agents (1.12.0).** `claim_resource`,
   `release_resource` and `list_claims` let agents take turns on the input and
   control panels.

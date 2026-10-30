@@ -59,7 +59,7 @@ DESCRIPTIONS = {
     "run/build_and_exec": "Builds and external programs",
     "run/macros": "Record and play macros",
     "packages_and_dev": "Packages and plugin development",
-    "packages_and_dev/packages": "Search, install and inspect packages",
+    "packages_and_dev/packages": "Install Package Control",
     "packages_and_dev/create": "Create new plugins, snippets, syntaxes, build systems",
     "packages_and_dev/diagnostics": "Profiling, syntax tests and diagnostics",
     "app": "The Sublime Text application and its windows",

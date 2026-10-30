@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.18.0
+
+Two breaking changes: the `install_package` and `search_packages` tools are removed (Package Control's job), and `close_file` with none of `path`, `name`, `index` refuses instead of closing the active tab. Fixes found by the package audit and by a sweep of every tool on a portable 4215: a task dialog's message is returned (UI Automation), tool calls no longer hang while a dialog blocks Sublime's main thread (the consent setting is read by a settings listener), `dismiss_native_window` clicks again when the first click is dropped and can cancel the Windows file-operation progress window, and the main-thread timeout message names the real blocker. The sweep script no longer hangs Sublime at its end. Tool count 379. Each change below says how it was tested.
 
 `dismiss_native_window` clicks a button a second time when the dialog is still open after the first click. The first `BM_CLICK` on a dialog that is not yet active was dropped: on Package Control's real "needs to be restarted for installed or updated libraries" message (its OK button was not yet the default) the first click left the dialog open (`closed: false`, still listed) and the second closed it. Seen twice on build 4215 with that dialog (bug log B14: the first time while a hang, B13, was also present, which I wrongly blamed; the second time after B13 was fixed). A message dialog raised by a plugin closed on the first click both times it was tried. Now the result says `retried: true` and one call closes it: tested with a fresh start of the portable that raised the real dialog, `dismiss_native_window` `action="button"` `button="OK"` returned `closed: true, retried: true`. The retry only clicks the same button of the same window handle, so a dialog that closed meanwhile is not clicked again.
 
