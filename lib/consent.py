@@ -112,7 +112,11 @@ def client_can_elicit(meta):
     """True when the request's _meta says the client can show a form question."""
     if not isinstance(meta, dict):
         return False
-    caps = meta.get("io.modelcontextprotocol/clientCapabilities")
+    return caps_can_elicit(meta.get("io.modelcontextprotocol/clientCapabilities"))
+
+
+def caps_can_elicit(caps):
+    """True when these client capabilities (initialize, or a request's _meta) allow a form question."""
     elicitation = caps.get("elicitation") if isinstance(caps, dict) else None
     return isinstance(elicitation, dict) and ("form" in elicitation or not elicitation)
 
@@ -165,6 +169,47 @@ class ConsentGate:
             self._pending[token] = (fingerprint, now + self._ttl)
         return token
 
+    def _question(self, name, args, items):
+        """The text of the approval question; eval_python code goes to the code panel first."""
+        codes = eval_codes(name, args)
+        shown = False
+        if codes and self._show_code:
+            try:
+                shown = bool(self._show_code(codes))
+            except Exception as error:
+                self._log("consent: could not show the code panel: {}".format(error))
+        if shown:
+            items = destructive_items(name, args, prompt=True)
+        return "sublime-mcp wants to do this in Sublime Text. Accept to allow it:\n- " + "\n- ".join(items)
+
+    def check_legacy(self, name, args, ask):
+        """check() for a 2025-11-25 connection, where the client cannot repeat the call with an
+        answer: ask(message) sends elicitation/create to the client, waits, and returns the
+        person's action ("accept", "decline", "cancel") or None when no answer came."""
+        items = destructive_items(name, args)
+        if not items:
+            return None
+        if any(EVAL_TOO_LONG.split("{}")[0] in item for item in items):
+            self._log("consent: denied, code too long to review: " + _short(items[0], 120))
+            return _denied(items, "code too long to show the person")
+        self._log("consent: asking: " + _log_text(items))
+        try:
+            action = ask(self._question(name, args, items))
+        except Exception as error:
+            self._log("consent: the question failed: {}".format(error))
+            action = None
+        finally:
+            self._clear_code()
+        if action == "accept":
+            self._log("consent: approved: " + _log_text(items))
+            return None
+        if action is None:
+            self._log("consent: no answer: " + _log_text(items))
+            return _denied(items, "the client gave no answer to the approval question")
+        self._log("consent: {} ({}): {}".format(
+            "declined" if action == "decline" else "not approved", action, _log_text(items)))
+        return _denied(items, "the person did not approve")
+
     def check(self, name, args, params, can_ask):
         """None when the call may run; otherwise the tools/call result to send instead."""
         items = destructive_items(name, args)
@@ -192,16 +237,7 @@ class ConsentGate:
             return _denied(items, "this client cannot be asked for approval (no elicitation support)")
         token = self._put(fingerprint)
         self._log("consent: asking: " + _log_text(items))
-        codes = eval_codes(name, args)
-        shown = False
-        if codes and self._show_code:
-            try:
-                shown = bool(self._show_code(codes))
-            except Exception as error:
-                self._log("consent: could not show the code panel: {}".format(error))
-        if shown:
-            items = destructive_items(name, args, prompt=True)
-        message = "sublime-mcp wants to do this in Sublime Text. Accept to allow it:\n- " + "\n- ".join(items)
+        message = self._question(name, args, items)
         return {
             "resultType": "input_required",
             "inputRequests": {REQUEST_KEY: {"method": "elicitation/create", "params": {

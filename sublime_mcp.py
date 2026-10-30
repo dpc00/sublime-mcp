@@ -7447,6 +7447,7 @@ class _MCPHandler(BaseHTTPRequestHandler):
             pass
         finally:
             _mcp_sessions.pop(session_id, None)
+            _mcp_session_caps.pop(session_id, None)
 
     def _handle_message(self):
         params = parse_qs(urlparse(self.path).query)
@@ -7468,8 +7469,20 @@ class _MCPHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"{}")
 
+        if (isinstance(body, dict) and "method" not in body and isinstance(body.get("id"), str)
+                and body["id"] in _mcp_pending_asks):
+            # the client's answer to an elicitation/create this server sent (see _mcp_ask)
+            slot = _mcp_pending_asks.get(body.get("id"))
+            if slot:
+                slot[1] = body.get("result")
+                slot[0].set()
+            return
+        if isinstance(body, dict) and body.get("method") == "initialize":
+            caps = (body.get("params") or {}).get("capabilities")
+            _mcp_session_caps[session_id] = caps if isinstance(caps, dict) else {}
+
         def _dispatch_and_push():
-            resp = _mcp_dispatch(body)[1]
+            resp = _mcp_dispatch(body, None, session_id)[1]
             if resp is not None:
                 _mcp_send(session_id, resp)
 
@@ -7548,6 +7561,32 @@ def _mcp_send(session_id, msg):
         q.put(msg)
 
 
+_mcp_session_caps = {}  # session_id -> the capabilities the client declared in initialize
+_mcp_pending_asks = {}  # request id -> [threading.Event, the client's result or None]
+_MCP_ASK_WAIT = 300     # seconds the person has to answer, as long as a modern token lives
+
+
+def _mcp_ask(session_id, message):
+    """Ask the person through the client (2025-11-25 elicitation/create sent over this session's
+    SSE stream) and wait for the answer. Returns "accept", "decline", "cancel", or None when the
+    session is gone or nobody answered in time."""
+    if session_id not in _mcp_sessions:
+        return None
+    ask_id = "sublime-mcp-ask-" + str(_uuid.uuid4())
+    slot = [threading.Event(), None]
+    _mcp_pending_asks[ask_id] = slot
+    try:
+        _mcp_send(session_id, {"jsonrpc": "2.0", "id": ask_id, "method": "elicitation/create",
+                               "params": {"mode": "form", "message": message,
+                                          "requestedSchema": {"type": "object", "properties": {}}}})
+        if not slot[0].wait(_MCP_ASK_WAIT):
+            return None
+        result = slot[1]
+        return result.get("action") if isinstance(result, dict) else None
+    finally:
+        _mcp_pending_asks.pop(ask_id, None)
+
+
 def _mcp_list_tools():
     with _mcp_tools_lock:
         snapshot = [tool for tool in _MCP_TOOLS
@@ -7582,15 +7621,21 @@ def _bridge_consent_denial(tool_name, body):
             "false. Held back: " + "; ".join(items))
 
 
-def _consent_gate_result(params, modern):
+def _consent_gate_result(params, modern, session_id=None):
     """None when this tools/call may run; otherwise the result to send instead.
 
     A destructive call is answered with a question on a 2026-07-28 connection (the client asks
-    the person and repeats the call) and is denied on any connection that cannot be asked. An
-    error here refuses the call. See lib/consent.py. Reached only through tools/call, so the HTTP
-    bridge routes are not covered."""
+    the person and repeats the call). On a 2025-11-25 SSE session whose client declared
+    elicitation in initialize, the question is sent to the client as elicitation/create and the
+    call waits for the answer. Any connection that cannot be asked is denied. An error here
+    refuses the call. See lib/consent.py. Reached only through tools/call, so the HTTP bridge
+    routes are not covered."""
     if not _REQUIRE_CONSENT:
         return None
+    if (not modern and session_id in _mcp_sessions
+            and consent.caps_can_elicit(_mcp_session_caps.get(session_id))):
+        return _CONSENT_GATE.check_legacy(params.get("name"), params.get("arguments") or {},
+                                          lambda message: _mcp_ask(session_id, message))
     can_ask = modern and consent.client_can_elicit(params.get("_meta"))
     return _CONSENT_GATE.check(params.get("name"), params.get("arguments") or {},
                                params if modern else {}, can_ask)
@@ -7671,11 +7716,12 @@ def _note_client_declaration(method, params):
         pass
 
 
-def _mcp_dispatch(msg, headers=None):
+def _mcp_dispatch(msg, headers=None, session_id=None):
     """Run one JSON-RPC message; return (http_status, response dict or None).
 
     `headers` are the HTTP request headers on Streamable HTTP (checked against the body for
-    modern requests); None on the legacy SSE transport. A notification has no response."""
+    modern requests); None on the legacy SSE transport, which passes its `session_id` so a
+    destructive call can ask the person over that session. A notification has no response."""
     method = msg.get("method", "")
     msg_id = msg.get("id")
     params = msg.get("params") or {}
@@ -7687,7 +7733,7 @@ def _mcp_dispatch(msg, headers=None):
                                "Header mismatch: params._meta lacks " + _MCP_META_VERSION)
     if version is not None:
         return _mcp_dispatch_modern(msg_id, method, params, version, headers)
-    resp = _mcp_dispatch_legacy(msg)
+    resp = _mcp_dispatch_legacy(msg, session_id)
     return (202 if resp is None else 200), resp
 
 
@@ -7725,7 +7771,7 @@ def _mcp_dispatch_modern(msg_id, method, params, version, headers):
     return 200, {"jsonrpc": "2.0", "id": msg_id, "result": result}
 
 
-def _mcp_dispatch_legacy(msg):
+def _mcp_dispatch_legacy(msg, session_id=None):
     """The `initialize`-handshake era (2025-11-25 and earlier); the response dict, or None."""
     method = msg.get("method", "")
     msg_id = msg.get("id")
@@ -7748,7 +7794,7 @@ def _mcp_dispatch_legacy(msg):
         elif method == "tools/list":
             result = {"tools": _mcp_list_tools()}
         elif method == "tools/call":
-            result = _consent_gate_result(params, False)
+            result = _consent_gate_result(params, False, session_id)
             if result is None:
                 result = _mcp_call_tool(params)
         else:
