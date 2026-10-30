@@ -4333,6 +4333,16 @@ _REQUIRE_CONSENT = True
 _CONSENT_PANEL = "sublime_mcp_consent"
 
 
+def _consent_required():
+    """The setting, read on every call so changing it needs no restart; the value read at
+    plugin start is the fallback when the settings cannot be read."""
+    try:
+        return bool(sublime.load_settings("MCP Commander.sublime-settings")
+                    .get("require_consent_for_destructive", True))
+    except Exception:
+        return _REQUIRE_CONSENT
+
+
 def _show_consent_code(codes):
     """Open (codes) or close (None) the panel with the whole eval_python code while the question
     is open. The prompt of a client like Claude Code shows only a few short lines, so the code the
@@ -7610,7 +7620,7 @@ def _bridge_consent_denial(tool_name, body):
     revert_file, exit, close_window, close_workspace, remove_folder, a close_file with discard, a
     run_command of those commands, also inside a batch) is refused here instead of run. eval_python
     stays open on the bridge: local tools drive the editor through it."""
-    if not _REQUIRE_CONSENT:
+    if not _consent_required():
         return None
     items = [i for i in consent.destructive_items(tool_name, body) if not i.startswith("eval_python")]
     if not items:
@@ -7630,7 +7640,7 @@ def _consent_gate_result(params, modern, session_id=None):
     call waits for the answer. Any connection that cannot be asked is denied. An error here
     refuses the call. See lib/consent.py. Reached only through tools/call, so the HTTP bridge
     routes are not covered."""
-    if not _REQUIRE_CONSENT:
+    if not _consent_required():
         return None
     if (not modern and session_id in _mcp_sessions
             and consent.caps_can_elicit(_mcp_session_caps.get(session_id))):
