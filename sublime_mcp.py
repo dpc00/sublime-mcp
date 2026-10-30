@@ -4334,13 +4334,18 @@ _CONSENT_PANEL = "sublime_mcp_consent"
 
 
 def _consent_required():
-    """The setting, read on every call so changing it needs no restart; the value read at
-    plugin start is the fallback when the settings cannot be read."""
-    try:
-        return bool(sublime.load_settings("MCP Commander.sublime-settings")
-                    .get("require_consent_for_destructive", True))
-    except Exception:
-        return _REQUIRE_CONSENT
+    """The setting, kept current by a settings listener (see _load_ports), so changing it
+    needs no restart. Never touches the sublime API: this runs on request threads before every
+    tool call, and a sublime.load_settings call there waits for the main thread, which a native
+    dialog can block (list_native_windows and dismiss_native_window then never get answered)."""
+    return _REQUIRE_CONSENT
+
+
+def _refresh_consent_setting():
+    """Settings listener (main thread): copy the current value into _REQUIRE_CONSENT."""
+    global _REQUIRE_CONSENT
+    _REQUIRE_CONSENT = bool(sublime.load_settings("MCP Commander.sublime-settings")
+                            .get("require_consent_for_destructive", True))
 
 
 def _show_consent_code(codes):
@@ -4434,6 +4439,8 @@ def _load_ports():
     global _PORT, _MCP_PORT, _BIND_HOST, _AUTH_TOKEN, _DISABLED_TOOLS, _REQUIRE_CONSENT
     settings = sublime.load_settings("MCP Commander.sublime-settings")
     _REQUIRE_CONSENT = bool(settings.get("require_consent_for_destructive", True))
+    settings.clear_on_change("sublime_mcp_consent")
+    settings.add_on_change("sublime_mcp_consent", _refresh_consent_setting)
     default_mcp_port = 9502 if sys.platform == "win32" else 9503
     default_http_port = 9500 if sys.platform == "win32" else 9501
     _MCP_PORT = int(settings.get("mcp_port", default_mcp_port))
