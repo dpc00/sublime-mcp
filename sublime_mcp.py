@@ -4959,48 +4959,6 @@ def _get_package_mcp_info(body):
 _POST["/package_mcp_info"] = _get_package_mcp_info
 
 
-def _search_packages(body):
-    query = body.get("query", "").strip().lower()
-    limit = min(int(body.get("limit", 20)), 100)
-
-    # Create PackageManager on the main thread (needs sublime.load_settings()),
-    # then do the potentially-slow list_available_packages() here in the HTTP thread.
-    def get_pm():
-        try:
-            pm_mod = sys.modules["Package Control.package_control.package_manager"]
-            return {"pm": pm_mod.PackageManager()}
-        except KeyError:
-            return {"error": "Package Control not installed"}
-        except Exception as e:
-            return {"error": str(e)}
-
-    result = _on_main(get_pm)
-    if "error" in result:
-        return result
-
-    try:
-        avail = result["pm"].list_available_packages()
-    except Exception as e:
-        return {"error": str(e)}
-
-    results = []
-    for name, info in avail.items():
-        if not query or query in name.lower() or query in (info.get("description") or "").lower():
-            results.append({
-                "name": name,
-                "description": info.get("description", ""),
-                "author": info.get("author", []),
-                "homepage": info.get("homepage", ""),
-                "labels": info.get("labels", []),
-                "last_modified": info.get("last_modified", ""),
-            })
-    results.sort(key=lambda r: r["name"].lower())
-    return {"packages": results[:limit], "total_matches": len(results)}
-
-
-_POST["/search_packages"] = _search_packages
-
-
 # ── Native windows (dialogs, menus): work while ST's main thread is blocked ──
 #
 # A command that opens a native OS dialog or menu (prompt_open_file, delete_file,
@@ -5973,15 +5931,6 @@ _MCP_TOOLS = [
      "documented escape hatch, not something to reach for by default.",
      {"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]},
      _get_package_mcp_info),
-    ("search_packages",
-     "Search Package Control for installable Sublime Text packages. "
-     "Returns name, description, author, homepage, labels, and last_modified for each match. "
-     "Searches both package names and descriptions.",
-     {"type": "object", "properties": {
-         "query": {"type": "string", "description": "Search term (name or description). Empty returns all."},
-         "limit": {"type": "integer", "default": 20, "description": "Max results (1-100)."},
-     }},
-     _search_packages),
     ("get_help",
      "Return the Agent Guide (AGENT_GUIDE.md) with detailed instructions on how to use sublime-mcp tools correctly. "
      "Call this first if you are unsure how to save files, close tabs, or use eval_python. "

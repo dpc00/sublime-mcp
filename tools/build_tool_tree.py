@@ -155,7 +155,7 @@ put("run/python", "eval_python eval_python_latest")
 put("run/commands", "run_command chain")
 put("run/build_and_exec", "exec")
 put("run/macros", "toggle_record_macro run_macro run_macro_file save_macro")
-put("packages_and_dev/packages", "search_packages install_package_control")
+put("packages_and_dev/packages", "install_package_control")
 put("packages_and_dev/create", "new_build_system new_plugin new_snippet new_syntax")
 put("packages_and_dev/diagnostics", "profile_plugins profile_syntax_definition "
     "run_syntax_tests")

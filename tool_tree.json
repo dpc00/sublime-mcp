@@ -266,10 +266,9 @@
     ]
    },
    "packages": {
-    "description": "Search, install and inspect packages",
+    "description": "Install Package Control",
     "tools": [
-     "install_package_control",
-     "search_packages"
+     "install_package_control"
     ]
    }
   },

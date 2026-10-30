@@ -2117,18 +2117,6 @@ TOOLS = [   {   'name': 'add_directory',
         'description': 'Scroll the active view so the end of the file is visible (does not move '
                        'the cursor).',
         'inputSchema': {'type': 'object', 'properties': {}}},
-    {   'name': 'search_packages',
-        'description': 'Search Package Control for installable Sublime Text packages. Returns '
-                       'name, description, author, homepage, labels, and last_modified for each '
-                       'match. Searches both package names and descriptions.',
-        'inputSchema': {   'type': 'object',
-                           'properties': {   'query': {   'type': 'string',
-                                                          'description': 'Search term (name or '
-                                                                         'description). Empty '
-                                                                         'returns all.'},
-                                             'limit': {   'type': 'integer',
-                                                          'default': 20,
-                                                          'description': 'Max results (1-100).'}}}},
     {   'name': 'select',
         'description': "Runs the Sublime Text 'select' command. (WindowCommand)",
         'inputSchema': {   'type': 'object',

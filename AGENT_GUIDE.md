@@ -206,7 +206,6 @@ get_sheet_content(index=<target index>)          # quote the echoed line and its
 Call these through `batch`; find more with `discover_tools`.
 
 ```
-search_packages(query="<name>")                # package manager search
 get_menu_items(caption="Command Palette")     # menu items with their command and args (filters: menu, caption, command)
 run_command(command="show_overlay", args={"overlay": "command_palette", "text": "Install Package"})
 get_command_palette(caption="Install")        # palette entries (filters: package, command, caption)
