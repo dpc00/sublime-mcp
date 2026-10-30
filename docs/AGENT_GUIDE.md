@@ -173,12 +173,15 @@ GhostShell has no command for sending text into a terminal tab (removed 2026-10-
 select the tab, type, send the Return, go back to your own tab. Always send the Return: there is no "leave the line".
 A command that then waits for the person (an npm login) is still sent; watch the tab and say what it waits for.
 
-1. **Find the target.** `get_sheets(settings=false)`: a shell console (name `C:\Windows\system32\cmd.exe`) or an agent console;
-   never your own tab (the one with `is_focused: true`).
-2. **Read it, then decide.** `get_sheet_content(index=<target index>)`. It is free only if the tab name has no ` - <command>`
-   suffix (while a command runs the name becomes `cmd.exe - <command>`) and the text ends with a prompt line (`C:\path>`).
-   If it is busy, wait and read again. If no suitable console exists, open one with `run_command` `ai_terminal_open_here`
-   (`profile`, `paths`; untested) and wait for its prompt.
+1. **Find the target.** `get_sheets(settings=false)`: a shell console (`Dos Console`, `PowerShell`, `Bash`, `WSL Bash` or
+   `C:\Windows\system32\cmd.exe`) or an agent console; never your own tab (the one with `is_focused: true`). Take the id and the
+   index from this read: a new tab is inserted at index 1 and moves the others, and an agent renames its own tab.
+2. **Read it, then decide.** `get_sheet_content(index=<target index>)`. It is free only if the text ENDS with the prompt and nothing
+   after it (`C:\path>`, `PS C:\path>`, `...$`, or an empty `❯` line in omp); that test works for every console. The tab name helps
+   for some: `cmd.exe` shows ` - <command>` while it runs, an agent shows `π <glyph> <project>` (a spinner frame = working, `>` =
+   idle), PowerShell and bash keep a plain name. If it is busy, wait and read again. If no suitable console exists, open one with
+   `run_command` `ai_terminal_open_here` and `{"profile": "<name>", "paths": ["<directory>"]}` (tested with Dos Console,
+   PowerShell, Bash, WSL Bash and omp; the prompt appears after 3 to 12 s) and wait for it.
 3. **One batch: focus, check, type with the Return, go back.** Your permission prompts are shown in your own tab, so a call
    must never leave the console tab in front:
 
@@ -190,12 +193,12 @@ batch(calls=[
   {"tool": "focus_sheet",  "args": {"id": <your own id>}},
   {"tool": "get_sheets",   "args": {"settings": false}}])    # you are back
 ```
-4. **Watch it.** `get_sheet_content(index=<target index>)` and `get_sheets` again: running = name has ` - <command>` and no
-   prompt at the end; finished = plain name and a prompt at the end. Quote the echoed command, its output, and say the console is
-   back at its prompt.
+4. **Watch it.** `get_sheet_content(index=<target index>)` and `get_sheets` again: running = no prompt at the end of the text;
+   finished = the prompt at the end. Quote the echoed command, its output, and say the console is back at its prompt.
 
-Tested 2026-10-30 on build 4215 in a `cmd.exe` tab: `echo CR_TEST_1` (command, output and prompt in the tab within a second), and
-`ping -n 6 127.0.0.1 & echo DONE_2` (busy while it ran, finished with `DONE_2` and the prompt six seconds later).
+Tested 2026-10-30 on build 4215: in a `cmd.exe` tab `echo CR_TEST_1` and `ping -n 6 127.0.0.1 & echo DONE_2`; in launched tabs
+(Dos Console `start chrome "https://www.google.com/search?q=..."`, PowerShell, Git Bash, WSL Bash) a command with a `sleep`; in an omp
+tab a short message (text, then Return in the same batch), which it answered. Each: command and output in the tab, prompt back.
 
 - **Guard the focus.** Sheet ids change when Sublime restarts (the cmd tab went from id 284 to 12), so call `get_sheets` in the
   same turn. If the first `get_sheets` in the batch does not show the target focused, the text went to your own tab. (Not
