@@ -165,6 +165,106 @@ if SUPPORTED:
         _user32.EnumChildWindows(hwnd, proc, 0)
         return out
 
+    # UI Automation fallback. A Windows task dialog (custom button text, such as "Install" /
+    # "Cancel") draws its message without child windows of class "Static", so the walk in
+    # _dialog_parts finds no text. UI Automation reads it. Plain ctypes on the COM vtables
+    # (no comtypes, no helper process); indexes checked against UIAutomationClient.idl
+    # (Windows SDK 10.0.18362).
+    _UIA_TEXT_CONTROL_TYPE = 50020
+    _UIA_CONTROL_TYPE_PROPERTY = 30003
+    _UIA_NAME_PROPERTY = 30005
+    _TREE_SCOPE_DESCENDANTS = 4
+    _VT_I4 = 3
+    _VT_BSTR = 8
+
+    class _GUID(ctypes.Structure):
+        _fields_ = [("Data1", wintypes.DWORD), ("Data2", wintypes.WORD), ("Data3", wintypes.WORD),
+                    ("Data4", ctypes.c_ubyte * 8)]
+
+    class _VARIANT(ctypes.Structure):
+        _fields_ = [("vt", ctypes.c_ushort), ("r1", ctypes.c_ushort), ("r2", ctypes.c_ushort),
+                    ("r3", ctypes.c_ushort), ("val", ctypes.c_void_p), ("val2", ctypes.c_void_p)]
+
+    def _guid(text):
+        g = _GUID()
+        ctypes.oledll.ole32.CLSIDFromString(text, ctypes.byref(g))
+        return g
+
+    def _vcall(obj, index, *argtypes):
+        """The COM method at vtable ``index`` of interface pointer ``obj``, as a callable that
+        takes the arguments after ``this`` and returns the HRESULT."""
+        ptr = ctypes.cast(obj, ctypes.POINTER(ctypes.c_void_p))
+        vtbl = ctypes.cast(ptr[0], ctypes.POINTER(ctypes.c_void_p))
+        proto = ctypes.WINFUNCTYPE(ctypes.c_long, ctypes.c_void_p, *argtypes)
+        fn = proto(vtbl[index])
+        return lambda *args: fn(obj, *args)
+
+    def _release(obj):
+        if obj and obj.value:
+            _vcall(obj, 2)()
+
+    def _uia_texts(hwnd):
+        """Names of the Text elements under window ``hwnd``, in tree order, empty ones skipped.
+        Returns [] when UI Automation is not available or the window cannot be read."""
+        ole32 = ctypes.windll.ole32
+        oleaut32 = ctypes.windll.oleaut32
+        hr_init = ole32.CoInitializeEx(None, 0)  # multithreaded: no message pump needed
+        owned, texts = [], []
+        try:
+            auto = ctypes.c_void_p()
+            hr = ole32.CoCreateInstance(ctypes.byref(_guid("{ff48dba4-60ef-4201-aa87-54103eef594e}")),
+                                        None, 1 | 4,  # CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER
+                                        ctypes.byref(_guid("{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}")),
+                                        ctypes.byref(auto))
+            if hr != 0 or not auto.value:
+                return []
+            owned.append(auto)
+            root = ctypes.c_void_p()
+            if _vcall(auto, 6, ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p))(hwnd, ctypes.byref(root)) != 0:
+                return []
+            owned.append(root)
+            cond = ctypes.c_void_p()
+            if _vcall(auto, 21, ctypes.POINTER(ctypes.c_void_p))(ctypes.byref(cond)) != 0:
+                return []
+            owned.append(cond)
+            found = ctypes.c_void_p()
+            if _vcall(root, 6, ctypes.c_int, ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p))(
+                    _TREE_SCOPE_DESCENDANTS, cond, ctypes.byref(found)) != 0:
+                return []
+            owned.append(found)
+            count = ctypes.c_int()
+            _vcall(found, 3, ctypes.POINTER(ctypes.c_int))(ctypes.byref(count))
+            for i in range(min(count.value, 200)):
+                el = ctypes.c_void_p()
+                if _vcall(found, 4, ctypes.c_int, ctypes.POINTER(ctypes.c_void_p))(i, ctypes.byref(el)) != 0:
+                    continue
+                try:
+                    kind = _VARIANT()
+                    get_prop = _vcall(el, 10, ctypes.c_int, ctypes.POINTER(_VARIANT))
+                    if get_prop(_UIA_CONTROL_TYPE_PROPERTY, ctypes.byref(kind)) != 0:
+                        continue
+                    is_text = kind.vt == _VT_I4 and (kind.val or 0) & 0xFFFFFFFF == _UIA_TEXT_CONTROL_TYPE
+                    oleaut32.VariantClear(ctypes.byref(kind))
+                    if not is_text:
+                        continue
+                    name = _VARIANT()
+                    if get_prop(_UIA_NAME_PROPERTY, ctypes.byref(name)) == 0:
+                        if name.vt == _VT_BSTR and name.val:
+                            t = ctypes.wstring_at(name.val).strip()
+                            if t:
+                                texts.append(t)
+                        oleaut32.VariantClear(ctypes.byref(name))
+                finally:
+                    _release(el)
+        except Exception:
+            return texts
+        finally:
+            for obj in reversed(owned):
+                _release(obj)
+            if hr_init in (0, 1):
+                ole32.CoUninitialize()
+        return texts
+
     def _dialog_parts(hwnd):
         buttons, messages = [], []
         for child in _children(hwnd):
@@ -181,6 +281,8 @@ if SUPPORTED:
                 t = _text(child).strip()
                 if t:
                     messages.append(t)
+        if not messages:
+            messages = _uia_texts(hwnd)
         return buttons, messages[:4]
 
 

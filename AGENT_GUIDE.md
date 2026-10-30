@@ -537,13 +537,14 @@ and returns every dialog that was not open before the command as `dialogs`, with
 fields as `list_native_windows`. Without `settle_ms` nothing changes. When `get_console`
 fails for lack of focus while a dialog is open, the error now names the dialog.
 
-**What `list_native_windows` cannot read.** The message of a Windows task dialog (one whose
-buttons have custom text, such as "Install <package>" / "Cancel") comes back with an empty
-`messages` list, although the buttons are listed. Read it with computer-use
-(`get_window_state` shows it as the dialog's main text). With computer-use, a click by
-`element_index` on those buttons may do nothing; a click at the button's pixel position
-from a `capture_mode="image"` snapshot worked, and a message box can take a second or two
-to close after the click, so list the windows again before assuming it did not.
+**Task dialogs.** The message of a Windows task dialog (one whose buttons have custom text, such as
+"Install <package>" / "Cancel") is read through UI Automation when the dialog has no ordinary
+static text, so `messages` carries it (tested on build 4215 with a dialog from a Python plugin:
+`["dlgtest: choose Install or Cancel"]`). Before this, `messages` came back empty for these dialogs
+and only a computer-use client could read them. If `messages` is still empty, take a
+`ui_screenshot` of the dialog's `hwnd`. `dismiss_native_window` with `action="button"` and the
+button's text clicks it; a message box can take a second or two to close, so list the windows
+again before assuming it did not.
 
 **Closing a tab that has no path.** `close_file(name="...")` (partial, case-insensitive) or
 `close_file(index=N)` closes that tab (a name that fits several tabs is refused, with the list);
