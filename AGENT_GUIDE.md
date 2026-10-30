@@ -170,36 +170,45 @@ get_commands()                     # command ids, scopes, packages, palette capt
 
 GhostShell has no command for sending text into a terminal tab (removed 2026-10-19: `ai_terminal_send_string`,
 `ai_terminal_send_string_window`, `ai_terminal_queue_input`, `ai_terminal_queue_input_to`). Do it the way a person does:
-select the tab, type, read it back, go back to your own tab. Tested 2026-10-19 on build 4200 with a `cmd.exe` tab:
+select the tab, type, send the Return, go back to your own tab. Always send the Return: there is no "leave the line".
+A command that then waits for the person (an npm login) is still sent; watch the tab and say what it waits for.
+
+1. **Find the target.** `get_sheets(settings=false)`: a shell console (name `C:\Windows\system32\cmd.exe`) or an agent console;
+   never your own tab (the one with `is_focused: true`).
+2. **Read it, then decide.** `get_sheet_content(index=<target index>)`. It is free only if the tab name has no ` - <command>`
+   suffix (while a command runs the name becomes `cmd.exe - <command>`) and the text ends with a prompt line (`C:\path>`).
+   If it is busy, wait and read again. If no suitable console exists, open one with `run_command` `ai_terminal_open_here`
+   (`profile`, `paths`; untested) and wait for its prompt.
+3. **One batch: focus, check, type with the Return, go back.** Your permission prompts are shown in your own tab, so a call
+   must never leave the console tab in front:
 
 ```
-get_sheets(settings=false)                       # find the target sheet id and your own (the focused one)
 batch(calls=[
-  {"tool": "focus_sheet", "args": {"id": <target id>}},
-  {"tool": "ui_type_text", "args": {"text": "echo hello\n"}},   # a newline is sent as Return
-  {"tool": "focus_sheet", "args": {"id": <your own id>}}])
-get_sheet_content(index=<target index>)          # quote the echoed line and its output
+  {"tool": "focus_sheet",  "args": {"id": <target id>}},
+  {"tool": "get_sheets",   "args": {"settings": false}},     # target must show is_focused: true here
+  {"tool": "ui_type_text", "args": {"text": "<command>\n", "settle_ms": 600}},   # in cmd.exe the newline is the Return
+  {"tool": "focus_sheet",  "args": {"id": <your own id>}},
+  {"tool": "get_sheets",   "args": {"settings": false}}])    # you are back
 ```
+4. **Watch it.** `get_sheet_content(index=<target index>)` and `get_sheets` again: running = name has ` - <command>` and no
+   prompt at the end; finished = plain name and a prompt at the end. Quote the echoed command, its output, and say the console is
+   back at its prompt.
 
-- **Guard the focus.** Sheet ids change when Sublime restarts (tested 2026-10-19: the cmd tab went from id 284 to 12), so
-  call `get_sheets` in the same turn. Run `focus_sheet` first and check it did not return an error and that
-  `get_sheets(settings=false)` shows the target with `is_focused: true` before typing anything (not `eval_python`: it
-  asks the person on every call). A `focus_sheet` on a stale id
-  returned "sheet id 284 not found", and nothing was typed.
-- **`ok` is not proof.** `ui_type_text` types into whichever tab is active in the window; if the `focus_sheet` before it
-  did not select the target, the text goes to the wrong tab (possibly your own session) and still returns ok. Read the
-  target tab back with `get_sheet_content` and quote the line before saying it was sent.
-- **Leave the line for the person to press Enter** (for example `npm publish`, which asks for browser authentication):
-  type the text with no trailing newline, read it back, then tell them to press Enter in that tab.
-- **A cmd.exe tab takes `ui_type_text` as typed.** UNVERIFIED for Claude Code tabs: Claude Code reads a burst of text as a
-  paste and takes an Enter in the same read, or within about 100 ms after it, as part of the paste (text of 60 characters
-  or fewer still submitted; 120 or more stayed in the box, measured 2026-10-17). For such a tab type the text with no
-  newline, then send the Return as its own `ui_press_key` (`key="Return"`, `method="post"`) at least 300 ms later.
+Tested 2026-10-30 on build 4215 in a `cmd.exe` tab: `echo CR_TEST_1` (command, output and prompt in the tab within a second), and
+`ping -n 6 127.0.0.1 & echo DONE_2` (busy while it ran, finished with `DONE_2` and the prompt six seconds later).
+
+- **Guard the focus.** Sheet ids change when Sublime restarts (the cmd tab went from id 284 to 12), so call `get_sheets` in the
+  same turn. If the first `get_sheets` in the batch does not show the target focused, the text went to your own tab. (Not
+  `eval_python`: it asks the person on every call.)
+- **`ok` is not proof.** Read the target tab back and quote the line before saying it was sent.
+- **A line typed without a Return is not shown** in `get_sheet_content` right away (76 characters typed, text unchanged): one more
+  reason to always send the Return.
+- **Claude Code and other agent tabs** read a burst of text as a paste and take an Enter in the same read as part of it (text of 60
+  characters or fewer still submitted; 120 or more stayed in the box, measured 2026-10-17). Type the text with no newline and a
+  `settle_ms` of 400 or more, then `ui_press_key` (`key="Return"`, `method="post"`) in the same batch.
 - **Escape: do not type a raw `\x1b`.** Use `ui_press_key` with `method="post"` (`Escape`, `Return`, arrows).
-- `cls` in a cmd.exe tab clears the tab text that `get_sheet_content` returns (tested: 183 characters left), so read
-  what you need first.
-- A string typed before the shell has printed its prompt is dropped. After `ai_terminal_open_here` wait a few seconds, and
-  confirm the prompt with a screenshot before typing.
+- `cls` in a cmd.exe tab clears the tab text that `get_sheet_content` returns, so read what you need first.
+- A string typed before the shell has printed its prompt is dropped: confirm the prompt before typing.
 
 ## Packages, menus, palette and input panels (no eval_python needed)
 
