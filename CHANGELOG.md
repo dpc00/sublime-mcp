@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.18.1
+
+The "main-thread timeout" message now says where the main thread is stuck: when a call to the main thread times out, the message names the plugin file and line the plugin host's main thread is in (found while a package, SublimeAnarchy, looped forever in a path walk on Windows and froze the editor for a tool call that gave no cause). The AGENT_GUIDE terminal-tab section was rewritten: always send the Return, one batch, read the tab first; the prompt at the end is the test; end a launched console with `ai_terminal_end_session`, never just close it.
+
 ## 1.18.0
 
 Two breaking changes: the `install_package` and `search_packages` tools are removed (Package Control's job), and `close_file` with none of `path`, `name`, `index` refuses instead of closing the active tab. Fixes found by the package audit and by a sweep of every tool on a portable 4215: a task dialog's message is returned (UI Automation), tool calls no longer hang while a dialog blocks Sublime's main thread (the consent setting is read by a settings listener), `dismiss_native_window` clicks again when the first click is dropped and can cancel the Windows file-operation progress window, and the main-thread timeout message names the real blocker. The sweep script no longer hangs Sublime at its end. Tool count 379. Each change below says how it was tested.
