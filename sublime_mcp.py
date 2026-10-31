@@ -100,7 +100,31 @@ def _dispatch_label(fn):
 _BLOCKING_WINDOW_KINDS = ("dialog", "menu", "other")
 
 
-def _timeout_message(label, windows):
+def _main_thread_where(depth=4):
+    """Where the plugin host's main thread is right now, innermost frame first.
+
+    Called from the HTTP thread while the main thread is stuck. A plugin that
+    loops or blocks inside Python (an endless os.path.dirname walk, a read that
+    never returns) shows up here with its file, line and source text; a stall
+    inside Sublime's own code shows the plugin frame that called into it.
+    Returns None when the frames cannot be read.
+    """
+    try:
+        frame = sys._current_frames().get(threading.main_thread().ident)
+        if frame is None:
+            return None
+        parts = []
+        for fs in reversed(traceback.extract_stack(frame)[-depth:]):
+            path = fs.filename.replace("\\", "/").split("/")
+            where = "/".join(path[-2:]) if len(path) > 1 else fs.filename
+            text = (fs.line or "").strip()
+            parts.append("{}:{} in {}{}".format(where, fs.lineno, fs.name, " ({})".format(text) if text else ""))
+        return " <- ".join(parts) or None
+    except Exception:
+        return None
+
+
+def _timeout_message(label, windows, where=None):
     """Say why the main thread did not answer, from the native windows that exist.
 
     ``windows`` is the list from native_windows.list_windows, or None when the
@@ -133,9 +157,15 @@ def _timeout_message(label, windows):
         return (head + " A native window blocks Sublime's main thread until it is dismissed: " + names +
                 ". list_native_windows shows it and dismiss_native_window answers it; both work while "
                 "Sublime is blocked.")
+    if where:
+        return (head + " No native dialog or menu is open, so the main thread is busy, not blocked by a "
+                "dialog. Right now it is inside: {}. A package that is only loading or installing moves "
+                "on by itself; if the same place shows up on a second call, that code is stuck "
+                "(an endless loop or a call that never returns) and the plugin host has to be restarted. "
+                "list_native_windows shows how long it has been busy.".format(where))
     return (head + " No native dialog or menu is open, so the main thread is busy, not blocked by a "
-            "dialog (for example a package is loading or installing). It was running {}. Call again in "
-            "a few seconds; list_native_windows shows how long it has been busy.".format(label))
+            "dialog (for example a package is loading or installing). The call that timed out was {}. "
+            "Call again in a few seconds; list_native_windows shows how long it has been busy.".format(label))
 
 
 def _main_thread_timeout_message(label):
@@ -145,7 +175,7 @@ def _main_thread_timeout_message(label):
             windows = native_windows.list_windows(_sublime_process_id())
         except Exception:
             windows = None
-    return _timeout_message(label, windows)
+    return _timeout_message(label, windows, _main_thread_where())
 
 
 def _on_main(fn):
